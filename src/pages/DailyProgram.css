@@ -1,0 +1,144 @@
+/* General Page Styling */
+.program-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem 4rem 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.page-header h1, .program-page-container > h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+/* Card-Based List Styling */
+.program-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.program-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px_12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.program-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 { margin: 0; font-size: 1.2rem; color: #34495e; }
+.card-lot-badge { background-color: #e7f3ff; color: #007bff; padding: 0.3rem 0.6rem; border-radius: 16px; font-size: 0.8rem; font-weight: 600; }
+.card-body { padding: 1.5rem; flex-grow: 1; }
+.card-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.card-info-item { font-size: 0.95rem; color: #555; }
+.card-info-item strong { display: block; color: #333; margin-bottom: 0.25rem; font-weight: 600; }
+.card-footer { background-color: #f8f9fa; padding: 1rem 1.5rem; border-top: 1px solid #e9ecef; display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+/* Form Section Styling */
+.form-section {
+  background: #fff;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.form-section h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.input-group input,
+.input-group select {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+/* Details Table Styling */
+.details-header { display: flex; justify-content: space-between; align-items: center; }
+.details-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.details-table th,
+.details-table td { border: 1px solid #e9ecef; padding: 0.75rem; text-align: left; }
+.details-table th { background-color: #f8f9fa; font-weight: 600; }
+.details-table input,
+.details-table select { width: 100%; }
+
+/* Button Styles */
+.add-btn, .edit-btn, .delete-btn, .save-btn, .clear-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.add-btn:hover, .edit-btn:hover, .delete-btn:hover, .save-btn:hover, .clear-btn:hover {
+  transform: translateY(-2px);
+}
+
+.add-btn { background-color: #007bff; color: white; }
+.edit-btn { background-color: #ffc107; color: #333; }
+.delete-btn { background-color: #dc3545; color: white; }
+.save-btn { background-color: #28a745; color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
+.clear-btn { background-color: #6c757d; color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
+
+.main-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+.action-buttons { display: flex; gap: 0.5rem; }
