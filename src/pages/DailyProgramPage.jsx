@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Select from 'react-select';
 import './DailyProgram.css';
 
-// Defines the structure of a new, blank program
 const initialProgramState = {
     numProg: 0,
     coddes: 0,
@@ -22,35 +22,37 @@ const DailyProgramPage = () => {
     const apiUrl = 'https://localhost:44374/api/dailyprogram';
     const lookupApiUrl = 'https://localhost:44374/api/lookup';
 
-    // State for the dropdown lists
-    const [destinations, setDestinations] = useState([]);
-    const [partenaires, setPartenaires] = useState([]);
-    const [varietes, setVarietes] = useState([]);
+    // State for the dropdown options
+    const [destinationsOptions, setDestinationsOptions] = useState([]);
+    const [partenairesOptions, setPartenairesOptions] = useState([]);
+    const [grpVarsOptions, setGrpVarsOptions] = useState([]);
+    const [tpalettesOptions, setTPalettesOptions] = useState([]);
 
-    // Effect to fetch lookup data for dropdowns
     useEffect(() => {
         const fetchLookups = async () => {
             try {
-                const [destResponse, partResponse, varResponse] = await Promise.all([
+                const partnerType = "EXPORTATEUR";
+                const [destRes, partRes, grpRes, palRes] = await Promise.all([
                     fetch(`${lookupApiUrl}/destinations`),
-                    fetch(`${lookupApiUrl}/partenaires`),
-                    fetch(`${lookupApiUrl}/varietes`)
+                    fetch(`${lookupApiUrl}/partenaires/${partnerType}`),
+                    fetch(`${lookupApiUrl}/grpvars`),
+                    fetch(`${lookupApiUrl}/tpalettes`)
                 ]);
 
-                if (!destResponse.ok || !partResponse.ok || !varResponse.ok) {
+                if (!destRes.ok || !partRes.ok || !grpRes.ok || !palRes.ok) {
                     throw new Error('Failed to fetch all lookup data');
                 }
 
-                // Correctly process the JSON for each response
-                const destData = await destResponse.json();
-                const partData = await partResponse.json();
-                const varData = await varResponse.json();
+                // Transform data into { value, label } format for React Select
+                const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
+                const partData = (await partRes.json()).map(p => ({ value: p.ref, label: p.nom }));
+                const grpData = (await grpRes.json()).map(g => ({ value: g.codgrv, label: g.nomgrv })); // Use corrected names
+                 const palData = (await palRes.json()).map(p => ({ value: p.codtyp, label: p.nomemb }));
 
-                // Set the state for all three lists
-                setDestinations(destData);
-                setPartenaires(partData);
-                setVarietes(varData);
-
+                setDestinationsOptions(destData);
+                setPartenairesOptions(partData);
+                setGrpVarsOptions(grpData);
+                setTPalettesOptions(palData);
             } catch (error) {
                 console.error("Failed to fetch lookup data:", error);
             }
@@ -58,7 +60,6 @@ const DailyProgramPage = () => {
         fetchLookups();
     }, []);
 
-    // Effect to fetch existing program data when in "edit" mode
     useEffect(() => {
         if (isEditing) {
             const fetchProgram = async () => {
@@ -67,8 +68,8 @@ const DailyProgramPage = () => {
                     if (!response.ok) throw new Error('Program not found');
                     
                     const data = await response.json();
-                    data.havday = data.havday.split('T')[0];
-                    data.dteprog = data.dteprog.split('T')[0];
+                    data.havday = data.havday ? data.havday.split('T')[0] : '';
+                    data.dteprog = data.dteprog ? data.dteprog.split('T')[0] : '';
                     setProgram(data);
                 } catch (error) {
                     console.error('Failed to fetch program:', error);
@@ -81,36 +82,50 @@ const DailyProgramPage = () => {
         }
     }, [id, isEditing, navigate]);
 
-    // Event Handlers
     const handleHeaderChange = (e) => {
         const { name, value } = e.target;
         setProgram(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleHeaderSelectChange = (selectedOption, actionMeta) => {
+        setProgram(prev => ({ ...prev, [actionMeta.name]: selectedOption.value }));
     };
 
     const handleDetailChange = (index, e) => {
         const { name, value, type, checked } = e.target;
         const updatedDetails = [...program.details];
-        const typedValue = type === 'checkbox' ? (checked ? 1 : 0) : parseInt(value, 10) || 0;
+        let typedValue;
+        if (type === 'checkbox') {
+            typedValue = checked ? 1 : 0;
+        } else if (name === 'codtyp') {
+            typedValue = value;
+        } else {
+            typedValue = parseInt(value, 10) || 0;
+        }
         updatedDetails[index] = { ...updatedDetails[index], [name]: typedValue };
         setProgram(prev => ({ ...prev, details: updatedDetails }));
     };
 
-    const addDetailRow = () => {
-        setProgram(prev => ({
-            ...prev,
-            details: [...prev.details, { codvar: 0, nbrpal: 0, nbrcoli: 0, valide: 0, numProg: program.numProg }]
-        }));
+    const handleDetailSelectChange = (index, selectedOption, actionMeta) => {
+        const updatedDetails = [...program.details];
+        updatedDetails[index] = { ...updatedDetails[index], [actionMeta.name]: selectedOption.value };
+        setProgram(prev => ({ ...prev, details: updatedDetails }));
     };
 
+   const addDetailRow = () => {
+    setProgram(prev => ({
+        ...prev,
+        details: [...prev.details, { codgrv: 0, codtyp: '', nbrpal: 0, nbrcoli: 0, valide: 0, numProg: program.numProg }]
+    }));
+};
+
     const removeDetailRow = (index) => {
-        const updatedDetails = program.details.filter((_, i) => i !== index);
-        setProgram(prev => ({ ...prev, details: updatedDetails }));
+        setProgram(prev => ({ ...prev, details: program.details.filter((_, i) => i !== index) }));
     };
 
     const handleSubmit = async () => {
         const method = isEditing ? 'PUT' : 'POST';
         const url = isEditing ? `${apiUrl}/${id}` : apiUrl;
-
         try {
             const response = await fetch(url, {
                 method: method,
@@ -132,44 +147,19 @@ const DailyProgramPage = () => {
             <section className="form-section">
                 <h2>Program Information</h2>
                 <div className="form-grid">
-                    <div className="input-group">
-                        <label>Num Prog</label>
-                        <input type="number" name="numProg" value={program.numProg} onChange={handleHeaderChange} />
-                    </div>
-                    <div className="input-group">
-                        <label>PO Number</label>
-                        <input type="text" name="po" value={program.po} onChange={handleHeaderChange} />
-                    </div>
-                    <div className="input-group">
-                        <label>Lot</label>
-                        <input type="text" name="lot" value={program.lot} onChange={handleHeaderChange} />
-                    </div>
+                    <div className="input-group"><label>Num Prog</label><input type="number" name="numProg" value={program.numProg} onChange={handleHeaderChange} /></div>
+                    <div className="input-group"><label>PO Number</label><input type="text" name="po" value={program.po} onChange={handleHeaderChange} /></div>
+                    <div className="input-group"><label>Lot</label><input type="text" name="lot" value={program.lot} onChange={handleHeaderChange} /></div>
                     <div className="input-group">
                         <label>Destination</label>
-                        <select name="coddes" value={program.coddes} onChange={handleHeaderChange}>
-                            <option value="0">Select a destination...</option>
-                            {destinations.map(dest => (
-                                <option key={dest.coddes} value={dest.coddes}>{dest.vildes}</option>
-                            ))}
-                        </select>
+                        <Select name="coddes" options={destinationsOptions} value={destinationsOptions.find(d => d.value === program.coddes)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
                     </div>
                     <div className="input-group">
                         <label>Partenaire (Exporter)</label>
-                        <select name="refexp" value={program.refexp} onChange={handleHeaderChange}>
-                            <option value="0">Select a partenaire...</option>
-                            {partenaires.map(part => (
-                                <option key={part.ref} value={part.ref}>{part.nom}</option>
-                            ))}
-                        </select>
+                        <Select name="refexp" options={partenairesOptions} value={partenairesOptions.find(p => p.value === program.refexp)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
                     </div>
-                    <div className="input-group">
-                        <label>Harvest Date</label>
-                        <input type="date" name="havday" value={program.havday} onChange={handleHeaderChange} />
-                    </div>
-                    <div className="input-group">
-                        <label>Program Date</label>
-                        <input type="date" name="dteprog" value={program.dteprog} onChange={handleHeaderChange} />
-                    </div>
+                    <div className="input-group"><label>Harvest Date</label><input type="date" name="havday" value={program.havday} onChange={handleHeaderChange} /></div>
+                    <div className="input-group"><label>Program Date</label><input type="date" name="dteprog" value={program.dteprog} onChange={handleHeaderChange} /></div>
                 </div>
             </section>
 
@@ -181,7 +171,8 @@ const DailyProgramPage = () => {
                 <table className="details-table">
                     <thead>
                         <tr>
-                            <th>Variety (codvar)</th>
+                            <th>Group</th>
+                            <th>Palette Type</th>
                             <th># Pallets</th>
                             <th># Boxes</th>
                             <th>Valid</th>
@@ -192,25 +183,21 @@ const DailyProgramPage = () => {
                         {program.details.map((detail, index) => (
                             <tr key={index}>
                                 <td>
-                                    <select
-                                        name="codvar"
-                                        value={detail.codvar}
-                                        onChange={(e) => handleDetailChange(index, e)}
-                                    >
-                                        <option value="0">Select variety...</option>
-                                        {varietes.map(v => (
-                                            <option key={v.codvar} value={v.codvar}>
-                                                {v.nomvar}
-                                            </option>
-                                        ))}
-                                    </select>
+                    <Select
+                        name="codgrv" // Corrected name
+                        options={grpVarsOptions}
+                        value={grpVarsOptions.find(g => g.value === detail.codgrv)} // Corrected property
+                        onChange={(opt, act) => handleDetailSelectChange(index, opt, act)}
+                        placeholder="Search..."
+                    />
+                </td>
+                                <td>
+                                    <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)} onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
                                 </td>
                                 <td><input type="number" name="nbrpal" value={detail.nbrpal} onChange={(e) => handleDetailChange(index, e)} /></td>
                                 <td><input type="number" name="nbrcoli" value={detail.nbrcoli} onChange={(e) => handleDetailChange(index, e)} /></td>
                                 <td><input type="checkbox" name="valide" checked={detail.valide === 1} onChange={(e) => handleDetailChange(index, e)} /></td>
-                                <td className="action-buttons">
-                                    <button className="delete-btn" onClick={() => removeDetailRow(index)}>D</button>
-                                </td>
+                                <td className="action-buttons"><button className="delete-btn" onClick={() => removeDetailRow(index)}>Delete</button></td>
                             </tr>
                         ))}
                     </tbody>
