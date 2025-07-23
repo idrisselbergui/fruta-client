@@ -1,216 +1,147 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
-import './DailyProgram.css';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DashboardChart from '../components/DashboardChart';
+import CollapsibleCard from '../components/CollapsibleCard'; // Import the new component
+import './DashboardPage.css';
 
-const initialProgramState = {
-    numProg: 0,
-    coddes: 0,
-    refexp: 0,
-    po: '',
-    havday: '',
-    dteprog: '',
-    lot: '',
-    details: [],
-};
+const getTodayString = () => new Date().toISOString().split('T')[0];
 
-const DailyProgramPage = () => {
-    const [program, setProgram] = useState(initialProgramState);
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const isEditing = Boolean(id);
-    const apiUrl = 'https://localhost:44374/api/dailyprogram';
-    const lookupApiUrl = 'https://localhost:44374/api/lookup';
+const DashboardPage = () => {
+  const [startDate, setStartDate] = useState(getTodayString());
+  const [endDate, setEndDate] = useState(getTodayString());
+  const [selectedVerger, setSelectedVerger] = useState(null);
+  const [selectedVariete, setSelectedVariete] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [vergerOptions, setVergerOptions] = useState([]);
+  const [varieteOptions, setVarieteOptions] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // State for the dropdown options
-    const [destinationsOptions, setDestinationsOptions] = useState([]);
-    const [partenairesOptions, setPartenairesOptions] = useState([]);
-    const [grpVarsOptions, setGrpVarsOptions] = useState([]);
-    const [tpalettesOptions, setTPalettesOptions] = useState([]);
+  const lookupApiUrl = 'https://localhost:44374/api/lookup';
+  const dashboardApiUrl = 'https://localhost:44374/api/dashboard';
 
-    useEffect(() => {
-        const fetchLookups = async () => {
-            try {
-                const partnerType = "EXPORTATEUR";
-                const [destRes, partRes, grpRes, palRes] = await Promise.all([
-                    fetch(`${lookupApiUrl}/destinations`),
-                    fetch(`${lookupApiUrl}/partenaires/${partnerType}`),
-                    fetch(`${lookupApiUrl}/grpvars`),
-                    fetch(`${lookupApiUrl}/tpalettes`)
-                ]);
-
-                if (!destRes.ok || !partRes.ok || !grpRes.ok || !palRes.ok) {
-                    throw new Error('Failed to fetch all lookup data');
-                }
-
-                // Transform data into { value, label } format for React Select
-                const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
-                const partData = (await partRes.json()).map(p => ({ value: p.ref, label: p.nom }));
-                const grpData = (await grpRes.json()).map(g => ({ value: g.codgrv, label: g.nomgrv })); // Use corrected names
-                 const palData = (await palRes.json()).map(p => ({ value: p.codtyp, label: p.nomemb }));
-
-                setDestinationsOptions(destData);
-                setPartenairesOptions(partData);
-                setGrpVarsOptions(grpData);
-                setTPalettesOptions(palData);
-            } catch (error) {
-                console.error("Failed to fetch lookup data:", error);
-            }
-        };
-        fetchLookups();
-    }, []);
-
-    useEffect(() => {
-        if (isEditing) {
-            const fetchProgram = async () => {
-                try {
-                    const response = await fetch(`${apiUrl}/${id}`);
-                    if (!response.ok) throw new Error('Program not found');
-                    
-                    const data = await response.json();
-                    data.havday = data.havday ? data.havday.split('T')[0] : '';
-                    data.dteprog = data.dteprog ? data.dteprog.split('T')[0] : '';
-                    setProgram(data);
-                } catch (error) {
-                    console.error('Failed to fetch program:', error);
-                    navigate('/programs');
-                }
-            };
-            fetchProgram();
-        } else {
-            setProgram(initialProgramState);
-        }
-    }, [id, isEditing, navigate]);
-
-    const handleHeaderChange = (e) => {
-        const { name, value } = e.target;
-        setProgram(prev => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [vergerRes, varieteRes] = await Promise.all([
+          fetch(`${lookupApiUrl}/vergers`),
+          fetch(`${lookupApiUrl}/varietes`)
+        ]);
+        if (!vergerRes.ok || !varieteRes.ok) throw new Error('Failed to fetch filter options');
+        const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: v.nomver }));
+        const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar }));
+        setVergerOptions(vergerData);
+        setVarieteOptions(varieteData);
+      } catch (err) {
+        console.error("Failed to fetch filter options:", err);
+        setError("Could not load filter options. Is the API running?");
+      }
     };
-    
-    const handleHeaderSelectChange = (selectedOption, actionMeta) => {
-        setProgram(prev => ({ ...prev, [actionMeta.name]: selectedOption.value }));
+    fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ startDate, endDate });
+      if (selectedVerger) params.append('vergerId', selectedVerger.value);
+      if (selectedVariete) params.append('varieteId', selectedVariete.value);
+      try {
+        const response = await fetch(`${dashboardApiUrl}/data?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch dashboard data.');
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    fetchDashboardData();
+  }, [startDate, endDate, selectedVerger, selectedVariete]);
 
-    const handleDetailChange = (index, e) => {
-        const { name, value, type, checked } = e.target;
-        const updatedDetails = [...program.details];
-        let typedValue;
-        if (type === 'checkbox') {
-            typedValue = checked ? 1 : 0;
-        } else if (name === 'codtyp') {
-            typedValue = value;
-        } else {
-            typedValue = parseInt(value, 10) || 0;
-        }
-        updatedDetails[index] = { ...updatedDetails[index], [name]: typedValue };
-        setProgram(prev => ({ ...prev, details: updatedDetails }));
-    };
+  const sortedTableRows = useMemo(() => {
+    if (!dashboardData?.tableRows) return [];
+    const sortableItems = [...dashboardData.tableRows];
+    sortableItems.sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+      return 0;
+    });
+    return sortableItems;
+  }, [dashboardData, sortConfig]);
 
-    const handleDetailSelectChange = (index, selectedOption, actionMeta) => {
-        const updatedDetails = [...program.details];
-        updatedDetails[index] = { ...updatedDetails[index], [actionMeta.name]: selectedOption.value };
-        setProgram(prev => ({ ...prev, details: updatedDetails }));
-    };
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
-   const addDetailRow = () => {
-    setProgram(prev => ({
-        ...prev,
-        details: [...prev.details, { codgrv: 0, codtyp: '', nbrpal: 0, nbrcoli: 0, valide: 0, numProg: program.numProg }]
-    }));
-};
+  if (isLoading && !dashboardData) return <LoadingSpinner />;
+  if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
-    const removeDetailRow = (index) => {
-        setProgram(prev => ({ ...prev, details: program.details.filter((_, i) => i !== index) }));
-    };
+  return (
+    <div className="dashboard-container">
+      <h1>Production Dashboard</h1>
+      <div className="dashboard-filters">
+        <div className="filter-item"><label>Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+        <div className="filter-item"><label>End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+        <div className="filter-item"><label>Orchard (Verger)</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
+        <div className="filter-item"><label>Variety</label><Select options={varieteOptions} value={selectedVariete} onChange={setSelectedVariete} isClearable placeholder="All Varieties" /></div>
+      </div>
 
-    const handleSubmit = async () => {
-        const method = isEditing ? 'PUT' : 'POST';
-        const url = isEditing ? `${apiUrl}/${id}` : apiUrl;
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(program),
-            });
-            if (!response.ok) throw new Error('Failed to save the program');
-            
-            navigate('/programs');
-        } catch (error) {
-            console.error('Save error:', error);
-        }
-    };
+      {isLoading ? <LoadingSpinner /> : dashboardData && (
+        <>
+          <div className="stats-grid">
+            <div className="stat-card reception-card"><h3>Reception</h3><p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p></div>
+            <div className="stat-card export-card"><h3>Export</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}</p><span className="stat-percentage">({dashboardData.exportPercentage.toFixed(2)}%)</span></div></div>
+            <div className="stat-card ecart-card"><h3>Ecart</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p><span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span></div></div>
+          </div>
 
-    return (
-        <div className="program-page-container">
-            <h1>{isEditing ? 'Edit Daily Program' : 'Create New Program'}</h1>
-            
-            <section className="form-section">
-                <h2>Program Information</h2>
-                <div className="form-grid">
-                    <div className="input-group"><label>Num Prog</label><input type="number" name="numProg" value={program.numProg} onChange={handleHeaderChange} /></div>
-                    <div className="input-group"><label>PO Number</label><input type="text" name="po" value={program.po} onChange={handleHeaderChange} /></div>
-                    <div className="input-group"><label>Lot</label><input type="text" name="lot" value={program.lot} onChange={handleHeaderChange} /></div>
-                    <div className="input-group">
-                        <label>Destination</label>
-                        <Select name="coddes" options={destinationsOptions} value={destinationsOptions.find(d => d.value === program.coddes)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
-                    </div>
-                    <div className="input-group">
-                        <label>Partenaire (Exporter)</label>
-                        <Select name="refexp" options={partenairesOptions} value={partenairesOptions.find(p => p.value === program.refexp)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
-                    </div>
-                    <div className="input-group"><label>Harvest Date</label><input type="date" name="havday" value={program.havday} onChange={handleHeaderChange} /></div>
-                    <div className="input-group"><label>Program Date</label><input type="date" name="dteprog" value={program.dteprog} onChange={handleHeaderChange} /></div>
-                </div>
-            </section>
-
-            <section className="form-section">
-                <div className="details-header">
-                    <h2>Program Details</h2>
-                    <button className="add-btn" onClick={addDetailRow}>+ Add New Detail</button>
-                </div>
-                <table className="details-table">
-                    <thead>
-                        <tr>
-                            <th>Group</th>
-                            <th>Palette Type</th>
-                            <th># Pallets</th>
-                            <th># Boxes</th>
-                            <th>Valid</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {program.details.map((detail, index) => (
-                            <tr key={index}>
-                                <td>
-                    <Select
-                        name="codgrv" // Corrected name
-                        options={grpVarsOptions}
-                        value={grpVarsOptions.find(g => g.value === detail.codgrv)} // Corrected property
-                        onChange={(opt, act) => handleDetailSelectChange(index, opt, act)}
-                        placeholder="Search..."
-                    />
-                </td>
-                                <td>
-                                    <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)}
-                                     onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
-                                </td>
-                                <td><input type="number" name="nbrpal" value={detail.nbrpal} onChange={(e) => handleDetailChange(index, e)} /></td>
-                                <td><input type="number" name="nbrcoli" value={detail.nbrcoli} onChange={(e) => handleDetailChange(index, e)} /></td>
-                                <td><input type="checkbox" name="valide" checked={detail.valide === 1} onChange={(e) => handleDetailChange(index, e)} /></td>
-                                <td className="action-buttons"><button className="delete-btn" onClick={() => removeDetailRow(index)}>Delete</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </section>
-            
-            <div className="main-actions">
-                <button className="save-btn" onClick={handleSubmit}>Save Program</button>
-                <button className="clear-btn" onClick={() => navigate('/programs')}>Cancel</button>
+          <CollapsibleCard title="Charts">
+            <div className="charts-grid">
+              <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
+              <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
             </div>
-        </div>
-    );
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Data Details" defaultOpen={true}>
+            <div className="dashboard-table-container">
+              <table className="details-table">
+                <thead>
+                  <tr>
+                    <th className="sortable-header" onClick={() => handleSort('vergerName')}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('varieteName')}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru')}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdscom')}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalEcart')}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedTableRows.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.vergerName}</td>
+                      <td>{row.varieteName}</td>
+                      <td>{row.totalPdsfru.toFixed(2)}</td>
+                      <td>{row.totalPdscom.toFixed(2)}</td>
+                      <td>{row.totalEcart.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleCard>
+        </>
+      )}
+    </div>
+  );
 };
 
-export default DailyProgramPage;
+export default DashboardPage;

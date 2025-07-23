@@ -18,7 +18,7 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
       <div className="custom-tooltip" style={{ backgroundColor: 'white', padding: '5px 10px', border: '1px solid #ccc', borderRadius: '4px' }}>
-        <p className="label" style={{ margin: 0, fontWeight: 'bold' }}>{`${payload[0].payload.Name}`}</p>
+        <p className="label" style={{ margin: 0, fontWeight: 'bold' }}>{`${payload[0].payload.name}`}</p>
         <p className="intro" style={{ margin: 0 }}>{`Value: ${payload[0].value.toFixed(2)}`}</p>
       </div>
     );
@@ -36,8 +36,9 @@ const DashboardChart = ({ data, title, dataKey, color }) => {
           margin={{ top: 5, right: 30, left: 20, bottom: 80 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          {/* The X-axis now uses the RefVer for its labels */}
-          <XAxis dataKey="RefVer" tick={<RotatedAxisTick />} interval={0} />
+          {/* --- CORRECTION ICI --- */}
+          {/* The X-axis now uses the correct camelCase "refVer" for its labels */}
+          <XAxis dataKey="refVer" tick={<RotatedAxisTick />} interval={0} />
           <YAxis />
           {/* Use the new custom tooltip */}
           <Tooltip content={<CustomTooltip />} />

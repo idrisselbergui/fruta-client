@@ -1,10 +1,11 @@
+/* General Page Styling */
 .dashboard-container {
-  padding: 1rem 2rem;
+  padding: 1rem; /* Reduced padding for mobile */
 }
 
 .dashboard-filters {
   background-color: #fff;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 2rem;
@@ -32,86 +33,91 @@
   font-size: 1rem;
 }
 
-/* ... other styles remain the same ... */
-
 .stats-grid {
   display: grid;
-  /* This will create two columns of a more controlled size */
-  grid-template-columns: repeat(auto-fit, minmax(300px, 400px)); 
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+  gap: 1.5rem; /* Reduced gap for mobile */
   margin-bottom: 2rem;
-  /* You can add this to center the cards if there's extra space */
-  justify-content: center; 
 }
 
 .stat-card {
   background-color: #ffffff;
-  /* Reduced padding to make the card smaller */
   padding: 1rem 1.5rem; 
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-left: 5px solid #007bff;
 }
 
 .stat-card h3 {
   margin-top: 0;
-  font-size: 0.9rem; /* Smaller title font */
+  font-size: 0.9rem;
   color: #6c757d;
   text-transform: uppercase;
 }
 
 .stat-card .stat-value {
-  font-size: 2rem; /* Smaller value font */
+  font-size: 2rem;
   font-weight: 700;
   color: #343a40;
 }
 
-/* ... other styles remain the same ... */
-
-.dashboard-table-container {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
 .stat-value-container {
   display: flex;
-  align-items: baseline; /* Aligns the bottom of the main number and the percentage */
-  gap: 0.75rem; /* Adds a nice space between them */
+  align-items: baseline;
+  gap: 0.75rem;
 }
 
-/* Remove the default margin from the <p> tag inside the container */
 .stat-value-container .stat-value {
   margin: 0;
 }
 
 .stat-percentage {
-  font-size: 1.2rem; /* Make the percentage text smaller */
+  font-size: 1.2rem;
   font-weight: 600;
-  color: #28a745; /* Green color to stand out */
+  color: #28a745;
 }
-/* Add these new rules to the bottom of the file */
-.reception-card { border-left-color: #007bff; } /* Blue */
-.export-card { border-left-color: #28a745; } /* Green */
-.ecart-card { border-left-color: #ffc107; } /* Yellow */
 
-.ecart-percentage {
-  color: #ffc107; /* Yellow to match the card */
+.reception-card { border-left: 5px solid #007bff; }
+.export-card { border-left: 5px solid #28a745; }
+.ecart-card { border-left: 5px solid #ffc107; }
+.ecart-percentage { color: #ffc107; }
+
+/* --- RESPONSIVE TABLE CONTAINER --- */
+.dashboard-table-container {
+  overflow-x: auto; /* This allows the table to be scrolled horizontally on small screens */
 }
-/* Styles for sortable table headers */
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* Ensures table has a minimum width before scrolling */
+}
+
+.details-table th,
+.details-table td {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+.details-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
 .sortable-header {
   cursor: pointer;
-  user-select: none; /* Prevents text selection on click */
+  user-select: none;
   position: relative;
-  padding-right: 20px; /* Make space for the arrow */
+  padding-right: 20px;
 }
 
 .sortable-header:hover {
   background-color: #f1f3f5;
 }
 
-/* Style for the sort indicator arrow */
 .sort-indicator {
   position: absolute;
   right: 8px;
@@ -120,11 +126,11 @@
   font-size: 0.8em;
   color: #007bff;
 }
+
 .charts-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr; /* Default to single column for mobile-first */
   gap: 2rem;
-  margin-top: 2rem;
 }
 
 .chart-container {
@@ -140,9 +146,69 @@
   color: #34495e;
 }
 
-/* Responsive adjustments for smaller screens */
-@media (max-width: 992px) {
+/* --- NEW: COLLAPSIBLE CARD STYLES --- */
+.collapsible-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.collapsible-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible-card-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #34495e;
+}
+
+.collapsible-card-toggle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #007bff;
+  transition: transform 0.2s ease-in-out;
+}
+
+.collapsible-card-header.closed .collapsible-card-toggle {
+    transform: rotate(45deg);
+}
+
+.collapsible-card-content {
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Remove default styles from items inside a collapsible card */
+.collapsible-card .chart-container,
+.collapsible-card .dashboard-table-container {
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.collapsible-card .charts-grid {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+
+/* --- MEDIA QUERIES FOR LARGER SCREENS --- */
+@media (min-width: 768px) {
+  .dashboard-container {
+    padding: 1rem 2rem; /* Restore padding on larger screens */
+  }
+}
+
+@media (min-width: 992px) {
   .charts-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr; /* Two columns for charts on desktop */
   }
 }
