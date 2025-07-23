@@ -7,7 +7,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Layout from './components/Layout';
 import DailyProgramPage from './pages/DailyProgramPage'; 
 import ProgramListPage from './pages/ProgramListPage';
-
+import DashboardPage from './pages/DashboardPage';
 // This component will be the parent for all routes that need the layout
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
@@ -44,7 +44,7 @@ function App() {
       <Route element={<AppLayout user={user} onLogout={handleLogout} />}>
         <Route path="/home" element={<HomePage user={user} />} />
           <Route path="/daily-program" element={<DailyProgramPage />} /> 
-
+<Route path="/dashboard" element={<DashboardPage />} />
          <Route path="/programs" element={<ProgramListPage />} />
 <Route path="/program/new" element={<DailyProgramPage />} />
 <Route path="/program/edit/:id" element={<DailyProgramPage />} />

@@ -192,7 +192,8 @@ const DailyProgramPage = () => {
                     />
                 </td>
                                 <td>
-                                    <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)} onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
+                                    <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)}
+                                     onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
                                 </td>
                                 <td><input type="number" name="nbrpal" value={detail.nbrpal} onChange={(e) => handleDetailChange(index, e)} /></td>
                                 <td><input type="number" name="nbrcoli" value={detail.nbrcoli} onChange={(e) => handleDetailChange(index, e)} /></td>

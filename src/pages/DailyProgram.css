@@ -5,20 +5,19 @@
   padding: 1rem 2rem 4rem 2rem;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.page-header, .program-page-container > h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
   margin-bottom: 2rem;
   border-bottom: 1px solid #e0e0e0;
   padding-bottom: 1rem;
 }
 
-.page-header h1, .program-page-container > h1 {
-  margin: 0;
-  font-size: 2rem;
-  color: #2c3e50;
-  margin-bottom: 2rem;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* Card-Based List Styling */
@@ -31,7 +30,7 @@
 .program-card {
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px_12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   display: flex;
@@ -63,7 +62,7 @@
 /* Form Section Styling */
 .form-section {
   background: #fff;
-  padding: 1.5rem 2rem;
+  padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 2rem;
@@ -72,7 +71,7 @@
 .form-section h2 {
   margin-top: 0;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e9ecef;
   padding-bottom: 1rem;
   font-size: 1.5rem;
   color: #2c3e50;
@@ -90,35 +89,32 @@
 }
 
 .input-group label {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
   font-weight: 600;
   color: #34495e;
 }
 
 .input-group input,
-.input-group select {
-  padding: 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
+.input-group div[class*="-container"] { /* Targets react-select containers */
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.input-group input:focus,
-.input-group select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 }
 
 /* Details Table Styling */
 .details-header { display: flex; justify-content: space-between; align-items: center; }
-.details-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.details-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
 .details-table th,
-.details-table td { border: 1px solid #e9ecef; padding: 0.75rem; text-align: left; }
-.details-table th { background-color: #f8f9fa; font-weight: 600; }
-.details-table input,
-.details-table select { width: 100%; }
+.details-table td { border: 1px solid #e9ecef; padding: 0.75rem; text-align: left; vertical-align: middle; }
+.details-table th { background-color: #f8f9fa; font-weight: 600; color: #495057; }
+.details-table input[type="number"], .details-table input[type="checkbox"] {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+.details-table input[type="checkbox"] {
+  height: 20px;
+  width: 20px;
+}
 
 /* Button Styles */
 .add-btn, .edit-btn, .delete-btn, .save-btn, .clear-btn {
@@ -128,17 +124,30 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.add-btn:hover, .edit-btn:hover, .delete-btn:hover, .save-btn:hover, .clear-btn:hover {
-  transform: translateY(-2px);
-}
-
+.add-btn:hover, .edit-btn:hover, .delete-btn:hover, .save-btn:hover, .clear-btn:hover { transform: translateY(-2px); }
 .add-btn { background-color: #007bff; color: white; }
 .edit-btn { background-color: #ffc107; color: #333; }
 .delete-btn { background-color: #dc3545; color: white; }
 .save-btn { background-color: #28a745; color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
 .clear-btn { background-color: #6c757d; color: white; padding: 0.8rem 1.5rem; font-size: 1rem; }
-
 .main-actions { display: flex; gap: 1rem; margin-top: 2rem; }
 .action-buttons { display: flex; gap: 0.5rem; }
+
+/* Pagination Styles */
+.pagination-controls {
+  display: flex;
+  justify-content: center; /* Changed from space-between */
+  align-items: center;
+  gap: 2rem; /* Added for nice spacing */
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+.pagination-controls button { background-color: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+.pagination-controls button:disabled { background-color: #6c757d; cursor: not-allowed; }
+.pagination-date { font-size: 1.2rem; font-weight: 600; color: #34495e; }

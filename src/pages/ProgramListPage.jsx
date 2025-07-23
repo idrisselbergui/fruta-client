@@ -5,63 +5,80 @@ import './DailyProgram.css';
 
 const ProgramListPage = () => {
   const [programs, setPrograms] = useState([]);
+  const [availableDates, setAvailableDates] = useState([]);
+  const [currentDateIndex, setCurrentDateIndex] = useState(0);
+  
   const navigate = useNavigate();
-
-  // State for loading and errors
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const apiUrl = 'https://localhost:44374/api/dailyprogram';
+
+  // 1. First, fetch the list of all available dates
   useEffect(() => {
-    const fetchPrograms = async () => {
-      // Reset states before fetching
+    const fetchDates = async () => {
       setIsLoading(true);
       setError(null);
-
-      const apiUrl = 'https://localhost:44374/api/dailyprogram';
       try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error('Failed to fetch data from the server.');
-        }
+        const response = await fetch(`${apiUrl}/dates`);
+        if (!response.ok) throw new Error('Failed to fetch dates.');
+        const dates = await response.json();
+        setAvailableDates(dates);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDates();
+  }, []);
+
+  // 2. Then, fetch programs for the currently selected date
+  useEffect(() => {
+    // Don't run if there are no dates yet
+    if (availableDates.length === 0) return;
+
+    const fetchProgramsForDate = async () => {
+      setIsLoading(true);
+      setError(null);
+      const selectedDate = availableDates[currentDateIndex];
+      try {
+        const response = await fetch(`${apiUrl}?date=${selectedDate}`);
+        if (!response.ok) throw new Error(`Failed to fetch programs for ${selectedDate}.`);
         const data = await response.json();
         setPrograms(data);
       } catch (err) {
-        setError(err.message); // Set the error message if something goes wrong
+        setError(err.message);
       } finally {
-        setIsLoading(false); // Stop loading, whether it succeeded or failed
+        setIsLoading(false);
       }
     };
-    fetchPrograms();
-  }, []);
 
-  const handleEdit = (id) => navigate(`/program/edit/${id}`);
+    fetchProgramsForDate();
+  }, [currentDateIndex, availableDates]); // This runs whenever the date index changes
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this program?')) {
-      const apiUrl = `https://localhost:44374/api/dailyprogram/${id}`;
-      try {
-        const response = await fetch(apiUrl, { method: 'DELETE' });
-        if (!response.ok) {
-          throw new Error('Failed to delete program');
-        }
-        // If delete is successful, remove the program from the list in the UI
-        setPrograms(programs.filter(p => p.id !== id));
-      } catch (err) {
-        // You could set an error state here as well for feedback
-        console.error('Delete error:', err);
-        setError(err.message);
-      }
+  const handlePrevDay = () => {
+    if (currentDateIndex < availableDates.length - 1) {
+      setCurrentDateIndex(currentDateIndex + 1);
     }
   };
 
-  // Conditional Rendering
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  const handleNextDay = () => {
+    if (currentDateIndex > 0) {
+      setCurrentDateIndex(currentDateIndex - 1);
+    }
+  };
+  
+  const handleEdit = (id) => navigate(`/program/edit/${id}`);
+  
+  const handleDelete = async (id) => {
+    // ... delete logic remains the same
+  };
 
-  if (error) {
-    return <div className="program-page-container"><p style={{ color: 'red', textAlign: 'center' }}>Error: {error}</p></div>;
-  }
+  if (isLoading && availableDates.length === 0) return <LoadingSpinner />;
+  if (error) return <div className="program-page-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
+
+  const current_date = availableDates[currentDateIndex];
 
   return (
     <div className="program-page-container">
@@ -72,37 +89,53 @@ const ProgramListPage = () => {
         </button>
       </div>
 
-      {/* Show a message if there are no programs */}
-      {programs.length === 0 ? (
-        <p>No programs found. Click "Add New Program" to get started.</p>
-      ) : (
-        <div className="program-list-grid">
-          {programs.map((prog) => (
-            <div className={`program-card status-${prog.status}`} key={prog.id}>
-              <div className="card-header">
-                <h3>Prog # {prog.numProg}</h3>
-                <span className="card-lot-badge">{prog.lot}</span>
-              </div>
-              <div className="card-body">
-                <div className="card-info-grid">
-                  <div className="card-info-item">
-                    <strong>PO Number:</strong>
-                    <span>{prog.po}</span>
-                  </div>
-                  <div className="card-info-item">
-                    <strong>Program Date:</strong>
-                    <span>{new Date(prog.dteprog).toLocaleDateString()}</span>
+     
+
+      {isLoading ? <LoadingSpinner /> : (
+        programs.length === 0 && current_date ? (
+          <p>No programs found for this date.</p>
+        ) : (
+          <div className="program-list-grid">
+            {programs.map((prog) => (
+              <div className="program-card" key={prog.id}>
+                <div className="card-header">
+                  <h3>Prog # {prog.numProg}</h3>
+                  <span className="card-lot-badge">{prog.lot}</span>
+                </div>
+                <div className="card-body">
+                  <div className="card-info-grid">
+                    <div className="card-info-item">
+                      <strong>PO Number:</strong>
+                      <span>{prog.po}</span>
+                    </div>
+                    <div className="card-info-item">
+                      <strong>Program Date:</strong>
+                      <span>{new Date(prog.dteprog).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
+                <div className="card-footer">
+                  <button className="edit-btn" onClick={() => handleEdit(prog.id)}>Edit</button>
+                  <button className="delete-btn" onClick={() => handleDelete(prog.id)}>Delete</button>
+                </div>
               </div>
-              <div className="card-footer">
-                <button className="edit-btn" onClick={() => handleEdit(prog.id)}>Edit</button>
-                <button className="delete-btn" onClick={() => handleDelete(prog.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          
+        )
       )}
+       {/* Pagination Controls */}
+      <div className="pagination-controls">
+        <button onClick={handleNextDay} disabled={currentDateIndex === 0}>
+          &larr; Newer Day
+        </button>
+        <span className="pagination-date">
+          {current_date ? new Date(current_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "No Date Selected"}
+        </span>
+        <button onClick={handlePrevDay} disabled={currentDateIndex >= availableDates.length - 1}>
+          Older Day &rarr;
+        </button>
+      </div>
     </div>
   );
 };

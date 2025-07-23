@@ -12,6 +12,7 @@ const Header = ({ user, onLogout }) => {
       </div>
      <nav className="navigation-menu">
     <NavLink to="/home">Home</NavLink>
+    <NavLink to="/dashboard">Dashboard</NavLink>
     <NavLink to="/programs">Programs</NavLink> {/* Add this line */}
     {user && user.permission === 1 && (
       <NavLink to="/admin">Admin</NavLink>
