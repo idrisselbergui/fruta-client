@@ -11,12 +11,12 @@ const DashboardPage = () => {
   const [startDate, setStartDate] = useState(getTodayString());
   const [endDate, setEndDate] = useState(getTodayString());
   const [selectedVerger, setSelectedVerger] = useState(null);
-  const [selectedVariete, setSelectedVariete] = useState(null); // Changed from selectedGrpVar
+  const [selectedVariete, setSelectedVariete] = useState(null);
 
   // State for data
   const [dashboardData, setDashboardData] = useState(null);
   const [vergerOptions, setVergerOptions] = useState([]);
-  const [varieteOptions, setVarieteOptions] = useState([]); // Changed from grpVarOptions
+  const [varieteOptions, setVarieteOptions] = useState([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,18 +30,19 @@ const DashboardPage = () => {
       try {
         const [vergerRes, varieteRes] = await Promise.all([
           fetch(`${lookupApiUrl}/vergers`), 
-          fetch(`${lookupApiUrl}/varietes`) // Changed from grpvars
+          fetch(`${lookupApiUrl}/varietes`)
         ]);
         if (!vergerRes.ok || !varieteRes.ok) {
             throw new Error('Failed to fetch filter options');
         }
         const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: v.nomver }));
-        const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar })); // Changed from grpvar
+        const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar }));
         
         setVergerOptions(vergerData);
-        setVarieteOptions(varieteData); // Changed from setGrpVarOptions
+        setVarieteOptions(varieteData);
       } catch (err) {
         console.error("Failed to fetch filter options:", err);
+        // Optionally set an error state for the user
       }
     };
     fetchFilterOptions();
@@ -58,7 +59,7 @@ const DashboardPage = () => {
         endDate,
       });
       if (selectedVerger) params.append('vergerId', selectedVerger.value);
-      if (selectedVariete) params.append('varieteId', selectedVariete.value); // Changed from grpVarId
+      if (selectedVariete) params.append('varieteId', selectedVariete.value);
 
       try {
         const response = await fetch(`${dashboardApiUrl}/data?${params.toString()}`);
@@ -72,9 +73,9 @@ const DashboardPage = () => {
       }
     };
     fetchDashboardData();
-  }, [startDate, endDate, selectedVerger, selectedVariete]); // Dependency array updated
+  }, [startDate, endDate, selectedVerger, selectedVariete]);
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && !dashboardData) return <LoadingSpinner />; // Show spinner only on initial load
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
   return (
@@ -95,46 +96,66 @@ const DashboardPage = () => {
           <Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" />
         </div>
         <div className="filter-item">
-          <label>Variety</label> {/* Changed label */}
+          <label>Variety</label>
           <Select options={varieteOptions} value={selectedVariete} onChange={setSelectedVariete} isClearable placeholder="All Varieties" />
         </div>
       </div>
 
-      {dashboardData && (
+      {isLoading ? <LoadingSpinner /> : dashboardData && (
         <>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <h3>Total Export PDSCOM</h3>
-              <p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Total Raw PDSFRU</h3>
-              <p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p>
-            </div>
-          </div>
+        <div className="stats-grid">
+        {/* Card Order: Reception -> Export -> Ecart */}
+        <div className="stat-card reception-card">
+          <h3>Reception</h3>
+          <p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p>
+        </div>
 
-          <div className="dashboard-table-container">
-            <table className="details-table">
-              <thead>
-                <tr>
-                  <th>Orchard</th>
-                  <th>Variety</th> {/* Changed header */}
-                  <th>Total PDSCOM</th>
-                  <th>Total PDSFRU</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dashboardData.tableRows.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.vergerName}</td>
-                    <td>{row.grpVarName}</td> {/* This property name in the DTO should also be updated */}
-                    <td>{row.totalPdscom.toFixed(2)}</td>
-                    <td>{row.totalPdsfru.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="stat-card export-card">
+          <h3>Export</h3>
+          <div className="stat-value-container">
+            <p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}</p>
+            <span className="stat-percentage">
+              ({dashboardData.exportPercentage.toFixed(2)}%)
+            </span>
           </div>
+        </div>
+
+        <div className="stat-card ecart-card">
+          <h3>Ecart</h3>
+          <div className="stat-value-container">
+            <p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p>
+            <span className="stat-percentage ecart-percentage">
+              ({dashboardData.ecartPercentage.toFixed(2)}%)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-table-container">
+        <table className="details-table">
+          <thead>
+            <tr>
+              {/* Column Order: Verger -> Variety -> Reception -> Export -> Ecart */}
+              <th>Verger</th>
+              <th>Variety</th>
+              <th>Reception</th>
+              <th>Export</th>
+              <th>Ecart</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dashboardData.tableRows.map((row, index) => (
+              <tr key={index}>
+                <td>{row.vergerName}</td>
+                <td>{row.varieteName}</td>
+                <td>{row.totalPdsfru.toFixed(2)}</td>
+                <td>{row.totalPdscom.toFixed(2)}</td>
+                <td>{row.totalEcart.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
         </>
       )}
     </div>
