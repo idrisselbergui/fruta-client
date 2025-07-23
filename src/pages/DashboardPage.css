@@ -99,3 +99,50 @@
 .ecart-percentage {
   color: #ffc107; /* Yellow to match the card */
 }
+/* Styles for sortable table headers */
+.sortable-header {
+  cursor: pointer;
+  user-select: none; /* Prevents text selection on click */
+  position: relative;
+  padding-right: 20px; /* Make space for the arrow */
+}
+
+.sortable-header:hover {
+  background-color: #f1f3f5;
+}
+
+/* Style for the sort indicator arrow */
+.sort-indicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  color: #007bff;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.chart-container {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.chart-container h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #34495e;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 992px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
