@@ -43,7 +43,8 @@ const DashboardPage = () => {
         ]);
         if (!vergerRes.ok || !varieteRes.ok || !destRes.ok) throw new Error('Failed to fetch filter options');
         
-        const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: v.nomver }));
+        // --- CORRECTION ICI ---
+        const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: `${v.refver} - ${v.nomver}` }));
         const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar }));
         const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
 
@@ -155,15 +156,6 @@ const DashboardPage = () => {
             </div>
           </CollapsibleCard>
 
-
-
-
-
-
-
-
-
-
           <CollapsibleCard title="Export by Destination">
             <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
               <label>Filter by Destination</label>
@@ -179,16 +171,6 @@ const DashboardPage = () => {
               <p>Please select a destination to view the chart.</p>
             )}
           </CollapsibleCard>
-
-
-
-
-
-
-
-
-
-
 
           <CollapsibleCard title="Data Details" defaultOpen={true}>
             <div className="dashboard-table-container">

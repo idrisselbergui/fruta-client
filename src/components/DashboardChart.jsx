@@ -37,7 +37,7 @@ const DashboardChart = ({ data, title, dataKey, color }) => {
         >
           <CartesianGrid strokeDasharray="3 3" />
           {/* --- CORRECTION ICI --- */}
-          {/* The X-axis now uses the correct camelCase "refVer" for its labels */}
+          {/* The X-axis now uses the 'refVer' property for its labels */}
           <XAxis dataKey="refVer" tick={<RotatedAxisTick />} interval={0} />
           <YAxis />
           {/* Use the new custom tooltip */}
