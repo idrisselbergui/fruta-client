@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardChart from '../components/DashboardChart';
+import CollapsibleCard from '../components/CollapsibleCard'; // Importer le nouveau composant
 import './DashboardPage.css';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -104,35 +105,40 @@ const DashboardPage = () => {
             <div className="stat-card ecart-card"><h3>Ecart</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p><span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span></div></div>
           </div>
 
-          <div className="charts-grid">
-            <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
-            <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
-          </div>
+          {/* --- CORRECTION ICI : Utilisation de CollapsibleCard --- */}
+          <CollapsibleCard title="Charts">
+            <div className="charts-grid">
+              <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
+              <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
+            </div>
+          </CollapsibleCard>
 
-          <div className="dashboard-table-container">
-            <table className="details-table">
-              <thead>
-                <tr>
-                  <th className="sortable-header" onClick={() => handleSort('vergerName')}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                  <th className="sortable-header" onClick={() => handleSort('varieteName')}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                  <th className="sortable-header" onClick={() => handleSort('totalPdsfru')}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                  <th className="sortable-header" onClick={() => handleSort('totalPdscom')}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                  <th className="sortable-header" onClick={() => handleSort('totalEcart')}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedTableRows.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.vergerName}</td>
-                    <td>{row.varieteName}</td>
-                    <td>{row.totalPdsfru.toFixed(2)}</td>
-                    <td>{row.totalPdscom.toFixed(2)}</td>
-                    <td>{row.totalEcart.toFixed(2)}</td>
+          <CollapsibleCard title="Data Details" defaultOpen={true}>
+            <div className="dashboard-table-container">
+              <table className="details-table">
+                <thead>
+                  <tr>
+                    <th className="sortable-header" onClick={() => handleSort('vergerName')}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('varieteName')}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru')}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdscom')}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalEcart')}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {sortedTableRows.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.vergerName}</td>
+                      <td>{row.varieteName}</td>
+                      <td>{row.totalPdsfru.toFixed(2)}</td>
+                      <td>{row.totalPdscom.toFixed(2)}</td>
+                      <td>{row.totalEcart.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleCard>
         </>
       )}
     </div>
