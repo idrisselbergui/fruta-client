@@ -126,13 +126,13 @@
   font-size: 0.8em;
   color: #007bff;
 }
-
 .charts-grid {
   display: grid;
-  grid-template-columns: 1fr; /* Default to single column for mobile-first */
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
 }
 
+ 
 .chart-container {
   background-color: #fff;
   padding: 1.5rem;

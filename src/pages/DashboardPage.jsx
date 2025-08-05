@@ -9,18 +9,21 @@ import './DashboardPage.css';
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
 const DashboardPage = () => {
-  // États pour les filtres principaux
+  // Main filters state
   const [startDate, setStartDate] = useState(getTodayString());
   const [endDate, setEndDate] = useState(getTodayString());
   const [selectedVerger, setSelectedVerger] = useState(null);
   const [selectedVariete, setSelectedVariete] = useState(null);
   
-  // Filtre séparé pour le graphique destination
+  // State for other charts
   const [selectedDestination, setSelectedDestination] = useState(null);
-
-  // États pour les données
   const [dashboardData, setDashboardData] = useState(null);
   const [destinationChartData, setDestinationChartData] = useState({ data: [], keys: [] });
+
+  // --- NEW STATE FOR THE REQUIRED CHART ---
+  const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
+
+  // Filter options state
   const [vergerOptions, setVergerOptions] = useState([]);
   const [varieteOptions, setVarieteOptions] = useState([]);
   const [destinationOptions, setDestinationOptions] = useState([]);
@@ -32,7 +35,7 @@ const DashboardPage = () => {
   const lookupApiUrl = 'https://localhost:44374/api/lookup';
   const dashboardApiUrl = 'https://localhost:44374/api/dashboard';
 
-  // Effet pour charger les options des filtres
+  // useEffect to load filter options (unchanged)
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
@@ -43,7 +46,6 @@ const DashboardPage = () => {
         ]);
         if (!vergerRes.ok || !varieteRes.ok || !destRes.ok) throw new Error('Failed to fetch filter options');
         
-        // --- CORRECTION ICI ---
         const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: `${v.refver} - ${v.nomver}` }));
         const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar }));
         const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
@@ -59,7 +61,7 @@ const DashboardPage = () => {
     fetchFilterOptions();
   }, []);
 
-  // Effet pour charger les données principales du tableau de bord
+  // useEffect for main dashboard data (unchanged)
   useEffect(() => {
     const fetchDashboardData = async () => {
         setIsLoading(true);
@@ -81,19 +83,17 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [startDate, endDate, selectedVerger, selectedVariete]);
 
-  // Nouvel effet pour charger les données du graphique destination
+  // useEffect for the original destination chart (unchanged)
   useEffect(() => {
     if (!selectedDestination) {
       setDestinationChartData({ data: [], keys: [] });
       return;
     }
-
     const fetchDestinationChartData = async () => {
       const params = new URLSearchParams({ startDate, endDate });
       if (selectedVerger) params.append('vergerId', selectedVerger.value);
       if (selectedVariete) params.append('varieteId', selectedVariete.value);
       if (selectedDestination) params.append('destinationId', selectedDestination.value);
-
       try {
         const response = await fetch(`${dashboardApiUrl}/destination-chart?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch destination chart data.');
@@ -103,9 +103,41 @@ const DashboardPage = () => {
         console.error("Failed to fetch destination chart data:", err);
       }
     };
-
     fetchDestinationChartData();
   }, [startDate, endDate, selectedVerger, selectedVariete, selectedDestination]);
+
+  // --- USEEFFECT FOR THE NEW CHART ---
+  useEffect(() => {
+    // Rule: If no orchard is selected, clear data and do nothing.
+    if (!selectedVerger) {
+      setSalesByDestinationChartData({ data: [], keys: [] });
+      return;
+    }
+
+    const fetchSalesByDestinationData = async () => {
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        vergerId: selectedVerger.value // This is the required parameter
+      });
+      if (selectedVariete) {
+        params.append('varieteId', selectedVariete.value);
+      }
+
+      try {
+        const response = await fetch(`${dashboardApiUrl}/destination-by-variety-chart?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch sales by destination data.');
+        const data = await response.json();
+        setSalesByDestinationChartData(data);
+      } catch (err) {
+        console.error("Failed to fetch sales by destination data:", err);
+        setSalesByDestinationChartData({ data: [], keys: [] }); // Clear data on error
+      }
+    };
+
+    fetchSalesByDestinationData();
+  }, [selectedVerger, selectedVariete, startDate, endDate]);
+
 
   const sortedTableRows = useMemo(() => {
     if (!dashboardData?.tableRows) return [];
@@ -137,7 +169,7 @@ const DashboardPage = () => {
       <div className="dashboard-filters">
         <div className="filter-item"><label>Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
         <div className="filter-item"><label>End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
-        <div className="filter-item"><label>Orchard (Verger)</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
+        <div className="filter-item"><label> Verger</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
         <div className="filter-item"><label>Variety</label><Select options={varieteOptions} value={selectedVariete} onChange={setSelectedVariete} isClearable placeholder="All Varieties" /></div>
       </div>
 
@@ -149,28 +181,54 @@ const DashboardPage = () => {
             <div className="stat-card ecart-card"><h3>Ecart</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p><span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span></div></div>
           </div>
 
-          <CollapsibleCard title="Charts by Verger">
+          <CollapsibleCard title="TVN/Export by Verger">
             <div className="charts-grid">
               <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
               <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
             </div>
           </CollapsibleCard>
+<CollapsibleCard title="Detailed Export Analysis" defaultOpen={true}>
+    {/* Main grid container to place the two charts side-by-side */}
+    <div className="charts-grid">
 
-          <CollapsibleCard title="Export by Destination">
+        {/* --- Section 1: Chart with Destination Filter --- */}
+        <div className="chart-sub-section">
+            <h4>Export by Verger (Grouped by Variety)</h4>
             <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
-              <label>Filter by Destination</label>
-              <Select options={destinationOptions} value={selectedDestination} onChange={setSelectedDestination} isClearable placeholder="Select a destination..." />
+                <label>Filter by Destination</label>
+                <Select options={destinationOptions} value={selectedDestination} onChange={setSelectedDestination} isClearable placeholder="Select a destination..." />
             </div>
             {selectedDestination ? (
-              <StackedBarChart 
-                data={destinationChartData.data}
-                keys={destinationChartData.keys}
-                title={`Total Export for ${selectedDestination.label}`}
-              />
+                <StackedBarChart
+                    data={destinationChartData.data}
+                    keys={destinationChartData.keys}
+                    title={`Total Export for ${selectedDestination.label}`}
+                />
             ) : (
-              <p>Please select a destination to view the chart.</p>
+                <p>Please select a destination to view the chart.</p>
             )}
-          </CollapsibleCard>
+        </div>
+
+        {/* --- Section 2: Chart Dependent on Verger Filter --- */}
+        <div className="chart-sub-section">
+            <h4>Export by Destination (Grouped by Variety)</h4>
+            {!selectedVerger ? (
+                <p>Please select an orchard to view this chart.</p>
+            ) : salesByDestinationChartData.data.length > 0 ? (
+                <StackedBarChart
+                    data={salesByDestinationChartData.data}
+                    keys={salesByDestinationChartData.keys}
+                    title={`Sales for ${selectedVerger.label}`}
+                    xAxisDataKey="name"
+                />
+            ) : (
+                <p>No export data available for this orchard.</p>
+            )}
+        </div>
+
+    </div>
+</CollapsibleCard>
+          
 
           <CollapsibleCard title="Data Details" defaultOpen={true}>
             <div className="dashboard-table-container">
