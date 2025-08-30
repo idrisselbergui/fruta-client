@@ -19,8 +19,8 @@ const DailyProgramPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = Boolean(id);
-    const apiUrl = 'https://localhost:44374/api/dailyprogram';
-    const lookupApiUrl = 'https://localhost:44374/api/lookup';
+    const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/dailyprogram';
+    const lookupApiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/lookup';
 
     // State for the dropdown options
     const [destinationsOptions, setDestinationsOptions] = useState([]);

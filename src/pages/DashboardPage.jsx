@@ -40,8 +40,8 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const lookupApiUrl = 'https://localhost:44374/api/lookup';
-  const dashboardApiUrl = 'https://localhost:44374/api/dashboard';
+  const lookupApiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/lookup';
+  const dashboardApiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/dashboard';
 
   // useEffect to load all filter options and initial dates
   useEffect(() => {

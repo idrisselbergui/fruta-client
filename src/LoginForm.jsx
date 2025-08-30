@@ -11,7 +11,7 @@ const LoginForm = ({ onLoginSuccess }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage('');
-    const apiUrl = 'https://localhost:44374/api/users/login'; // Your correct port
+    const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/users/login'; // Your correct port
     
     try {
       const response = await fetch(apiUrl, {
