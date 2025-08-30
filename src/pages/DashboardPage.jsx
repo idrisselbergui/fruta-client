@@ -6,27 +6,35 @@ import StackedBarChart from '../components/StackedBarChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import './DashboardPage.css';
 
-const getTodayString = () => new Date().toISOString().split('T')[0];
+// Helper to format date to YYYY-MM-DD string
+const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
 
 const DashboardPage = () => {
   // Main filters state
-  const [startDate, setStartDate] = useState(getTodayString());
-  const [endDate, setEndDate] = useState(getTodayString());
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedVerger, setSelectedVerger] = useState(null);
+  const [selectedGrpVar, setSelectedGrpVar] = useState(null); // New filter state
   const [selectedVariete, setSelectedVariete] = useState(null);
   
   // State for other charts
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [destinationChartData, setDestinationChartData] = useState({ data: [], keys: [] });
-
-  // --- NEW STATE FOR THE REQUIRED CHART ---
   const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
+
+  // State for the Ecart Details table
+  const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
+  const [isEcartLoading, setIsEcartLoading] = useState(false);
+  const [ecartSortConfig, setEcartSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
+  const [selectedEcartType, setSelectedEcartType] = useState(null);
 
   // Filter options state
   const [vergerOptions, setVergerOptions] = useState([]);
-  const [varieteOptions, setVarieteOptions] = useState([]);
+  const [grpVarOptions, setGrpVarOptions] = useState([]); // New options state
+  const [allVarieteOptions, setAllVarieteOptions] = useState([]); // Will hold all varieties
   const [destinationOptions, setDestinationOptions] = useState([]);
+  const [ecartTypeOptions, setEcartTypeOptions] = useState([]);
   
   const [sortConfig, setSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
   const [isLoading, setIsLoading] = useState(true);
@@ -35,39 +43,72 @@ const DashboardPage = () => {
   const lookupApiUrl = 'https://localhost:44374/api/lookup';
   const dashboardApiUrl = 'https://localhost:44374/api/dashboard';
 
-  // useEffect to load filter options (unchanged)
+  // useEffect to load all filter options and initial dates
   useEffect(() => {
-    const fetchFilterOptions = async () => {
+    const fetchInitialData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        const [vergerRes, varieteRes, destRes] = await Promise.all([
+        const datesRes = await fetch(`${lookupApiUrl}/campagne-dates`);
+        if (!datesRes.ok) throw new Error('Failed to fetch campaign dates.');
+        const datesData = await datesRes.json();
+        setStartDate(formatDate(datesData.startDate));
+        setEndDate(formatDate(datesData.endDate));
+
+        const [vergerRes, varieteRes, destRes, ecartTypeRes, grpVarRes] = await Promise.all([
           fetch(`${lookupApiUrl}/vergers`),
           fetch(`${lookupApiUrl}/varietes`),
-          fetch(`${lookupApiUrl}/destinations`)
+          fetch(`${lookupApiUrl}/destinations`),
+          fetch(`${lookupApiUrl}/typeecarts`),
+          fetch(`${lookupApiUrl}/grpvars`) // Fetch grpvars
         ]);
-        if (!vergerRes.ok || !varieteRes.ok || !destRes.ok) throw new Error('Failed to fetch filter options');
+        if (!vergerRes.ok || !varieteRes.ok || !destRes.ok || !ecartTypeRes.ok || !grpVarRes.ok) throw new Error('Failed to fetch filter options');
         
         const vergerData = (await vergerRes.json()).map(v => ({ value: v.refver, label: `${v.refver} - ${v.nomver}` }));
-        const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar }));
+        // --- New Logic: Store grpVarId with each variety option ---
+        const varieteData = (await varieteRes.json()).map(v => ({ value: v.codvar, label: v.nomvar, grpVarId: v.codgrv }));
         const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
+        const ecartTypeData = (await ecartTypeRes.json()).map(et => ({ value: et.codtype, label: et.destype }));
+        const grpVarData = (await grpVarRes.json()).map(g => ({ value: g.codgrv, label: g.nomgrv }));
 
         setVergerOptions(vergerData);
-        setVarieteOptions(varieteData);
+        setAllVarieteOptions(varieteData); // Store all varieties
         setDestinationOptions(destData);
+        setEcartTypeOptions(ecartTypeData);
+        setGrpVarOptions(grpVarData); // Set new options
       } catch (err) {
-        console.error("Failed to fetch filter options:", err);
-        setError("Could not load filter options. Is the API running?");
+        console.error("Failed to fetch initial data:", err);
+        setError("Could not load initial page data. Is the API running?");
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchFilterOptions();
+    fetchInitialData();
   }, []);
 
-  // useEffect for main dashboard data (unchanged)
+  // --- New Logic: Cascading dropdown for Varieties ---
+  const filteredVarieteOptions = useMemo(() => {
+    if (!selectedGrpVar) {
+      return allVarieteOptions; // Show all if no group is selected
+    }
+    return allVarieteOptions.filter(v => v.grpVarId === selectedGrpVar.value);
+  }, [selectedGrpVar, allVarieteOptions]);
+
+  // --- New Logic: Handler to reset variety when group changes ---
+  const handleGrpVarChange = (selectedOption) => {
+    setSelectedGrpVar(selectedOption);
+    // When the group changes, we must reset the selected variety
+    setSelectedVariete(null);
+  };
+
+  // useEffect for main dashboard data
   useEffect(() => {
+    if (!startDate || !endDate) return;
+
     const fetchDashboardData = async () => {
-        setIsLoading(true);
-        setError(null);
         const params = new URLSearchParams({ startDate, endDate });
         if (selectedVerger) params.append('vergerId', selectedVerger.value);
+        if (selectedGrpVar) params.append('grpVarId', selectedGrpVar.value); // Pass grpVarId
         if (selectedVariete) params.append('varieteId', selectedVariete.value);
         try {
             const response = await fetch(`${dashboardApiUrl}/data?${params.toString()}`);
@@ -76,22 +117,21 @@ const DashboardPage = () => {
             setDashboardData(data);
         } catch (err) {
             setError(err.message);
-        } finally {
-            setIsLoading(false);
         }
     };
     fetchDashboardData();
-  }, [startDate, endDate, selectedVerger, selectedVariete]);
+  }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]); // Add selectedGrpVar
 
-  // useEffect for the original destination chart (unchanged)
+  // useEffect for the destination chart
   useEffect(() => {
-    if (!selectedDestination) {
+    if (!startDate || !endDate || !selectedDestination) {
       setDestinationChartData({ data: [], keys: [] });
       return;
     }
     const fetchDestinationChartData = async () => {
       const params = new URLSearchParams({ startDate, endDate });
       if (selectedVerger) params.append('vergerId', selectedVerger.value);
+      if (selectedGrpVar) params.append('grpVarId', selectedGrpVar.value); // Pass grpVarId
       if (selectedVariete) params.append('varieteId', selectedVariete.value);
       if (selectedDestination) params.append('destinationId', selectedDestination.value);
       try {
@@ -104,26 +144,24 @@ const DashboardPage = () => {
       }
     };
     fetchDestinationChartData();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedDestination]);
+  }, [startDate, endDate, selectedVerger, selectedVariete, selectedDestination, selectedGrpVar]); // Add selectedGrpVar
 
-  // --- USEEFFECT FOR THE NEW CHART ---
+  // useEffect for the sales by destination chart
   useEffect(() => {
-    // Rule: If no orchard is selected, clear data and do nothing.
-    if (!selectedVerger) {
+    if (!startDate || !endDate || !selectedVerger) {
       setSalesByDestinationChartData({ data: [], keys: [] });
       return;
     }
-
     const fetchSalesByDestinationData = async () => {
       const params = new URLSearchParams({
         startDate,
         endDate,
-        vergerId: selectedVerger.value // This is the required parameter
+        vergerId: selectedVerger.value
       });
+      if (selectedGrpVar) params.append('grpVarId', selectedGrpVar.value); // Pass grpVarId
       if (selectedVariete) {
         params.append('varieteId', selectedVariete.value);
       }
-
       try {
         const response = await fetch(`${dashboardApiUrl}/destination-by-variety-chart?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch sales by destination data.');
@@ -131,12 +169,37 @@ const DashboardPage = () => {
         setSalesByDestinationChartData(data);
       } catch (err) {
         console.error("Failed to fetch sales by destination data:", err);
-        setSalesByDestinationChartData({ data: [], keys: [] }); // Clear data on error
+        setSalesByDestinationChartData({ data: [], keys: [] });
       }
     };
-
     fetchSalesByDestinationData();
-  }, [selectedVerger, selectedVariete, startDate, endDate]);
+  }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]); // Add selectedGrpVar
+
+  // useEffect for the Ecart Details table
+  useEffect(() => {
+    if (!startDate || !endDate) return;
+
+    const fetchEcartDetails = async () => {
+        setIsEcartLoading(true);
+        const params = new URLSearchParams({ startDate, endDate });
+        if (selectedVerger) params.append('vergerId', selectedVerger.value);
+        if (selectedGrpVar) params.append('grpVarId', selectedGrpVar.value); // Pass grpVarId
+        if (selectedVariete) params.append('varieteId', selectedVariete.value);
+        if (selectedEcartType) params.append('ecartTypeId', selectedEcartType.value);
+
+        try {
+            const response = await fetch(`${dashboardApiUrl}/ecart-details?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch ecart details.');
+            const data = await response.json();
+            setEcartDetails({ data: data.data, totalPdsfru: data.totalPdsfru });
+        } catch (err) {
+            console.error("Failed to fetch ecart details:", err);
+        } finally {
+            setIsEcartLoading(false);
+        }
+    };
+    fetchEcartDetails();
+  }, [startDate, endDate, selectedVerger, selectedVariete, selectedEcartType, selectedGrpVar]); // Add selectedGrpVar
 
 
   const sortedTableRows = useMemo(() => {
@@ -160,7 +223,29 @@ const DashboardPage = () => {
     setSortConfig({ key, direction });
   };
 
-  if (isLoading && !dashboardData) return <LoadingSpinner />;
+  const sortedEcartDetails = useMemo(() => {
+    if (!ecartDetails?.data) return [];
+    const sortableItems = [...ecartDetails.data];
+    sortableItems.sort((a, b) => {
+        const aValue = a[ecartSortConfig.key];
+        const bValue = b[ecartSortConfig.key];
+        if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
+        if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+    });
+    return sortableItems;
+  }, [ecartDetails.data, ecartSortConfig]);
+
+  const handleEcartSort = (key) => {
+    let direction = 'ascending';
+    if (ecartSortConfig.key === key && ecartSortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setEcartSortConfig({ key, direction });
+  };
+
+
+  if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
   return (
@@ -169,11 +254,32 @@ const DashboardPage = () => {
       <div className="dashboard-filters">
         <div className="filter-item"><label>Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
         <div className="filter-item"><label>End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
-        <div className="filter-item"><label> Verger</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
-        <div className="filter-item"><label>Variety</label><Select options={varieteOptions} value={selectedVariete} onChange={setSelectedVariete} isClearable placeholder="All Varieties" /></div>
+        <div className="filter-item"><label>Verger</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
+        {/* --- NEW FILTER --- */}
+        <div className="filter-item">
+            <label>Variety Group</label>
+            <Select 
+                options={grpVarOptions} 
+                value={selectedGrpVar} 
+                onChange={handleGrpVarChange} 
+                isClearable 
+                placeholder="All Groups" 
+            />
+        </div>
+        {/* --- UPDATED FILTER --- */}
+        <div className="filter-item">
+            <label>Variety</label>
+            <Select 
+                options={filteredVarieteOptions} 
+                value={selectedVariete} 
+                onChange={setSelectedVariete} 
+                isClearable 
+                placeholder="All Varieties" 
+            />
+        </div>
       </div>
 
-      {isLoading ? <LoadingSpinner /> : dashboardData && (
+      {!dashboardData ? <LoadingSpinner /> : (
         <>
           <div className="stats-grid">
             <div className="stat-card reception-card"><h3>Reception</h3><p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p></div>
@@ -187,50 +293,45 @@ const DashboardPage = () => {
               <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
             </div>
           </CollapsibleCard>
-<CollapsibleCard title="Detailed Export Analysis" defaultOpen={true}>
-    {/* Main grid container to place the two charts side-by-side */}
-    <div className="charts-grid">
-
-        {/* --- Section 1: Chart with Destination Filter --- */}
-        <div className="chart-sub-section">
-            <h4>Export by Verger (Grouped by Variety)</h4>
-            <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
-                <label>Filter by Destination</label>
-                <Select options={destinationOptions} value={selectedDestination} onChange={setSelectedDestination} isClearable placeholder="Select a destination..." />
-            </div>
-            {selectedDestination ? (
-                <StackedBarChart
-                    data={destinationChartData.data}
-                    keys={destinationChartData.keys}
-                    title={`Total Export for ${selectedDestination.label}`}
-                />
-            ) : (
-                <p>Please select a destination to view the chart.</p>
-            )}
-        </div>
-
-        {/* --- Section 2: Chart Dependent on Verger Filter --- */}
-        <div className="chart-sub-section">
-            <h4>Export by Destination (Grouped by Variety)</h4>
-            {!selectedVerger ? (
-                <p>Please select an orchard to view this chart.</p>
-            ) : salesByDestinationChartData.data.length > 0 ? (
-                <StackedBarChart
-                    data={salesByDestinationChartData.data}
-                    keys={salesByDestinationChartData.keys}
-                    title={`Sales for ${selectedVerger.label}`}
-                    xAxisDataKey="name"
-                />
-            ) : (
-                <p>No export data available for this orchard.</p>
-            )}
-        </div>
-
-    </div>
-</CollapsibleCard>
           
-
-          <CollapsibleCard title="Data Details" defaultOpen={true}>
+          <CollapsibleCard title="Detailed Export Analysis">
+            <div className="charts-grid">
+                <div className="chart-sub-section">
+                    <h4>Export by Verger (Grouped by Variety)</h4>
+                    <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
+                        <label>Filter by Destination</label>
+                        <Select options={destinationOptions} value={selectedDestination} onChange={setSelectedDestination} isClearable placeholder="Select a destination..." />
+                    </div>
+                    {selectedDestination ? (
+                        <StackedBarChart
+                            data={destinationChartData.data}
+                            keys={destinationChartData.keys}
+                            title={`Total Export for ${selectedDestination.label}`}
+                        />
+                    ) : (
+                        <p>Please select a destination to view the chart.</p>
+                    )}
+                </div>
+                <div className="chart-sub-section">
+                    <h4>Export by Destination (Grouped by Variety) </h4>
+                    <br/><br/><br/><br/><br/><br/>
+                    {!selectedVerger ? (
+                        <p>Please select an orchard to view this chart.</p>
+                    ) : salesByDestinationChartData.data.length > 0 ? (
+                        <StackedBarChart
+                            data={salesByDestinationChartData.data}
+                            keys={salesByDestinationChartData.keys}
+                            title={`Sales for ${selectedVerger.label}`}
+                            xAxisDataKey="name"
+                        />
+                    ) : (
+                        <p>No export data available for this orchard.</p>
+                    )}
+                </div>
+            </div>
+          </CollapsibleCard>
+          
+          <CollapsibleCard title="Data Details">
             <div className="dashboard-table-container">
               <table className="details-table">
                 <thead>
@@ -255,6 +356,51 @@ const DashboardPage = () => {
                 </tbody>
               </table>
             </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Ecart Details">
+            <div className="ecart-filter-container">
+                <div className="filter-item" style={{ flexGrow: 1, maxWidth: '400px' }}>
+                    <label>Filter by Ecart Type</label>
+                    <Select
+                        options={ecartTypeOptions}
+                        value={selectedEcartType}
+                        onChange={setSelectedEcartType}
+                        isClearable
+                        placeholder="All Ecart Types..."
+                    />
+                </div>
+                <div className="stat-card ecart-card" style={{ marginBottom: 0, minWidth: '250px' }}>
+                    <h3>Total Poids Fruit (Ecart)</h3>
+                    <p className="stat-value">{ecartDetails.totalPdsfru.toFixed(2)}</p>
+                </div>
+            </div>
+            {isEcartLoading ? <LoadingSpinner /> : (
+              <div className="dashboard-table-container" style={{ marginTop: '1.5rem' }}>
+                <table className="details-table">
+                  <thead>
+                    <tr>
+                      <th className="sortable-header" onClick={() => handleEcartSort('vergerName')}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('varieteName')}>Variety{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('ecartType')}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('totalPdsfru')}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('totalNbrcai')}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedEcartDetails.map((row, index) => (
+                      <tr key={index}>
+                        <td>{row.vergerName}</td>
+                        <td>{row.varieteName}</td>
+                        <td>{row.ecartType}</td>
+                        <td>{row.totalPdsfru.toFixed(2)}</td>
+                        <td>{row.totalNbrcai}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CollapsibleCard>
         </>
       )}
