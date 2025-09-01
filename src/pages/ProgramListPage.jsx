@@ -12,7 +12,7 @@ const ProgramListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const apiUrl = 'https://localhost:44374/api/dailyprogram';
+  const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/dailyprogram';
 
   // 1. First, fetch the list of all available dates
   useEffect(() => {
