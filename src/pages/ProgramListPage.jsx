@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { apiGet, apiDelete } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
 import './DailyProgram.css';
 
 const ProgramListPage = () => {
@@ -12,17 +13,13 @@ const ProgramListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/dailyprogram';
-
-  // 1. First, fetch the list of all available dates
+  // --- 2. REFACTOR ALL FETCH LOGIC TO USE THE API SERVICE ---
   useEffect(() => {
     const fetchDates = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${apiUrl}/dates`);
-        if (!response.ok) throw new Error('Failed to fetch dates.');
-        const dates = await response.json();
+        const dates = await apiGet('/api/dailyprogram/dates');
         setAvailableDates(dates);
       } catch (err) {
         setError(err.message);
@@ -33,9 +30,7 @@ const ProgramListPage = () => {
     fetchDates();
   }, []);
 
-  // 2. Then, fetch programs for the currently selected date
   useEffect(() => {
-    // Don't run if there are no dates yet
     if (availableDates.length === 0) return;
 
     const fetchProgramsForDate = async () => {
@@ -43,9 +38,8 @@ const ProgramListPage = () => {
       setError(null);
       const selectedDate = availableDates[currentDateIndex];
       try {
-        const response = await fetch(`${apiUrl}?date=${selectedDate}`);
-        if (!response.ok) throw new Error(`Failed to fetch programs for ${selectedDate}.`);
-        const data = await response.json();
+        // Pass the date as a query parameter
+        const data = await apiGet('/api/dailyprogram', { date: selectedDate });
         setPrograms(data);
       } catch (err) {
         setError(err.message);
@@ -55,7 +49,7 @@ const ProgramListPage = () => {
     };
 
     fetchProgramsForDate();
-  }, [currentDateIndex, availableDates]); // This runs whenever the date index changes
+  }, [currentDateIndex, availableDates]);
 
   const handlePrevDay = () => {
     if (currentDateIndex < availableDates.length - 1) {
@@ -72,9 +66,22 @@ const ProgramListPage = () => {
   const handleEdit = (id) => navigate(`/program/edit/${id}`);
   
   const handleDelete = async (id) => {
-    // ... delete logic remains the same
+    // A simple confirmation dialog
+    if (window.confirm('Are you sure you want to delete this program?')) {
+        try {
+            await apiDelete(`/api/dailyprogram/${id}`);
+            // Refetch the programs for the current date to update the list
+            const selectedDate = availableDates[currentDateIndex];
+            const data = await apiGet('/api/dailyprogram', { date: selectedDate });
+            setPrograms(data);
+        } catch(err) {
+            console.error("Failed to delete program:", err);
+            setError("Could not delete the program.");
+        }
+    }
   };
 
+  // The JSX remains the same
   if (isLoading && availableDates.length === 0) return <LoadingSpinner />;
   if (error) return <div className="program-page-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
@@ -88,9 +95,7 @@ const ProgramListPage = () => {
           + Add New Program
         </button>
       </div>
-
      
-
       {isLoading ? <LoadingSpinner /> : (
         programs.length === 0 && current_date ? (
           <p>No programs found for this date.</p>
@@ -121,10 +126,8 @@ const ProgramListPage = () => {
               </div>
             ))}
           </div>
-          
         )
       )}
-       {/* Pagination Controls */}
       <div className="pagination-controls">
         <button onClick={handleNextDay} disabled={currentDateIndex === 0}>
           &larr; Newer Day
@@ -141,3 +144,4 @@ const ProgramListPage = () => {
 };
 
 export default ProgramListPage;
+
