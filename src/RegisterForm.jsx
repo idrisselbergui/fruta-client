@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import './LoginForm.css'; // We can reuse the same styles
+import { apiPost } from './apiService'; // --- THIS LINE IS NOW CORRECTED ---
+import './LoginForm.css';
 
 const RegisterForm = () => {
   const [username, setUsername] = useState('');
@@ -10,18 +11,21 @@ const RegisterForm = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage('');
-    const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/users/register'; // Your correct port
 
     try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, permission: parseInt(permission) }),
+      // The apiService will automatically add the admin's database header
+      const data = await apiPost('/api/users/register', { 
+        username, 
+        password, 
+        permission: parseInt(permission) 
       });
-      const data = await response.json();
       setMessage(data.message);
+      // Clear form on success
+      setUsername('');
+      setPassword('');
+      setPermission(0);
     } catch (error) {
-      setMessage('Error: Registration failed.');
+      setMessage(`Error: ${error.message}`);
     }
   };
 
@@ -29,7 +33,6 @@ const RegisterForm = () => {
     <div className="login-container" style={{ height: 'auto', paddingTop: '5rem' }}>
       <form className="login-form" onSubmit={handleSubmit}>
         <h2>Register New User</h2>
-        {/* Username and Password Inputs */}
         <div className="input-group">
           <label htmlFor="username">Username</label>
           <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
@@ -38,7 +41,6 @@ const RegisterForm = () => {
           <label htmlFor="password">Password</label>
           <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        {/* Permission Input */}
         <div className="input-group">
           <label htmlFor="permission">Permission (0 for User, 1 for Admin)</label>
           <input type="number" id="permission" value={permission} onChange={(e) => setPermission(e.target.value)} required />
@@ -51,3 +53,4 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
+

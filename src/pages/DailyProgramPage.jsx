@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import { apiGet, apiPost, apiPut } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
 import './DailyProgram.css';
 
 const initialProgramState = {
@@ -19,40 +20,29 @@ const DailyProgramPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = Boolean(id);
-    const apiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/dailyprogram';
-    const lookupApiUrl = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net/api/lookup';
-
+    
     // State for the dropdown options
     const [destinationsOptions, setDestinationsOptions] = useState([]);
     const [partenairesOptions, setPartenairesOptions] = useState([]);
     const [grpVarsOptions, setGrpVarsOptions] = useState([]);
     const [tpalettesOptions, setTPalettesOptions] = useState([]);
 
+    // --- 2. REFACTOR ALL FETCH LOGIC TO USE THE API SERVICE ---
     useEffect(() => {
         const fetchLookups = async () => {
             try {
                 const partnerType = "EXPORTATEUR";
-                const [destRes, partRes, grpRes, palRes] = await Promise.all([
-                    fetch(`${lookupApiUrl}/destinations`),
-                    fetch(`${lookupApiUrl}/partenaires/${partnerType}`),
-                    fetch(`${lookupApiUrl}/grpvars`),
-                    fetch(`${lookupApiUrl}/tpalettes`)
+                const [destData, partData, grpData, palData] = await Promise.all([
+                    apiGet('/api/lookup/destinations'),
+                    apiGet(`/api/lookup/partenaires/${partnerType}`),
+                    apiGet('/api/lookup/grpvars'),
+                    apiGet('/api/lookup/tpalettes')
                 ]);
 
-                if (!destRes.ok || !partRes.ok || !grpRes.ok || !palRes.ok) {
-                    throw new Error('Failed to fetch all lookup data');
-                }
-
-                // Transform data into { value, label } format for React Select
-                const destData = (await destRes.json()).map(d => ({ value: d.coddes, label: d.vildes }));
-                const partData = (await partRes.json()).map(p => ({ value: p.ref, label: p.nom }));
-                const grpData = (await grpRes.json()).map(g => ({ value: g.codgrv, label: g.nomgrv })); // Use corrected names
-                 const palData = (await palRes.json()).map(p => ({ value: p.codtyp, label: p.nomemb }));
-
-                setDestinationsOptions(destData);
-                setPartenairesOptions(partData);
-                setGrpVarsOptions(grpData);
-                setTPalettesOptions(palData);
+                setDestinationsOptions(destData.map(d => ({ value: d.coddes, label: d.vildes })));
+                setPartenairesOptions(partData.map(p => ({ value: p.ref, label: p.nom })));
+                setGrpVarsOptions(grpData.map(g => ({ value: g.codgrv, label: g.nomgrv })));
+                setTPalettesOptions(palData.map(p => ({ value: p.codtyp, label: p.nomemb })));
             } catch (error) {
                 console.error("Failed to fetch lookup data:", error);
             }
@@ -64,10 +54,7 @@ const DailyProgramPage = () => {
         if (isEditing) {
             const fetchProgram = async () => {
                 try {
-                    const response = await fetch(`${apiUrl}/${id}`);
-                    if (!response.ok) throw new Error('Program not found');
-                    
-                    const data = await response.json();
+                    const data = await apiGet(`/api/dailyprogram/${id}`);
                     data.havday = data.havday ? data.havday.split('T')[0] : '';
                     data.dteprog = data.dteprog ? data.dteprog.split('T')[0] : '';
                     setProgram(data);
@@ -82,6 +69,7 @@ const DailyProgramPage = () => {
         }
     }, [id, isEditing, navigate]);
 
+    // All handler functions remain the same
     const handleHeaderChange = (e) => {
         const { name, value } = e.target;
         setProgram(prev => ({ ...prev, [name]: value }));
@@ -112,34 +100,31 @@ const DailyProgramPage = () => {
         setProgram(prev => ({ ...prev, details: updatedDetails }));
     };
 
-   const addDetailRow = () => {
-    setProgram(prev => ({
-        ...prev,
-        details: [...prev.details, { codgrv: 0, codtyp: '', nbrpal: 0, nbrcoli: 0, valide: 0, numProg: program.numProg }]
-    }));
-};
+    const addDetailRow = () => {
+        setProgram(prev => ({
+            ...prev,
+            details: [...prev.details, { codgrv: 0, codtyp: '', nbrpal: 0, nbrcoli: 0, valide: 0, numProg: program.numProg }]
+        }));
+    };
 
     const removeDetailRow = (index) => {
         setProgram(prev => ({ ...prev, details: program.details.filter((_, i) => i !== index) }));
     };
 
     const handleSubmit = async () => {
-        const method = isEditing ? 'PUT' : 'POST';
-        const url = isEditing ? `${apiUrl}/${id}` : apiUrl;
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(program),
-            });
-            if (!response.ok) throw new Error('Failed to save the program');
-            
+            if (isEditing) {
+                await apiPut(`/api/dailyprogram/${id}`, program);
+            } else {
+                await apiPost('/api/dailyprogram', program);
+            }
             navigate('/programs');
         } catch (error) {
             console.error('Save error:', error);
         }
     };
 
+    // The JSX remains the same
     return (
         <div className="program-page-container">
             <h1>{isEditing ? 'Edit Daily Program' : 'Create New Program'}</h1>
@@ -151,11 +136,11 @@ const DailyProgramPage = () => {
                     <div className="input-group"><label>PO Number</label><input type="text" name="po" value={program.po} onChange={handleHeaderChange} /></div>
                     <div className="input-group"><label>Lot</label><input type="text" name="lot" value={program.lot} onChange={handleHeaderChange} /></div>
                     <div className="input-group">
-                        <label>Destination</label>
+                        <label>Client</label>
                         <Select name="coddes" options={destinationsOptions} value={destinationsOptions.find(d => d.value === program.coddes)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
                     </div>
                     <div className="input-group">
-                        <label>Partenaire (Exporter)</label>
+                        <label>Exporter</label>
                         <Select name="refexp" options={partenairesOptions} value={partenairesOptions.find(p => p.value === program.refexp)} onChange={handleHeaderSelectChange} placeholder="Search..." isClearable />
                     </div>
                     <div className="input-group"><label>Harvest Date</label><input type="date" name="havday" value={program.havday} onChange={handleHeaderChange} /></div>
@@ -183,14 +168,14 @@ const DailyProgramPage = () => {
                         {program.details.map((detail, index) => (
                             <tr key={index}>
                                 <td>
-                    <Select
-                        name="codgrv" // Corrected name
-                        options={grpVarsOptions}
-                        value={grpVarsOptions.find(g => g.value === detail.codgrv)} // Corrected property
-                        onChange={(opt, act) => handleDetailSelectChange(index, opt, act)}
-                        placeholder="Search..."
-                    />
-                </td>
+                                    <Select
+                                        name="codgrv"
+                                        options={grpVarsOptions}
+                                        value={grpVarsOptions.find(g => g.value === detail.codgrv)}
+                                        onChange={(opt, act) => handleDetailSelectChange(index, opt, act)}
+                                        placeholder="Search..."
+                                    />
+                                </td>
                                 <td>
                                     <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)}
                                      onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
@@ -214,3 +199,4 @@ const DailyProgramPage = () => {
 };
 
 export default DailyProgramPage;
+
