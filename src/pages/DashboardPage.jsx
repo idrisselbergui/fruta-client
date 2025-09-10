@@ -4,47 +4,64 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardChart from '../components/DashboardChart';
 import StackedBarChart from '../components/StackedBarChart';
 import CollapsibleCard from '../components/CollapsibleCard';
-import { apiGet } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
+import { apiGet } from '../apiService';
+import useDebounce from '../hooks/useDebounce'; // --- 1. IMPORT THE NEW HOOK ---
 import './DashboardPage.css';
 
-// Helper to format date to YYYY-MM-DD string
 const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
 
 const DashboardPage = () => {
-  // --- All of your state variables remain exactly the same ---
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedVerger, setSelectedVerger] = useState(null);
-  const [selectedGrpVar, setSelectedGrpVar] = useState(null);
-  const [selectedVariete, setSelectedVariete] = useState(null);
-  const [selectedDestination, setSelectedDestination] = useState(null);
+  // --- 2. COMBINE ALL FILTERS INTO A SINGLE STATE OBJECT ---
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    selectedVerger: null,
+    selectedGrpVar: null,
+    selectedVariete: null,
+    selectedDestination: null,
+    selectedEcartType: null,
+  });
+
+  // --- 3. APPLY THE DEBOUNCE HOOK TO THE FILTERS ---
+  const debouncedFilters = useDebounce(filters, 500);
+  
+  // Data states remain the same
   const [dashboardData, setDashboardData] = useState(null);
   const [destinationChartData, setDestinationChartData] = useState({ data: [], keys: [] });
   const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
   const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
-  const [isEcartLoading, setIsEcartLoading] = useState(false);
-  const [ecartSortConfig, setEcartSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
-  const [selectedEcartType, setSelectedEcartType] = useState(null);
+  const [isDataLoading, setIsDataLoading] = useState(true); 
+  
+  // Dropdown options states remain the same
   const [vergerOptions, setVergerOptions] = useState([]);
   const [grpVarOptions, setGrpVarOptions] = useState([]);
   const [varieteOptions, setVarieteOptions] = useState([]);
   const [destinationOptions, setDestinationOptions] = useState([]);
   const [ecartTypeOptions, setEcartTypeOptions] = useState([]);
+  
+  // Sorting configurations
   const [sortConfig, setSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
+  const [ecartSortConfig, setEcartSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
+
+  // Initial page load state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- 2. REFACTOR ALL FETCH LOGIC TO USE apiGet ---
+  // --- 4. CREATE A SINGLE HANDLER FOR ALL FILTER CHANGES ---
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
 
-  // useEffect to load filter options and initial dates
+  // useEffect for fetching initial dropdown options
   useEffect(() => {
     const fetchInitialData = async () => {
-      setIsLoading(true);
-      setError(null);
       try {
         const datesData = await apiGet('/api/lookup/campagne-dates');
-        setStartDate(formatDate(datesData.startDate));
-        setEndDate(formatDate(datesData.endDate));
+        setFilters(prev => ({
+          ...prev,
+          startDate: formatDate(datesData.startDate),
+          endDate: formatDate(datesData.endDate),
+        }));
 
         const [vergerData, varieteData, destData, ecartTypeData, grpVarData] = await Promise.all([
           apiGet('/api/lookup/vergers'),
@@ -61,8 +78,7 @@ const DashboardPage = () => {
         setGrpVarOptions(grpVarData.map(g => ({ value: g.codgrv, label: g.nomgrv })));
 
       } catch (err) {
-        console.error("Failed to fetch initial data:", err);
-        setError("Could not load initial page data. Is the API running?");
+        setError("Could not load initial page data.");
       } finally {
         setIsLoading(false);
       }
@@ -70,170 +86,135 @@ const DashboardPage = () => {
     fetchInitialData();
   }, []);
 
-  // useEffect for main dashboard data
+  // --- 5. CREATE A SINGLE, CONSOLIDATED useEffect FOR ALL DATA FETCHING ---
   useEffect(() => {
-    if (!startDate || !endDate) return;
+    if (!debouncedFilters.startDate || !debouncedFilters.endDate || isLoading) return;
 
-    const fetchDashboardData = async () => {
-        const params = { startDate, endDate };
-        if (selectedVerger) params.vergerId = selectedVerger.value;
-        if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
-        if (selectedVariete) params.varieteId = selectedVariete.value;
-        
-        try {
-            const data = await apiGet('/api/dashboard/data', params);
-            setDashboardData(data);
-        } catch (err) {
-            setError(err.message);
-        }
+    const fetchAllDashboardData = async () => {
+      setIsDataLoading(true);
+      const { startDate, endDate, selectedVerger, selectedGrpVar, selectedVariete, selectedDestination, selectedEcartType } = debouncedFilters;
+      
+      const baseParams = { startDate, endDate };
+      if (selectedVerger) baseParams.vergerId = selectedVerger.value;
+      if (selectedGrpVar) baseParams.grpVarId = selectedGrpVar.value;
+      if (selectedVariete) baseParams.varieteId = selectedVariete.value;
+
+      try {
+        // Build all API call promises
+        const mainDataPromise = apiGet('/api/dashboard/data', baseParams);
+
+        const ecartParams = { ...baseParams };
+        if (selectedEcartType) ecartParams.ecartTypeId = selectedEcartType.value;
+        const ecartPromise = apiGet('/api/dashboard/ecart-details', ecartParams);
+
+        const destChartParams = { ...baseParams };
+        if (selectedDestination) destChartParams.destinationId = selectedDestination.value;
+        const destChartPromise = selectedDestination ? apiGet('/api/dashboard/destination-chart', destChartParams) : Promise.resolve({ data: [], keys: [] });
+
+        const salesChartParams = { ...baseParams };
+        const salesChartPromise = selectedVerger ? apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams) : Promise.resolve({ data: [], keys: [] });
+
+        // Await all promises together
+        const [mainData, ecartData, destChartData, salesChartData] = await Promise.all([
+            mainDataPromise,
+            ecartPromise,
+            destChartPromise,
+            salesChartPromise
+        ]);
+
+        // Set all state at once
+        setDashboardData(mainData);
+        setEcartDetails({ data: ecartData.data, totalPdsfru: ecartData.totalPdsfru });
+        setDestinationChartData(destChartData);
+        setSalesByDestinationChartData(salesChartData);
+
+      } catch (err) {
+        setError("Failed to load dashboard data.");
+      } finally {
+        setIsDataLoading(false);
+      }
     };
-    fetchDashboardData();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]);
+    fetchAllDashboardData();
+  }, [debouncedFilters, isLoading]); // This now depends only on the debounced filters
 
-  // All other useEffect hooks follow the same pattern...
-  
   const filteredVarieteOptions = useMemo(() => {
-    if (!selectedGrpVar) {
-      return varieteOptions;
-    }
-    return varieteOptions.filter(v => v.grpVarId === selectedGrpVar.value);
-  }, [selectedGrpVar, varieteOptions]);
+    if (!filters.selectedGrpVar) return varieteOptions;
+    return varieteOptions.filter(v => v.grpVarId === filters.selectedGrpVar.value);
+  }, [filters.selectedGrpVar, varieteOptions]);
 
   const handleGrpVarChange = (selectedOption) => {
-    setSelectedGrpVar(selectedOption);
-    if (selectedVariete) {
-        const isStillValid = filteredVarieteOptions.some(v => v.value === selectedVariete.value && v.grpVarId === selectedOption?.value);
-        if (!isStillValid) {
-            setSelectedVariete(null);
-        }
+    handleFilterChange('selectedGrpVar', selectedOption);
+    const isStillValid = filteredVarieteOptions.some(v => v.value === filters.selectedVariete?.value);
+    
+    if (!isStillValid) {
+        handleFilterChange('selectedVariete', null);
     }
   };
 
-  useEffect(() => {
-    if (!startDate || !endDate || !selectedDestination) {
-      setDestinationChartData({ data: [], keys: [] });
-      return;
-    }
-    const fetchDestinationChartData = async () => {
-      const params = { startDate, endDate };
-      if (selectedVerger) params.vergerId = selectedVerger.value;
-      if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
-      if (selectedVariete) params.varieteId = selectedVariete.value;
-      if (selectedDestination) params.destinationId = selectedDestination.value;
-      try {
-        const data = await apiGet('/api/dashboard/destination-chart', params);
-        setDestinationChartData(data);
-      } catch (err) {
-        console.error("Failed to fetch destination chart data:", err);
-      }
-    };
-    fetchDestinationChartData();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedDestination, selectedGrpVar]);
-
-  useEffect(() => {
-    if (!startDate || !endDate || !selectedVerger) {
-      setSalesByDestinationChartData({ data: [], keys: [] });
-      return;
-    }
-    const fetchSalesByDestinationData = async () => {
-      const params = { startDate, endDate, vergerId: selectedVerger.value };
-      if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
-      if (selectedVariete) params.varieteId = selectedVariete.value;
-      try {
-        const data = await apiGet('/api/dashboard/destination-by-variety-chart', params);
-        setSalesByDestinationChartData(data);
-      } catch (err) {
-        console.error("Failed to fetch sales by destination data:", err);
-        setSalesByDestinationChartData({ data: [], keys: [] });
-      }
-    };
-    fetchSalesByDestinationData();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]);
-
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-
-    const fetchEcartDetails = async () => {
-        setIsEcartLoading(true);
-        const params = { startDate, endDate };
-        if (selectedVerger) params.vergerId = selectedVerger.value;
-        if (selectedVariete) params.varieteId = selectedVariete.value;
-        if (selectedEcartType) params.ecartTypeId = selectedEcartType.value;
-
-        try {
-            const data = await apiGet('/api/dashboard/ecart-details', params);
-            setEcartDetails({ data: data.data, totalPdsfru: data.totalPdsfru });
-        } catch (err) {
-            console.error("Failed to fetch ecart details:", err);
-        } finally {
-            setIsEcartLoading(false);
-        }
-    };
-    fetchEcartDetails();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedEcartType]);
-
   const sortedTableRows = useMemo(() => {
     if (!dashboardData?.tableRows) return [];
-    const sortableItems = [...dashboardData.tableRows];
-    sortableItems.sort((a, b) => {
+    return [...dashboardData.tableRows].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
       return 0;
     });
-    return sortableItems;
   }, [dashboardData, sortConfig]);
-
-  const handleSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
 
   const sortedEcartDetails = useMemo(() => {
     if (!ecartDetails?.data) return [];
-    const sortableItems = [...ecartDetails.data];
-    sortableItems.sort((a, b) => {
+    return [...ecartDetails.data].sort((a, b) => {
         const aValue = a[ecartSortConfig.key];
         const bValue = b[ecartSortConfig.key];
         if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
     });
-    return sortableItems;
   }, [ecartDetails.data, ecartSortConfig]);
-
-  const handleEcartSort = (key) => {
+  
+  const handleSort = (key, isEcart) => {
+    const currentConfig = isEcart ? ecartSortConfig : sortConfig;
+    const setConfig = isEcart ? setEcartSortConfig : setSortConfig;
     let direction = 'ascending';
-    if (ecartSortConfig.key === key && ecartSortConfig.direction === 'ascending') {
+    if (currentConfig.key === key && currentConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    setEcartSortConfig({ key, direction });
+    setConfig({ key, direction });
   };
-
+  
   if (isLoading) return <LoadingSpinner />;
-  if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
+  if (error) return <div className="dashboard-page"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
   return (
-    <div className="dashboard-container">
-      <h1>Production Dashboard</h1>
-      <div className="dashboard-filters">
-        <div className="filter-item"><label>Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-        <div className="filter-item"><label>End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
-        <div className="filter-item"><label>Verger</label><Select options={vergerOptions} value={selectedVerger} onChange={setSelectedVerger} isClearable placeholder="All Orchards" /></div>
-        <div className="filter-item"><label>Variety Group</label><Select options={grpVarOptions} value={selectedGrpVar} onChange={handleGrpVarChange} isClearable placeholder="All Groups" /></div>
-        <div className="filter-item"><label>Variety</label><Select options={filteredVarieteOptions} value={selectedVariete} onChange={setSelectedVariete} isClearable placeholder="All Varieties" /></div>
+    <div className="dashboard-page">
+      <h1 className="dashboard-title">Production Dashboard</h1>
+      
+      <div className="filters-card">
+        <div className="filters-grid">
+          <div className="filter-item"><label>Start Date</label><input type="date" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} /></div>
+          <div className="filter-item"><label>End Date</label><input type="date" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} /></div>
+          <div className="filter-item"><label>Verger</label><Select options={vergerOptions} value={filters.selectedVerger} onChange={val => handleFilterChange('selectedVerger', val)} isClearable placeholder="All Orchards" /></div>
+          <div className="filter-item"><label>Variety Group</label><Select options={grpVarOptions} value={filters.selectedGrpVar} onChange={handleGrpVarChange} isClearable placeholder="All Groups" /></div>
+          <div className="filter-item"><label>Variety</label><Select options={filteredVarieteOptions} value={filters.selectedVariete} onChange={val => handleFilterChange('selectedVariete', val)} isClearable placeholder="All Varieties" /></div>
+        </div>
       </div>
 
-      {!dashboardData ? <LoadingSpinner /> : (
+      {isDataLoading ? <LoadingSpinner /> : !dashboardData ? <p>No data available for the selected filters.</p> : (
         <>
           <div className="stats-grid">
-            <div className="stat-card reception-card"><h3>Reception</h3><p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p></div>
-            <div className="stat-card export-card"><h3>Export</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}</p><span className="stat-percentage">({dashboardData.exportPercentage.toFixed(2)}%)</span></div></div>
-            <div className="stat-card ecart-card"><h3>Ecart</h3><div className="stat-value-container"><p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p><span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span></div></div>
+            <div className="stat-card reception-card">
+              <div className="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div className="stat-info"><h3>Reception</h3><p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p></div>
+            </div>
+            <div className="stat-card export-card">
+              <div className="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"/><path d="M16 8l-4 4-4-4"/><path d="M12 16V4"/></svg></div>
+              <div className="stat-info"><h3>Export</h3><p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}<span className="stat-percentage">({dashboardData.exportPercentage.toFixed(2)}%)</span></p></div>
+            </div>
+            <div className="stat-card ecart-card">
+              <div className="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+              <div className="stat-info"><h3>Ecart</h3><p className="stat-value">{dashboardData.totalEcart.toFixed(2)}<span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span></p></div>
+            </div>
           </div>
 
           <CollapsibleCard title="TVN/Export by Verger">
@@ -245,32 +226,31 @@ const DashboardPage = () => {
           
           <CollapsibleCard title="Detailed Export Analysis">
             <div className="charts-grid">
-                <div className="chart-sub-section">
-                    <h4>Export by Verger (Grouped by Variety)</h4>
+                <div className="chart-container">
+                    <h3>Export by Verger (Grouped by Variety)</h3>
                     <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
                         <label>Filter by Client</label>
-                        <Select options={destinationOptions} value={selectedDestination} onChange={setSelectedDestination} isClearable placeholder="Select a client..." />
+                        <Select options={destinationOptions} value={filters.selectedDestination} onChange={val => handleFilterChange('selectedDestination', val)} isClearable placeholder="Select a client..." />
                     </div>
-                    {selectedDestination ? (
+                    {filters.selectedDestination ? (
                         <StackedBarChart
                             data={destinationChartData.data}
                             keys={destinationChartData.keys}
-                            title={`Total Export for ${selectedDestination.label}`}
+                            title={`Total Export for ${filters.selectedDestination.label}`}
                         />
                     ) : (
                         <p>Please select a client to view the chart.</p>
                     )}
                 </div>
-                <div className="chart-sub-section">
-                    <h4>Export by Client (Grouped by Variety) </h4>
-                    <br/><br/><br/><br/><br/><br/>
-                    {!selectedVerger ? (
+                <div className="chart-container">
+                    <h3>Export by Client (Grouped by Variety)</h3>
+                    {!filters.selectedVerger ? (
                         <p>Please select an orchard to view this chart.</p>
                     ) : salesByDestinationChartData.data.length > 0 ? (
                         <StackedBarChart
                             data={salesByDestinationChartData.data}
                             keys={salesByDestinationChartData.keys}
-                            title={`Sales for ${selectedVerger.label}`}
+                            title={`Sales for ${filters.selectedVerger.label}`}
                             xAxisDataKey="name"
                         />
                     ) : (
@@ -285,11 +265,11 @@ const DashboardPage = () => {
               <table className="details-table">
                 <thead>
                   <tr>
-                    <th className="sortable-header" onClick={() => handleSort('vergerName')}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('varieteName')}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru')}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('totalPdscom')}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('totalEcart')}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('vergerName', false)}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('varieteName', false)}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru', false)}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdscom', false)}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalEcart', false)}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -313,27 +293,27 @@ const DashboardPage = () => {
                     <label>Filter by Ecart Type</label>
                     <Select
                         options={ecartTypeOptions}
-                        value={selectedEcartType}
-                        onChange={setSelectedEcartType}
+                        value={filters.selectedEcartType}
+                        onChange={val => handleFilterChange('selectedEcartType', val)}
                         isClearable
                         placeholder="All Ecart Types..."
                     />
                 </div>
-                <div className="stat-card ecart-card ecart-total-card">
-                    <h3>Total Poids Fruit (Ecart)</h3>
-                    <p className="stat-value">{ecartDetails.totalPdsfru.toFixed(2)}</p>
+                <div className="stat-card ecart-card">
+                  <div className="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 12H2.5"/><path d="M18.5 5H5.5"/><path d="M18.5 19H5.5"/></svg></div>
+                  <div className="stat-info"><h3>Total Poids Fruit (Ecart)</h3><p className="stat-value">{ecartDetails.totalPdsfru.toFixed(2)}</p></div>
                 </div>
             </div>
-            {isEcartLoading ? <LoadingSpinner /> : (
+            {isDataLoading ? <LoadingSpinner /> : (
               <div className="dashboard-table-container">
                 <table className="details-table">
                   <thead>
                     <tr>
-                      <th className="sortable-header" onClick={() => handleEcartSort('vergerName')}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('varieteName')}>Variety{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('ecartType')}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('totalPdsfru')}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('totalNbrcai')}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('vergerName', true)}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('varieteName', true)}>Variety{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('ecartType', true)}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('totalPdsfru', true)}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('totalNbrcai', true)}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     </tr>
                   </thead>
                   <tbody>
