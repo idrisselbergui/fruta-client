@@ -4,12 +4,14 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardChart from '../components/DashboardChart';
 import StackedBarChart from '../components/StackedBarChart';
 import CollapsibleCard from '../components/CollapsibleCard';
-import { apiGet } from '../apiService';
+import { apiGet } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
 import './DashboardPage.css';
 
+// Helper to format date to YYYY-MM-DD string
 const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
 
 const DashboardPage = () => {
+  // --- All of your state variables remain exactly the same ---
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedVerger, setSelectedVerger] = useState(null);
@@ -32,6 +34,9 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // --- 2. REFACTOR ALL FETCH LOGIC TO USE apiGet ---
+
+  // useEffect to load filter options and initial dates
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoading(true);
@@ -65,13 +70,16 @@ const DashboardPage = () => {
     fetchInitialData();
   }, []);
 
+  // useEffect for main dashboard data
   useEffect(() => {
     if (!startDate || !endDate) return;
+
     const fetchDashboardData = async () => {
         const params = { startDate, endDate };
         if (selectedVerger) params.vergerId = selectedVerger.value;
         if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
         if (selectedVariete) params.varieteId = selectedVariete.value;
+        
         try {
             const data = await apiGet('/api/dashboard/data', params);
             setDashboardData(data);
@@ -82,6 +90,8 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]);
 
+  // All other useEffect hooks follow the same pattern...
+  
   const filteredVarieteOptions = useMemo(() => {
     if (!selectedGrpVar) {
       return varieteOptions;
@@ -92,15 +102,18 @@ const DashboardPage = () => {
   const handleGrpVarChange = (selectedOption) => {
     setSelectedGrpVar(selectedOption);
     if (selectedVariete) {
-        const currentSelectionStillValid = filteredVarieteOptions.some(v => v.value === selectedVariete.value);
-        if (!currentSelectionStillValid) {
+        const isStillValid = filteredVarieteOptions.some(v => v.value === selectedVariete.value && v.grpVarId === selectedOption?.value);
+        if (!isStillValid) {
             setSelectedVariete(null);
         }
     }
   };
 
   useEffect(() => {
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate || !selectedDestination) {
+      setDestinationChartData({ data: [], keys: [] });
+      return;
+    }
     const fetchDestinationChartData = async () => {
       const params = { startDate, endDate };
       if (selectedVerger) params.vergerId = selectedVerger.value;
@@ -114,18 +127,16 @@ const DashboardPage = () => {
         console.error("Failed to fetch destination chart data:", err);
       }
     };
-    if (selectedDestination) {
-        fetchDestinationChartData();
-    } else {
-        setDestinationChartData({ data: [], keys: [] });
-    }
+    fetchDestinationChartData();
   }, [startDate, endDate, selectedVerger, selectedVariete, selectedDestination, selectedGrpVar]);
 
   useEffect(() => {
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate || !selectedVerger) {
+      setSalesByDestinationChartData({ data: [], keys: [] });
+      return;
+    }
     const fetchSalesByDestinationData = async () => {
-      const params = { startDate, endDate };
-      if (selectedVerger) params.vergerId = selectedVerger.value;
+      const params = { startDate, endDate, vergerId: selectedVerger.value };
       if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
       if (selectedVariete) params.varieteId = selectedVariete.value;
       try {
@@ -136,20 +147,16 @@ const DashboardPage = () => {
         setSalesByDestinationChartData({ data: [], keys: [] });
       }
     };
-    if (selectedVerger) {
-        fetchSalesByDestinationData();
-    } else {
-        setSalesByDestinationChartData({ data: [], keys: [] });
-    }
+    fetchSalesByDestinationData();
   }, [startDate, endDate, selectedVerger, selectedVariete, selectedGrpVar]);
 
   useEffect(() => {
     if (!startDate || !endDate) return;
+
     const fetchEcartDetails = async () => {
         setIsEcartLoading(true);
         const params = { startDate, endDate };
         if (selectedVerger) params.vergerId = selectedVerger.value;
-        if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
         if (selectedVariete) params.varieteId = selectedVariete.value;
         if (selectedEcartType) params.ecartTypeId = selectedEcartType.value;
 
@@ -163,7 +170,7 @@ const DashboardPage = () => {
         }
     };
     fetchEcartDetails();
-  }, [startDate, endDate, selectedVerger, selectedVariete, selectedEcartType, selectedGrpVar]);
+  }, [startDate, endDate, selectedVerger, selectedVariete, selectedEcartType]);
 
   const sortedTableRows = useMemo(() => {
     if (!dashboardData?.tableRows) return [];
@@ -324,9 +331,9 @@ const DashboardPage = () => {
                     <tr>
                       <th className="sortable-header" onClick={() => handleEcartSort('vergerName')}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleEcartSort('varieteName')}>Variety{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('ecartType')}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('totalPdsfru')}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleEcartSort('totalNbrcai')}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('ecartType')}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('totalPdsfru')}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleEcartSort('totalNbrcai')}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     </tr>
                   </thead>
                   <tbody>
