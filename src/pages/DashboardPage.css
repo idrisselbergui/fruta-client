@@ -10,7 +10,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 2rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   align-items: end;
 }
@@ -83,13 +83,13 @@
 
 /* --- RESPONSIVE TABLE CONTAINER --- */
 .dashboard-table-container {
-  overflow-x: auto;
+  overflow-x: auto; /* This allows the table to be scrolled horizontally on small screens */
 }
 
 .details-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px; 
+  min-width: 600px; /* Ensures table has a minimum width before scrolling */
 }
 
 .details-table th,
@@ -98,7 +98,7 @@
   padding: 1rem;
   text-align: left;
   vertical-align: middle;
-  white-space: nowrap; 
+  white-space: nowrap; /* Prevents text from wrapping */
 }
 
 .details-table th {
@@ -199,48 +199,31 @@
 }
 
 
-/* --- NEW AND UPDATED STYLES FOR ECART FILTER AND TOTAL --- */
-.ecart-filter-container {
-  display: flex;
-  justify-content: space-between; /* This will push the items to opposite ends */
-  align-items: flex-end; /* Aligns them vertically at the bottom */
-  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
-  gap: 1.5rem; /* Consistent gap */
-  margin-bottom: 1.5rem;
-}
-
-.ecart-filter-container .filter-item {
-  width: 450px; /* Give the filter a fixed width */
-  max-width: 100%; /* Ensure it shrinks on small screens */
-}
-
-/* Make the specific stat card in this container smaller */
-.ecart-filter-container .stat-card {
-  margin-bottom: 0;
-  min-width: 200px;
-  flex-shrink: 0; 
-  padding: 0.75rem 1.25rem;
-}
-
-.ecart-filter-container .stat-card h3 {
-  font-size: 0.75rem;
-}
-
-.ecart-filter-container .stat-card .stat-value {
-  font-size: 1.5rem;
-  padding-top: 0.25rem;
-}
-
-
+/* --- MEDIA QUERIES FOR LARGER SCREENS --- */
 @media (min-width: 768px) {
   .dashboard-container {
-    padding: 1rem 2rem; 
+    padding: 1rem 2rem; /* Restore padding on larger screens */
   }
 }
 
 @media (min-width: 992px) {
   .charts-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Two columns for charts on desktop */
   }
+}
+
+.ecart-filter-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.ecart-filter-container .filter-item {
+  min-width: 400px;
+}
+.ecart-total-card {
+  min-width: 250px;
+  margin-bottom: 0;
 }
 
