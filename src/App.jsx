@@ -8,10 +8,11 @@ import Layout from './components/Layout';
 import DailyProgramPage from './pages/DailyProgramPage'; 
 import ProgramListPage from './pages/ProgramListPage';
 import DashboardPage from './pages/DashboardPage';
-// This component will be the parent for all routes that need the layout
+import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
+import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
-    <Outlet /> {/* Child routes will render here */}
+    <Outlet />
   </Layout>
 );
 
@@ -37,19 +38,19 @@ function App() {
 
   return (
     <Routes>
-      {/* Route for the login page - no layout */}
       <Route path="/" element={<LoginForm onLoginSuccess={handleLoginSuccess} />} />
 
-      {/* Routes that use the main layout */}
       <Route element={<AppLayout user={user} onLogout={handleLogout} />}>
         <Route path="/home" element={<HomePage user={user} />} />
-          <Route path="/daily-program" element={<DailyProgramPage />} /> 
-<Route path="/dashboard" element={<DashboardPage />} />
-         <Route path="/programs" element={<ProgramListPage />} />
-<Route path="/program/new" element={<DailyProgramPage />} />
-<Route path="/program/edit/:id" element={<DailyProgramPage />} />
-
-              <Route
+        <Route path="/daily-program" element={<DailyProgramPage />} /> 
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/programs" element={<ProgramListPage />} />
+        <Route path="/program/new" element={<DailyProgramPage />} />
+        <Route path="/program/edit/:id" element={<DailyProgramPage />} />
+        {/* --- 2. ADD THE ROUTE FOR THE NEW PAGE --- */}
+        <Route path="/traits" element={<TraitPage />} />
+        <Route path="/traitements" element={<TraitementPage />} />
+        <Route
           path="/admin"
           element={
             <ProtectedRoute user={user}>
@@ -62,7 +63,6 @@ function App() {
   );
 }
 
-// AppWrapper remains the same
 function AppWrapper() {
   return (
     <BrowserRouter>

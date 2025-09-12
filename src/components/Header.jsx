@@ -13,7 +13,10 @@ const Header = ({ user, onLogout }) => {
      <nav className="navigation-menu">
     <NavLink to="/home">Home</NavLink>
     <NavLink to="/dashboard">Dashboard</NavLink>
-    <NavLink to="/programs">Programs</NavLink> {/* Add this line */}
+    <NavLink to="/programs">Programs</NavLink>
+    <NavLink to="/traits">Products</NavLink> 
+    {/* --- ADD THIS NEW LINK --- */}
+    <NavLink to="/traitements">Treatments</NavLink>
     {user && user.permission === 1 && (
       <NavLink to="/admin">Admin</NavLink>
     )}
@@ -24,3 +27,4 @@ const Header = ({ user, onLogout }) => {
 };
 
 export default Header;
+

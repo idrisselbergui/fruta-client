@@ -1,5 +1,5 @@
 // The base URL of your deployed API
-const API_BASE_URL = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net';
+const API_BASE_URL = 'https://localhost:44374';
 
 /**VITE_API_BASE_URL=https://localhost:44374
  * const API_BASE_URL = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net';
