@@ -32,26 +32,33 @@
 .input-with-button {
     display: flex;
     gap: 0.5rem;
+    align-items: flex-end; /* This aligns items to the bottom */
 }
 
-.input-with-button .css-b62m3t-container { /* Targets react-select wrapper */
+.input-with-button > div[class*="-container"] { /* Targets react-select wrapper */
     flex-grow: 1;
 }
 
+
 .add-btn-inline {
-    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px; /* Set a fixed width */
     height: 38px; /* Match react-select height */
+    padding: 0; /* Remove padding */
     flex-shrink: 0;
-    margin-top: auto;
     border: none;
     border-radius: 6px;
     background-color: #007bff;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.5rem; /* Adjust icon size */
     cursor: pointer;
+    line-height: 1; /* Ensure icon is centered vertically */
 }
 
 .traitement-form .save-btn {
     grid-column: 1 / -1; /* Span full width on larger screens */
     justify-self: start;
 }
+

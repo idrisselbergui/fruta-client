@@ -50,6 +50,13 @@ const apiFetch = async (endpoint, options = {}) => {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
+    // --- FIX ---
+    // Handle the case where the response is successful but has no content (e.g., a 204 from a DELETE request)
+    if (response.status === 204) {
+        return null; // Return null or a success indicator
+    }
+    // --- END FIX ---
+
     return response.json();
 };
 
@@ -80,4 +87,3 @@ export const apiPut = (endpoint, body) => {
 export const apiDelete = (endpoint) => {
     return apiFetch(endpoint, { method: 'DELETE' });
 };
-
