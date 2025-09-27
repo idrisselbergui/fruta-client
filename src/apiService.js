@@ -1,8 +1,8 @@
 // The base URL of your deployed API
-const API_BASE_URL = 'https://localhost:44374';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://41.140.246.34:44374';
 
-/**VITE_API_BASE_URL=https://localhost:44374
- * const API_BASE_URL = 'https://fruta-dkd7h0e6bggjfqav.canadacentral-01.azurewebsites.net';
+
+/**
  * A helper function to get the current user's session data.
  * @returns {object|null} The parsed user object or null if not logged in.
  */
@@ -23,8 +23,6 @@ const getHeaders = () => {
     if (user && user.database) {
         headers.append('X-Database-Name', user.database);
     }
-    // Note: If no user is logged in, the header will be omitted,
-    // which is correct for public endpoints like login.
     return headers;
 }
 
@@ -43,29 +41,37 @@ const apiFetch = async (endpoint, options = {}) => {
         headers,
     };
 
-    const response = await fetch(url, config);
+    try {
+        const response = await fetch(url, config);
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ 
+                message: `HTTP error! status: ${response.status}` 
+            }));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        // Handle no content responses (e.g., 204 from DELETE)
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+            return null;
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
     }
-
-    // --- FIX ---
-    // Handle the case where the response is successful but has no content (e.g., a 204 from a DELETE request)
-    if (response.status === 204) {
-        return null; // Return null or a success indicator
-    }
-    // --- END FIX ---
-
-    return response.json();
 };
 
-// --- Export specific methods for different types of requests ---
-
+// Export specific methods for different types of requests
 export const apiGet = (endpoint, params) => {
     const url = new URL(`${API_BASE_URL}${endpoint}`);
     if (params) {
-        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined) {
+                url.searchParams.append(key, params[key]);
+            }
+        });
     }
     return apiFetch(url.pathname + url.search, { method: 'GET' });
 };
@@ -87,3 +93,6 @@ export const apiPut = (endpoint, body) => {
 export const apiDelete = (endpoint) => {
     return apiFetch(endpoint, { method: 'DELETE' });
 };
+
+// Export API_BASE_URL for debugging
+export { API_BASE_URL };
