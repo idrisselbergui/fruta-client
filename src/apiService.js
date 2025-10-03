@@ -1,5 +1,5 @@
 // The base URL of your deployed API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://41.140.246.34:44374';
+const API_BASE_URL = 'http://41.140.246.34';
 
 
 /**
