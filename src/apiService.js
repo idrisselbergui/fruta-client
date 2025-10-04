@@ -1,6 +1,6 @@
 // The base URL of your deployed API
  
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fruta-api.ddnsfree.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:44374';
 
 
 /**
