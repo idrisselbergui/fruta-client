@@ -1,7 +1,5 @@
 // The base URL of your deployed API
- 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:44374';
-
 
 /**
  * A helper function to get the current user's session data.
@@ -14,18 +12,27 @@ const getUserSession = () => {
 
 /**
  * Creates the authorization and database headers for an API request.
- * @returns {Headers} A Headers object with Content-Type and X-Database-Name.
+ * @param {object} options - The fetch options (e.g., { method: 'GET', body: '...' }).
+ * @returns {Headers} A Headers object with conditional Content-Type, X-Database-Name, and ngrok bypass.
  */
-const getHeaders = () => {
-    const headers = new Headers();
-    headers.append('Content-Type', 'application/json');
+const getHeaders = (options = {}) => {
+  const headers = new Headers();
 
-    const user = getUserSession();
-    if (user && user.database) {
-        headers.append('X-Database-Name', user.database);
-    }
-    return headers;
-}
+  // Add ngrok bypass header to skip the free-tier warning page for all requests
+  headers.append('ngrok-skip-browser-warning', 'true');
+
+  // Conditionally add Content-Type only for requests with a body (e.g., POST/PUT)
+  const hasBody = options.body || options.method?.toUpperCase() !== 'GET';
+  if (hasBody) {
+    headers.append('Content-Type', 'application/json');
+  }
+
+  const user = getUserSession();
+  if (user && user.database) {
+    headers.append('X-Database-Name', user.database);
+  }
+  return headers;
+};
 
 /**
  * A wrapper for the fetch API that automatically adds headers and handles errors.
@@ -34,65 +41,65 @@ const getHeaders = () => {
  * @returns {Promise<any>} A promise that resolves with the JSON response.
  */
 const apiFetch = async (endpoint, options = {}) => {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const headers = getHeaders();
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = getHeaders(options); // Pass options to getHeaders for conditional logic
 
-    const config = {
-        ...options,
-        headers,
-    };
+  const config = {
+    ...options,
+    headers,
+  };
 
-    try {
-        const response = await fetch(url, config);
+  try {
+    const response = await fetch(url, config);
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ 
-                message: `HTTP error! status: ${response.status}` 
-            }));
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        // Handle no content responses (e.g., 204 from DELETE)
-        if (response.status === 204 || response.headers.get('content-length') === '0') {
-            return null;
-        }
-
-        return response.json();
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ 
+        message: `HTTP error! status: ${response.status}` 
+      }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
+
+    // Handle no content responses (e.g., 204 from DELETE)
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
 };
 
 // Export specific methods for different types of requests
 export const apiGet = (endpoint, params) => {
-    const url = new URL(`${API_BASE_URL}${endpoint}`);
-    if (params) {
-        Object.keys(params).forEach(key => {
-            if (params[key] !== null && params[key] !== undefined) {
-                url.searchParams.append(key, params[key]);
-            }
-        });
-    }
-    return apiFetch(url.pathname + url.search, { method: 'GET' });
+  const url = new URL(`${API_BASE_URL}${endpoint}`);
+  if (params) {
+    Object.keys(params).forEach(key => {
+      if (params[key] !== null && params[key] !== undefined) {
+        url.searchParams.append(key, params[key]);
+      }
+    });
+  }
+  return apiFetch(url.pathname + url.search, { method: 'GET' });
 };
 
 export const apiPost = (endpoint, body) => {
-    return apiFetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(body),
-    });
+  return apiFetch(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 };
 
 export const apiPut = (endpoint, body) => {
-    return apiFetch(endpoint, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-    });
+  return apiFetch(endpoint, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
 };
 
 export const apiDelete = (endpoint) => {
-    return apiFetch(endpoint, { method: 'DELETE' });
+  return apiFetch(endpoint, { method: 'DELETE' });
 };
 
 // Export API_BASE_URL for debugging
