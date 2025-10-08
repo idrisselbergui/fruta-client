@@ -7,8 +7,10 @@ const Layout = ({ children, user, onLogout }) => {
   return (
     <div className="layout-container">
       <Header user={user} onLogout={onLogout} />
-      <main className="main-content">
-        {children}
+      <main className="main-content" role="main">
+        <div className="content-wrapper">
+          {children}
+        </div>
       </main>
       <Footer />
     </div>
