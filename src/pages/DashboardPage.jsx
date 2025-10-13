@@ -287,19 +287,46 @@ const DashboardPage = () => {
                     <h3>Export by Verger (Grouped by Variety)</h3>
                     <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
                         <label>Filter by Client</label>
-                        <Select options={destinationOptions} value={filters.selectedDestination} onChange={val => handleFilterChange('selectedDestination', val)} isClearable placeholder="Select a client..." />
-                    </div>
-                    {filters.selectedDestination && (
-                        <div className="filter-item" style={{ marginBottom: '1.5rem' }}>
-                            <button
-                                onClick={handleGeneratePDF}
-                                className="pdf-generate-button"
-                                title="Generate PDF Report"
-                            >
-                                📄 Generate PDF Report
-                            </button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <Select
+                                options={destinationOptions}
+                                value={filters.selectedDestination}
+                                onChange={val => handleFilterChange('selectedDestination', val)}
+                                isClearable
+                                placeholder="Select a client..."
+                                styles={{
+                                    container: (provided) => ({
+                                        ...provided,
+                                        flex: 1
+                                    })
+                                }}
+                            />
+                            {filters.selectedDestination && (
+                                <button
+                                    onClick={handleGeneratePDF}
+                                    className="print-icon-button"
+                                    title="Imprimer le PDF"
+                                    style={{
+                                        padding: '8px',
+                                        backgroundColor: '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        width: '40px',
+                                        height: '38px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        alignSelf: 'stretch'
+                                    }}
+                                >
+                                    📄
+                                </button>
+                            )}
                         </div>
-                    )}
+                    </div>
                     {filters.selectedDestination ? (
                         <StackedBarChart
                             data={destinationChartData.data}
