@@ -1,14 +1,16 @@
 import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts';
+import { formatNumberWithSpaces } from '../utils/numberUtils';
+import './StackedBarChart.css';
  
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19AF', '#FF4560', '#775DD0'];
@@ -22,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <p key={entry.dataKey} className="tooltip-entry">
             <span className="tooltip-color" style={{ backgroundColor: entry.fill }}></span>
             <span className="tooltip-key">{entry.dataKey}:</span>
-            <span className="tooltip-value">{entry.value.toFixed(2)}</span>
+            <span className="tooltip-value">{formatNumberWithSpaces(entry.value)}</span>
           </p>
         ))}
       </div>
@@ -53,7 +55,7 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
         <h3 className="chart-title">{title}</h3>
         {showSummary && (
           <p className="chart-summary">
-            Total: {totalSum.toFixed(2)} {unit}
+            Total: {formatNumberWithSpaces(totalSum)} {unit}
           </p>
         )}
       </div>

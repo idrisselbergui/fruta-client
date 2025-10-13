@@ -1,11 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const CollapsibleCard = ({ title, children, defaultOpen = false, className = '', maxContentHeight = 800 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+const CollapsibleCard = ({ title, children, defaultOpen = false, open, onToggle, className = '', maxContentHeight = 800, isLoading = false }) => {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const internalSetIsOpen = (newState) => {
+    setInternalOpen(newState);
+  };
   const contentRef = useRef(null);
 
   const toggleOpen = () => {
-    setIsOpen(!isOpen);
+    if (onToggle) {
+      onToggle(!isOpen);
+    } else {
+      setInternalOpen(!isOpen);
+    }
   };
 
   const cardStyle = {

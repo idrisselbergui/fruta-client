@@ -10,6 +10,13 @@ import './DashboardPage.css';
 
 const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
 
+const formatNumberWithSpaces = (num, decimals = 2) => {
+  const fixed = Math.abs(num).toFixed(decimals);
+  const parts = fixed.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (num < 0 ? '-' : '') + parts.join('.');
+};
+
 const DashboardPage = () => {
   // --- STATE MANAGEMENT REFACTORED FOR SIMPLICITY ---
   const [filters, setFilters] = useState({
@@ -40,6 +47,14 @@ const DashboardPage = () => {
   // Sorting states
   const [sortConfig, setSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
   const [ecartSortConfig, setEcartSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
+
+  // Card open states - cards start closed by default
+  const [cardStates, setCardStates] = useState({
+    tvnExport: false,
+    detailedExport: false,
+    dataDetails: false,
+    ecartDetails: false,
+  });
 
   // Loading and Error states
   const [isLoading, setIsLoading] = useState(true); // For initial page load only
@@ -187,6 +202,10 @@ const DashboardPage = () => {
     }
     setConfig({ key, direction });
   };
+
+  const handleCardToggle = (cardName, isOpen) => {
+    setCardStates(prev => ({ ...prev, [cardName]: isOpen }));
+  };
   
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
@@ -208,32 +227,32 @@ const DashboardPage = () => {
           <div className="stats-grid">
             <div className="stat-card reception-card">
               <h3>Reception</h3>
-              <p className="stat-value">{dashboardData.totalPdsfru.toFixed(2)}</p>
+              <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalPdsfru)}</p>
             </div>
             <div className="stat-card export-card">
               <h3>Export</h3>
               <div className="stat-value-container">
-                  <p className="stat-value">{dashboardData.totalPdscom.toFixed(2)}</p>
-                  <span className="stat-percentage">({dashboardData.exportPercentage.toFixed(2)}%)</span>
+                  <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalPdscom)}</p>
+                  <span className="stat-percentage">({formatNumberWithSpaces(dashboardData.exportPercentage, 2)}%)</span>
               </div>
             </div>
             <div className="stat-card ecart-card">
               <h3>Ecart</h3>
               <div className="stat-value-container">
-                  <p className="stat-value">{dashboardData.totalEcart.toFixed(2)}</p>
-                  <span className="stat-percentage ecart-percentage">({dashboardData.ecartPercentage.toFixed(2)}%)</span>
+                  <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalEcart)}</p>
+                  <span className="stat-percentage ecart-percentage">({formatNumberWithSpaces(dashboardData.ecartPercentage, 2)}%)</span>
               </div>
             </div>
           </div>
 
-          <CollapsibleCard title="TVN/Export by Verger">
+          <CollapsibleCard title="TVN/Export by Verger" open={cardStates.tvnExport} onToggle={(isOpen) => handleCardToggle('tvnExport', isOpen)}>
             <div className="charts-grid">
               <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
               <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
             </div>
           </CollapsibleCard>
           
-          <CollapsibleCard title="Detailed Export Analysis">
+          <CollapsibleCard title="Detailed Export Analysis" open={cardStates.detailedExport} onToggle={(isOpen) => handleCardToggle('detailedExport', isOpen)}>
             <div className="charts-grid">
                 <div className="chart-container">
                     <h3>Export by Verger (Grouped by Variety)</h3>
@@ -269,7 +288,7 @@ const DashboardPage = () => {
             </div>
           </CollapsibleCard>
           
-          <CollapsibleCard title="Data Details">
+          <CollapsibleCard title="Data Details" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
             <div className="dashboard-table-container">
               <table className="details-table">
                 <thead>
@@ -286,9 +305,9 @@ const DashboardPage = () => {
                     <tr key={index}>
                       <td>{row.vergerName}</td>
                       <td>{row.varieteName}</td>
-                      <td>{row.totalPdsfru.toFixed(2)}</td>
-                      <td>{row.totalPdscom.toFixed(2)}</td>
-                      <td>{row.totalEcart.toFixed(2)}</td>
+                      <td>{formatNumberWithSpaces(row.totalPdsfru)}</td>
+                      <td>{formatNumberWithSpaces(row.totalPdscom)}</td>
+                      <td>{formatNumberWithSpaces(row.totalEcart)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -296,7 +315,7 @@ const DashboardPage = () => {
             </div>
           </CollapsibleCard>
 
-          <CollapsibleCard title="Ecart Details">
+          <CollapsibleCard title="Ecart Details" open={cardStates.ecartDetails} onToggle={(isOpen) => handleCardToggle('ecartDetails', isOpen)}>
             <div className="ecart-filter-container">
                 <div className="filter-item">
                     <label>Filter by Ecart Type</label>
@@ -310,7 +329,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="stat-card ecart-card ecart-total-card">
                     <h3>Total Poids Fruit (Ecart)</h3>
-                    <p className="stat-value">{ecartDetails.totalPdsfru.toFixed(2)}</p>
+                    <p className="stat-value">{formatNumberWithSpaces(ecartDetails.totalPdsfru)}</p>
                 </div>
             </div>
             {isDataLoading ? <LoadingSpinner /> : (
@@ -331,8 +350,8 @@ const DashboardPage = () => {
                         <td>{row.vergerName}</td>
                         <td>{row.varieteName}</td>
                         <td>{row.ecartType}</td>
-                        <td>{row.totalPdsfru.toFixed(2)}</td>
-                        <td>{row.totalNbrcai}</td>
+                        <td>{formatNumberWithSpaces(row.totalPdsfru)}</td>
+                        <td>{formatNumberWithSpaces(row.totalNbrcai)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -347,4 +366,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-

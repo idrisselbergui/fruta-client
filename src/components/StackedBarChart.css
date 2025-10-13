@@ -1,0 +1,110 @@
+/* Custom styles for StackedBarChart */
+
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.chart-container.empty {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.chart-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.chart-summary {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.stacked-bar-chart {
+  /* Recharts wrapper */
+}
+
+.custom-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+}
+
+.tooltip-label {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.tooltip-entry {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+}
+
+.tooltip-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.tooltip-key {
+  color: #4a5568;
+  margin-right: 8px;
+}
+
+.tooltip-value {
+  color: #1a202c;
+  font-weight: 600;
+}
+
+.bar-stack:hover {
+  filter: brightness(1.1);
+  transition: filter 0.2s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 16px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-title {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    padding: 12px;
+  }
+
+  .custom-tooltip {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+}

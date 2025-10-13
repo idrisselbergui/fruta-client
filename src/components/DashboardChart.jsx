@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Legend
 } from 'recharts';
+import { formatNumberWithSpaces } from '../utils/numberUtils';
  
 
 // Custom rotated axis tick
@@ -39,7 +40,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className="custom-tooltip">
         <p className="tooltip-label">{label}</p>
         <p className="tooltip-value">
-          <span className="value-label">Value:</span> {payload[0].value.toFixed(2)}
+          <span className="value-label">Value:</span> {formatNumberWithSpaces(payload[0].value)}
         </p>
         {payload[0].payload.unit && (
           <p className="tooltip-unit">{payload[0].payload.unit}</p>
@@ -63,7 +64,7 @@ const DashboardChart = ({ data, title, dataKey, color = '#007bff', unit = '' }) 
         <h3 className="chart-title">{title}</h3>
         {data.length > 0 && (
           <p className="chart-summary">
-            Total: {data.reduce((sum, item) => sum + parseFloat(item[dataKey]), 0).toFixed(2)} {unit}
+            Total: {formatNumberWithSpaces(data.reduce((sum, item) => sum + parseFloat(item[dataKey]), 0))} {unit}
           </p>
         )}
       </div>
