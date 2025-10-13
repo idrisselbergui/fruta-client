@@ -6,6 +6,7 @@ import StackedBarChart from '../components/StackedBarChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
+import generateDetailedExportPDF from '../utils/pdfGenerator';
 import './DashboardPage.css';
 
 const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
@@ -206,6 +207,34 @@ const DashboardPage = () => {
   const handleCardToggle = (cardName, isOpen) => {
     setCardStates(prev => ({ ...prev, [cardName]: isOpen }));
   };
+
+  const handleGeneratePDF = () => {
+    console.log('PDF button clicked');
+    console.log('Selected destination:', filters.selectedDestination);
+    console.log('Dashboard data:', dashboardData);
+    console.log('Destination chart data:', destinationChartData);
+    console.log('Sales chart data:', salesByDestinationChartData);
+
+    if (filters.selectedDestination) {
+      try {
+        generateDetailedExportPDF(
+          dashboardData,
+          destinationChartData,
+          salesByDestinationChartData,
+          filters.selectedDestination,
+          filters.selectedVerger,
+          filters
+        );
+        console.log('PDF generation completed');
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+    } else {
+      console.log('No destination selected');
+      alert('Please select a destination first');
+    }
+  };
   
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
@@ -260,6 +289,17 @@ const DashboardPage = () => {
                         <label>Filter by Client</label>
                         <Select options={destinationOptions} value={filters.selectedDestination} onChange={val => handleFilterChange('selectedDestination', val)} isClearable placeholder="Select a client..." />
                     </div>
+                    {filters.selectedDestination && (
+                        <div className="filter-item" style={{ marginBottom: '1.5rem' }}>
+                            <button
+                                onClick={handleGeneratePDF}
+                                className="pdf-generate-button"
+                                title="Generate PDF Report"
+                            >
+                                📄 Generate PDF Report
+                            </button>
+                        </div>
+                    )}
                     {filters.selectedDestination ? (
                         <StackedBarChart
                             data={destinationChartData.data}
@@ -272,6 +312,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="chart-container">
                     <h3>Export by Client (Grouped by Variety)</h3>
+                    <div className="chart-placeholder"></div>
                     {!filters.selectedVerger ? (
                         <p>Please select an orchard to view this chart.</p>
                     ) : salesByDestinationChartData.data.length > 0 ? (
