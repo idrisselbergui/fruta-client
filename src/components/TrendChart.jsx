@@ -33,6 +33,8 @@ const formatDateLabel = (label, timePeriod) => {
       return new Date(label).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
     case 'weekly':
       return label; // Already formatted as "Week of dd/MM/yyyy"
+    case 'biweekly':
+      return label; // Already formatted as "Bi-weekly dd/MM/yyyy"
     case 'monthly':
       return new Date(label).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
     case 'yearly':

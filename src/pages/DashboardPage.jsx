@@ -521,13 +521,13 @@ const DashboardPage = () => {
                       📈 Monthly
                     </button>
                     <button
-                      className={`time-period-btn ${selectedTimePeriod === 'yearly' ? 'active' : ''}`}
-                      onClick={() => setSelectedTimePeriod('yearly')}
+                      className={`time-period-btn ${selectedTimePeriod === 'biweekly' ? 'active' : ''}`}
+                      onClick={() => setSelectedTimePeriod('biweekly')}
                       style={{
                         padding: '0.375rem 0.75rem',
-                        border: `1px solid ${selectedTimePeriod === 'yearly' ? '#dc3545' : '#dee2e6'}`,
-                        backgroundColor: selectedTimePeriod === 'yearly' ? '#dc3545' : '#ffffff',
-                        color: selectedTimePeriod === 'yearly' ? '#ffffff' : '#495057',
+                        border: `1px solid ${selectedTimePeriod === 'biweekly' ? '#6f42c1' : '#dee2e6'}`,
+                        backgroundColor: selectedTimePeriod === 'biweekly' ? '#6f42c1' : '#ffffff',
+                        color: selectedTimePeriod === 'biweekly' ? '#ffffff' : '#495057',
                         borderRadius: '4px',
                         cursor: 'pointer',
                         fontSize: '0.75rem',
@@ -538,7 +538,7 @@ const DashboardPage = () => {
                         height: '32px'
                       }}
                     >
-                      📋 Yearly
+                      📊 Bi-weekly
                     </button>
                   </div>
                 </div>
@@ -547,22 +547,7 @@ const DashboardPage = () => {
                 Current view: <strong>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</strong> data by <strong>{selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1)}</strong>
               </div>
             </div>
-            <div className="charts-grid">
-                <div className="chart-container">
-                    <h3>Export by Client (Grouped by Variety)</h3>
-                    {!filters.selectedVerger ? (
-                        <p>Please select an orchard to view this chart.</p>
-                    ) : salesByDestinationChartData.data.length > 0 ? (
-                        <StackedBarChart
-                            data={salesByDestinationChartData.data}
-                            keys={salesByDestinationChartData.keys}
-                            title={`Sales for ${filters.selectedVerger.label}`}
-                            xAxisDataKey="name"
-                        />
-                    ) : (
-                        <p>No export data available for this orchard.</p>
-                    )}
-                </div>
+            <div className="full-width-chart">
                 <div className="chart-container">
                     <h3>Orchard Performance Trends</h3>
                     {!filters.selectedVerger ? (
@@ -577,20 +562,6 @@ const DashboardPage = () => {
                     ) : (
                         <p>No trend data available for the selected orchard.</p>
                     )}
-                </div>
-                <div className="chart-container">
-                    <h3>Top Performing Clients</h3>
-                    <div className="chart-placeholder">
-                        <p>🏆 Top clients by export volume chart will be displayed here</p>
-                        <p>This could show a ranking of clients based on their export performance</p>
-                    </div>
-                </div>
-                <div className="chart-container">
-                    <h3>Export Distribution by Client</h3>
-                    <div className="chart-placeholder">
-                        <p>🥧 Pie chart showing export distribution across different clients</p>
-                        <p>This could show the percentage breakdown of exports by client</p>
-                    </div>
                 </div>
             </div>
           </CollapsibleCard>
