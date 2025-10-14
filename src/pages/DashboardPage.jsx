@@ -3,6 +3,7 @@ import Select from 'react-select';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardChart from '../components/DashboardChart';
 import StackedBarChart from '../components/StackedBarChart';
+import TrendChart from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
@@ -37,6 +38,7 @@ const DashboardPage = () => {
   const [destinationChartData, setDestinationChartData] = useState({ data: [], keys: [] });
   const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
   const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
+  const [periodicTrendData, setPeriodicTrendData] = useState([]);
   
   // Dropdown options states
   const [vergerOptions, setVergerOptions] = useState([]);
@@ -155,6 +157,38 @@ const DashboardPage = () => {
     };
     fetchAllDashboardData();
   }, [debouncedFilters, isLoading]);
+
+  // Fetch periodic trend data when filters, chart type, or time period changes
+  useEffect(() => {
+    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || !filters.selectedVerger) {
+        return;
+    }
+
+    const fetchPeriodicTrendData = async () => {
+      try {
+        const { startDate, endDate, selectedVerger, selectedGrpVar, selectedVariete } = debouncedFilters;
+
+        const params = {
+          startDate,
+          endDate,
+          chartType: selectedChartType,
+          timePeriod: selectedTimePeriod,
+          vergerId: selectedVerger.value
+        };
+
+        if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
+        if (selectedVariete) params.varieteId = selectedVariete.value;
+
+        const trendData = await apiGet('/api/dashboard/periodic-trends', params);
+        setPeriodicTrendData(trendData.trends || []);
+
+      } catch (err) {
+        console.error("Failed to load periodic trend data:", err);
+        setPeriodicTrendData([]);
+      }
+    };
+    fetchPeriodicTrendData();
+  }, [debouncedFilters, selectedChartType, selectedTimePeriod, isLoading]);
 
   const filteredVarieteOptions = useMemo(() => {
     if (!filters.selectedGrpVar) return varieteOptions;
@@ -530,11 +564,19 @@ const DashboardPage = () => {
                     )}
                 </div>
                 <div className="chart-container">
-                    <h3>Client Performance Trends</h3>
-                    <div className="chart-placeholder">
-                        <p>📈 Client performance trend chart will be displayed here</p>
-                        <p>This could show historical performance data for selected clients</p>
-                    </div>
+                    <h3>Orchard Performance Trends</h3>
+                    {!filters.selectedVerger ? (
+                        <p>Please select an orchard to view trends.</p>
+                    ) : periodicTrendData.length > 0 ? (
+                        <TrendChart
+                            data={periodicTrendData}
+                            chartType={selectedChartType}
+                            timePeriod={selectedTimePeriod}
+                            title={`Orchard Performance Trends - ${filters.selectedVerger.label}`}
+                        />
+                    ) : (
+                        <p>No trend data available for the selected orchard.</p>
+                    )}
                 </div>
                 <div className="chart-container">
                     <h3>Top Performing Clients</h3>
