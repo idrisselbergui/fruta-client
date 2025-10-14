@@ -53,9 +53,16 @@ const DashboardPage = () => {
   const [cardStates, setCardStates] = useState({
     tvnExport: false,
     detailedExport: false,
+    exportByClient: false,
     dataDetails: false,
     ecartDetails: false,
   });
+
+  // Time period selection for Export by Client card
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState('monthly');
+
+  // Chart type selection for multi-purpose chart
+  const [selectedChartType, setSelectedChartType] = useState('export');
 
   // Loading and Error states
   const [isLoading, setIsLoading] = useState(true); // For initial page load only
@@ -352,6 +359,196 @@ const DashboardPage = () => {
                     ) : (
                         <p>No export data available for this orchard.</p>
                     )}
+                </div>
+            </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Données Périodiques" open={cardStates.exportByClient} onToggle={(isOpen) => handleCardToggle('exportByClient', isOpen)}>
+            <div className="multi-chart-controls" style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <div className="chart-type-buttons" style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <button
+                      className={`chart-type-btn ${selectedChartType === 'reception' ? 'active' : ''}`}
+                      onClick={() => setSelectedChartType('reception')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: `2px solid ${selectedChartType === 'reception' ? '#17a2b8' : '#dee2e6'}`,
+                        backgroundColor: selectedChartType === 'reception' ? '#17a2b8' : '#ffffff',
+                        color: selectedChartType === 'reception' ? '#ffffff' : '#495057',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      📥 Reception
+                    </button>
+                    <button
+                      className={`chart-type-btn ${selectedChartType === 'export' ? 'active' : ''}`}
+                      onClick={() => setSelectedChartType('export')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: `2px solid ${selectedChartType === 'export' ? '#28a745' : '#dee2e6'}`,
+                        backgroundColor: selectedChartType === 'export' ? '#28a745' : '#ffffff',
+                        color: selectedChartType === 'export' ? '#ffffff' : '#495057',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      📤 Export
+                    </button>
+                    <button
+                      className={`chart-type-btn ${selectedChartType === 'ecart' ? 'active' : ''}`}
+                      onClick={() => setSelectedChartType('ecart')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: `2px solid ${selectedChartType === 'ecart' ? '#ffc107' : '#dee2e6'}`,
+                        backgroundColor: selectedChartType === 'ecart' ? '#ffc107' : '#ffffff',
+                        color: selectedChartType === 'ecart' ? '#212529' : '#495057',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      ⚖️ Ecart
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <div className="time-period-buttons" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    <button
+                      className={`time-period-btn ${selectedTimePeriod === 'daily' ? 'active' : ''}`}
+                      onClick={() => setSelectedTimePeriod('daily')}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        border: `1px solid ${selectedTimePeriod === 'daily' ? '#007bff' : '#dee2e6'}`,
+                        backgroundColor: selectedTimePeriod === 'daily' ? '#007bff' : '#ffffff',
+                        color: selectedTimePeriod === 'daily' ? '#ffffff' : '#495057',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        transition: 'all 0.15s ease',
+                        outline: 'none',
+                        minWidth: 'auto',
+                        height: '32px'
+                      }}
+                    >
+                      📅 Daily
+                    </button>
+                    <button
+                      className={`time-period-btn ${selectedTimePeriod === 'weekly' ? 'active' : ''}`}
+                      onClick={() => setSelectedTimePeriod('weekly')}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        border: `1px solid ${selectedTimePeriod === 'weekly' ? '#28a745' : '#dee2e6'}`,
+                        backgroundColor: selectedTimePeriod === 'weekly' ? '#28a745' : '#ffffff',
+                        color: selectedTimePeriod === 'weekly' ? '#ffffff' : '#495057',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        transition: 'all 0.15s ease',
+                        outline: 'none',
+                        minWidth: 'auto',
+                        height: '32px'
+                      }}
+                    >
+                      📊 Weekly
+                    </button>
+                    <button
+                      className={`time-period-btn ${selectedTimePeriod === 'monthly' ? 'active' : ''}`}
+                      onClick={() => setSelectedTimePeriod('monthly')}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        border: `1px solid ${selectedTimePeriod === 'monthly' ? '#ffc107' : '#dee2e6'}`,
+                        backgroundColor: selectedTimePeriod === 'monthly' ? '#ffc107' : '#ffffff',
+                        color: selectedTimePeriod === 'monthly' ? '#212529' : '#495057',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        transition: 'all 0.15s ease',
+                        outline: 'none',
+                        minWidth: 'auto',
+                        height: '32px'
+                      }}
+                    >
+                      📈 Monthly
+                    </button>
+                    <button
+                      className={`time-period-btn ${selectedTimePeriod === 'yearly' ? 'active' : ''}`}
+                      onClick={() => setSelectedTimePeriod('yearly')}
+                      style={{
+                        padding: '0.375rem 0.75rem',
+                        border: `1px solid ${selectedTimePeriod === 'yearly' ? '#dc3545' : '#dee2e6'}`,
+                        backgroundColor: selectedTimePeriod === 'yearly' ? '#dc3545' : '#ffffff',
+                        color: selectedTimePeriod === 'yearly' ? '#ffffff' : '#495057',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        transition: 'all 0.15s ease',
+                        outline: 'none',
+                        minWidth: 'auto',
+                        height: '32px'
+                      }}
+                    >
+                      📋 Yearly
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6c757d' }}>
+                Current view: <strong>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</strong> data by <strong>{selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1)}</strong>
+              </div>
+            </div>
+            <div className="charts-grid">
+                <div className="chart-container">
+                    <h3>Export by Client (Grouped by Variety)</h3>
+                    {!filters.selectedVerger ? (
+                        <p>Please select an orchard to view this chart.</p>
+                    ) : salesByDestinationChartData.data.length > 0 ? (
+                        <StackedBarChart
+                            data={salesByDestinationChartData.data}
+                            keys={salesByDestinationChartData.keys}
+                            title={`Sales for ${filters.selectedVerger.label}`}
+                            xAxisDataKey="name"
+                        />
+                    ) : (
+                        <p>No export data available for this orchard.</p>
+                    )}
+                </div>
+                <div className="chart-container">
+                    <h3>Client Performance Trends</h3>
+                    <div className="chart-placeholder">
+                        <p>📈 Client performance trend chart will be displayed here</p>
+                        <p>This could show historical performance data for selected clients</p>
+                    </div>
+                </div>
+                <div className="chart-container">
+                    <h3>Top Performing Clients</h3>
+                    <div className="chart-placeholder">
+                        <p>🏆 Top clients by export volume chart will be displayed here</p>
+                        <p>This could show a ranking of clients based on their export performance</p>
+                    </div>
+                </div>
+                <div className="chart-container">
+                    <h3>Export Distribution by Client</h3>
+                    <div className="chart-placeholder">
+                        <p>🥧 Pie chart showing export distribution across different clients</p>
+                        <p>This could show the percentage breakdown of exports by client</p>
+                    </div>
                 </div>
             </div>
           </CollapsibleCard>
