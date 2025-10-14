@@ -62,28 +62,29 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
           className="stacked-bar-chart"
         >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
+          <CartesianGrid
+            strokeDasharray="3 3"
             stroke="#f7fafc"
             vertical={false}
           />
-          <XAxis 
-            dataKey={xAxisDataKey} 
+          <XAxis
+            dataKey={xAxisDataKey}
             tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: '0.875rem', fill: '#718096', fontWeight: '500' }}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
             angle={-45}
             textAnchor="end"
-            height={80}
+            height={100}
           />
-          <YAxis 
+          <YAxis
             tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: '0.875rem', fill: '#718096' }}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
             unit={unit}
+            width={40}
           />
           <Tooltip 
             content={<CustomTooltip />} 

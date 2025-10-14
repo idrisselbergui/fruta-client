@@ -17,12 +17,12 @@ const RotatedAxisTick = (props) => {
   const { x, y, payload } = props;
   return (
     <g transform={`translate(${x},${y})`}>
-      <text 
-        x={0} 
-        y={0} 
-        dy={16} 
-        textAnchor="end" 
-        fill="#718096" 
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="end"
+        fill="#4a5568"
         transform="rotate(-45)"
         fontSize="0.875rem"
         fontWeight="500"
@@ -71,25 +71,27 @@ const DashboardChart = ({ data, title, dataKey, color = '#007bff', unit = '' }) 
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={enrichedData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
           className="dashboard-bar-chart"
         >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
+          <CartesianGrid
+            strokeDasharray="3 3"
             stroke="#f7fafc"
             vertical={false}
           />
-          <XAxis 
-            dataKey="refVer" 
-            tick={<RotatedAxisTick />} 
+          <XAxis
+            dataKey="refVer"
+            tick={<RotatedAxisTick />}
             interval={0}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            height={100}
           />
-          <YAxis 
+          <YAxis
             tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: '0.875rem', fill: '#718096' }}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
+            width={40}
           />
           <Tooltip 
             content={<CustomTooltip />} 

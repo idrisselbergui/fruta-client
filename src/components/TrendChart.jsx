@@ -41,7 +41,7 @@ export const CombinedTrendChart = ({
       <ResponsiveContainer width="100%" height={400}>
         <LineChart
           data={formattedData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
           className="dashboard-line-chart"
         >
           <CartesianGrid
@@ -51,18 +51,19 @@ export const CombinedTrendChart = ({
           />
           <XAxis
             dataKey="displayLabel"
-            tick={{ fontSize: '0.75rem', fill: '#718096' }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
             angle={-45}
             textAnchor="end"
-            height={80}
+            height={100}
             interval={0}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
           />
           <YAxis
             tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: '0.875rem', fill: '#718096' }}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
+            width={40}
           />
           <Tooltip
             content={<CombinedTooltip />}
@@ -212,7 +213,7 @@ const TrendChart = ({
       <ResponsiveContainer width="100%" height={400}>
         <LineChart
           data={formattedData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
           className="dashboard-line-chart"
         >
           <CartesianGrid
@@ -222,18 +223,19 @@ const TrendChart = ({
           />
           <XAxis
             dataKey="displayLabel"
-            tick={{ fontSize: '0.75rem', fill: '#718096' }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
             angle={-45}
             textAnchor="end"
-            height={80}
+            height={100}
             interval={0}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
           />
           <YAxis
             tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: '0.875rem', fill: '#718096' }}
+            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+            tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
+            width={40}
           />
           <Tooltip
             content={<CustomTooltip />}

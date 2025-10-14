@@ -150,6 +150,28 @@
   color: #34495e;
 }
 
+/* Chart axis styling for consistent alignment */
+.dashboard-line-chart .recharts-cartesian-axis-line,
+.dashboard-bar-chart .recharts-cartesian-axis-line,
+.stacked-bar-chart .recharts-cartesian-axis-line {
+  stroke: #e2e8f0 !important;
+  stroke-width: 1 !important;
+}
+
+.dashboard-line-chart .recharts-cartesian-axis-tick text,
+.dashboard-bar-chart .recharts-cartesian-axis-tick text,
+.stacked-bar-chart .recharts-cartesian-axis-tick text {
+  fill: #4a5568 !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+.dashboard-line-chart .recharts-cartesian-axis-tick-line,
+.dashboard-bar-chart .recharts-cartesian-axis-tick-line,
+.stacked-bar-chart .recharts-cartesian-axis-tick-line {
+  display: none !important;
+}
+
 /* --- COLLAPSIBLE CARD STYLES --- */
 .collapsible-card {
   background-color: #fff;

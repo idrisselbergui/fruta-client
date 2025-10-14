@@ -439,21 +439,21 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard-container">
-      <h1>Production Dashboard</h1>
+      <h1>Tableau de Bord de Production</h1>
       
       <div className="dashboard-filters">
-        <div className="filter-item"><label>Start Date</label><input type="date" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} /></div>
-        <div className="filter-item"><label>End Date</label><input type="date" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} /></div>
-        <div className="filter-item"><label>Verger</label><Select options={vergerOptions} value={filters.selectedVerger} onChange={val => handleFilterChange('selectedVerger', val)} isClearable placeholder="All Orchards" /></div>
-        <div className="filter-item"><label>Variety Group</label><Select options={grpVarOptions} value={filters.selectedGrpVar} onChange={handleGrpVarChange} isClearable placeholder="All Groups" /></div>
-        <div className="filter-item"><label>Variety</label><Select options={filteredVarieteOptions} value={filters.selectedVariete} onChange={val => handleFilterChange('selectedVariete', val)} isClearable placeholder="All Varieties" /></div>
+        <div className="filter-item"><label>Date de Début</label><input type="date" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} /></div>
+        <div className="filter-item"><label>Date de Fin</label><input type="date" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} /></div>
+        <div className="filter-item"><label>Verger</label><Select options={vergerOptions} value={filters.selectedVerger} onChange={val => handleFilterChange('selectedVerger', val)} isClearable placeholder="Tous les Vergers" /></div>
+        <div className="filter-item"><label>Groupe de Variétés</label><Select options={grpVarOptions} value={filters.selectedGrpVar} onChange={handleGrpVarChange} isClearable placeholder="Tous les Groupes" /></div>
+        <div className="filter-item"><label>Variété</label><Select options={filteredVarieteOptions} value={filters.selectedVariete} onChange={val => handleFilterChange('selectedVariete', val)} isClearable placeholder="Toutes les Variétés" /></div>
       </div>
 
-      {isDataLoading ? <LoadingSpinner /> : !dashboardData ? <p>No data available for the selected filters.</p> : (
+      {isDataLoading ? <LoadingSpinner /> : !dashboardData ? <p>Aucune donnée disponible pour les filtres sélectionnés.</p> : (
         <>
           <div className="stats-grid">
             <div className="stat-card reception-card">
-              <h3>Reception</h3>
+              <h3>Réception</h3>
               <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalPdsfru)}</p>
             </div>
             <div className="stat-card export-card">
@@ -464,7 +464,7 @@ const DashboardPage = () => {
               </div>
             </div>
             <div className="stat-card ecart-card">
-              <h3>Ecart</h3>
+              <h3>Écart</h3>
               <div className="stat-value-container">
                   <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalEcart)}</p>
                   <span className="stat-percentage ecart-percentage">({formatNumberWithSpaces(dashboardData.ecartPercentage, 2)}%)</span>
@@ -472,19 +472,19 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          <CollapsibleCard title="TVN/Export by Verger" open={cardStates.tvnExport} onToggle={(isOpen) => handleCardToggle('tvnExport', isOpen)}>
+          <CollapsibleCard title="TVN/Export par Verger" open={cardStates.tvnExport} onToggle={(isOpen) => handleCardToggle('tvnExport', isOpen)}>
             <div className="charts-grid">
-              <DashboardChart data={dashboardData.receptionByVergerChart} title="Reception by Verger" dataKey="value" color="#3498db" />
-              <DashboardChart data={dashboardData.exportByVergerChart} title="Export by Verger" dataKey="value" color="#2ecc71" />
+              <DashboardChart data={dashboardData.receptionByVergerChart} title="Réception par Verger" dataKey="value" color="#3498db" />
+              <DashboardChart data={dashboardData.exportByVergerChart} title="Export par Verger" dataKey="value" color="#2ecc71" />
             </div>
           </CollapsibleCard>
           
-          <CollapsibleCard title="Detailed Export Analysis" open={cardStates.detailedExport} onToggle={(isOpen) => handleCardToggle('detailedExport', isOpen)}>
+          <CollapsibleCard title="Analyse Détaillée des Exportations" open={cardStates.detailedExport} onToggle={(isOpen) => handleCardToggle('detailedExport', isOpen)}>
             <div className="charts-grid">
                 <div className="chart-container">
-                    <h3>Export by Verger (Grouped by Variety)</h3>
+                    <h3>Export par Verger (Groupé par Variété)</h3>
                     <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
-                        <label>Filter by Client</label>
+                        <label>Filtrer par Client</label>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <Select
                                 options={destinationOptions}
@@ -532,14 +532,14 @@ const DashboardPage = () => {
                             title={`Total Export for ${filters.selectedDestination.label}`}
                         />
                     ) : (
-                        <p>Please select a client to view the chart.</p>
+                        <p>Veuillez sélectionner un client pour voir le graphique.</p>
                     )}
                 </div>
                 <div className="chart-container">
-                    <h3>Export by Client (Grouped by Variety)</h3>
+                    <h3>Export par Client (Groupé par Variété)</h3>
                     <div className="chart-placeholder"></div>
                     {!filters.selectedVerger ? (
-                        <p>Please select an orchard to view this chart.</p>
+                        <p>Veuillez sélectionner un verger pour voir ce graphique.</p>
                     ) : salesByDestinationChartData.data.length > 0 ? (
                         <StackedBarChart
                             data={salesByDestinationChartData.data}
@@ -548,7 +548,7 @@ const DashboardPage = () => {
                             xAxisDataKey="name"
                         />
                     ) : (
-                        <p>No export data available for this orchard.</p>
+                        <p>Aucune donnée d'export disponible pour ce verger.</p>
                     )}
                 </div>
             </div>
@@ -742,28 +742,28 @@ const DashboardPage = () => {
             </div>
             <div className="full-width-chart">
                 <div id="trend-chart-container" className="chart-container">
-                    <h3>Orchard Performance Trends</h3>
+                    <h3>Tendances de Performance du Verger</h3>
                     {!filters.selectedVerger ? (
-                        <p>Please select an orchard to view trends.</p>
+                        <p>Veuillez sélectionner un verger pour voir les tendances.</p>
                     ) : selectedChartType === 'combined' ? (
                         combinedTrendData.length > 0 ? (
                             <CombinedTrendChart
                                 data={combinedTrendData}
                                 timePeriod={selectedTimePeriod}
-                                title={`Combined Orchard Trends - ${filters.selectedVerger.label}`}
+                                title={`Tendances Combinées du Verger - ${filters.selectedVerger.label}`}
                             />
                         ) : (
-                            <p>No combined trend data available for the selected orchard.</p>
+                            <p>Aucune donnée de tendance combinée disponible pour le verger sélectionné.</p>
                         )
                     ) : periodicTrendData.length > 0 ? (
                         <TrendChart
                             data={periodicTrendData}
                             chartType={selectedChartType}
                             timePeriod={selectedTimePeriod}
-                            title={`Orchard Performance Trends - ${filters.selectedVerger.label}`}
+                            title={`Tendances de Performance du Verger - ${filters.selectedVerger.label}`}
                         />
                     ) : (
-                        <p>No trend data available for the selected orchard.</p>
+                        <p>Aucune donnée de tendance disponible pour le verger sélectionné.</p>
                     )}
                 </div>
             </div>
@@ -808,7 +808,7 @@ const DashboardPage = () => {
                         ) : (
                             <tr>
                                 <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center', color: '#6c757d' }}>
-                                    No data available
+                                    Aucune donnée disponible
                                 </td>
                             </tr>
                         )}
@@ -844,16 +844,16 @@ const DashboardPage = () => {
 
           </CollapsibleCard>
           
-          <CollapsibleCard title="Data Details" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
+          <CollapsibleCard title="Détails des Données" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
             <div className="dashboard-table-container">
               <table className="details-table">
                 <thead>
                   <tr>
                     <th className="sortable-header" onClick={() => handleSort('vergerName', false)}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('varieteName', false)}>Variety{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru', false)}>Reception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('varieteName', false)}>Variété{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalPdsfru', false)}>Réception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     <th className="sortable-header" onClick={() => handleSort('totalPdscom', false)}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                    <th className="sortable-header" onClick={() => handleSort('totalEcart', false)}>Ecart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('totalEcart', false)}>Écart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -871,16 +871,16 @@ const DashboardPage = () => {
             </div>
           </CollapsibleCard>
 
-          <CollapsibleCard title="Ecart Details" open={cardStates.ecartDetails} onToggle={(isOpen) => handleCardToggle('ecartDetails', isOpen)}>
+          <CollapsibleCard title="Détails des Écarts" open={cardStates.ecartDetails} onToggle={(isOpen) => handleCardToggle('ecartDetails', isOpen)}>
             <div className="ecart-filter-container">
                 <div className="filter-item">
-                    <label>Filter by Ecart Type</label>
+                    <label>Filtrer par Type d'Écart</label>
                     <Select
                         options={ecartTypeOptions}
                         value={filters.selectedEcartType}
                         onChange={val => handleFilterChange('selectedEcartType', val)}
                         isClearable
-                        placeholder="All Ecart Types..."
+                        placeholder="Tous les Types d'Écart..."
                     />
                 </div>
                 <div className="stat-card ecart-card ecart-total-card">
