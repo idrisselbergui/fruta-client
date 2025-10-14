@@ -102,5 +102,18 @@ export const apiDelete = (endpoint) => {
   return apiFetch(endpoint, { method: 'DELETE' });
 };
 
+// User management functions
+export const getUsers = () => {
+  return apiGet('/api/users');
+};
+
+export const updateUser = (userId, userData) => {
+  return apiPut(`/api/users/${userId}`, userData);
+};
+
+export const deleteUser = (userId) => {
+  return apiDelete(`/api/users/${userId}`);
+};
+
 // Export API_BASE_URL for debugging
 export { API_BASE_URL };
