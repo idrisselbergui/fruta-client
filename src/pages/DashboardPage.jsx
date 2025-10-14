@@ -3,7 +3,7 @@ import Select from 'react-select';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardChart from '../components/DashboardChart';
 import StackedBarChart from '../components/StackedBarChart';
-import TrendChart from '../components/TrendChart';
+import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
@@ -65,6 +65,9 @@ const DashboardPage = () => {
 
   // Chart type selection for multi-purpose chart
   const [selectedChartType, setSelectedChartType] = useState('export');
+
+  // Combined chart data state
+  const [combinedTrendData, setCombinedTrendData] = useState([]);
 
   // Loading and Error states
   const [isLoading, setIsLoading] = useState(true); // For initial page load only
@@ -176,10 +179,19 @@ const DashboardPage = () => {
           vergerId: selectedVerger.value
         };
 
-        if (selectedGrpVar) params.grpVarId = selectedGrpVar.value;
-        if (selectedVariete) params.varieteId = selectedVariete.value;
+        // Apply variety group and variety filters if selected
+        if (selectedGrpVar && selectedGrpVar.value !== null && selectedGrpVar.value !== undefined) {
+          params.grpVarId = selectedGrpVar.value;
+          console.log('Applying variety group filter:', selectedGrpVar.value);
+        }
+        if (selectedVariete && selectedVariete.value !== null && selectedVariete.value !== undefined) {
+          params.varieteId = selectedVariete.value;
+          console.log('Applying variety filter:', selectedVariete.value);
+        }
 
+        console.log('Trend chart filters:', params); // Debug logging
         const trendData = await apiGet('/api/dashboard/periodic-trends', params);
+        console.log('Trend data received:', trendData); // Debug logging
         setPeriodicTrendData(trendData.trends || []);
 
       } catch (err) {
@@ -188,6 +200,99 @@ const DashboardPage = () => {
       }
     };
     fetchPeriodicTrendData();
+  }, [debouncedFilters, selectedChartType, selectedTimePeriod, isLoading]);
+
+  // Fetch combined trend data when combined chart type is selected
+  useEffect(() => {
+    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || !filters.selectedVerger || selectedChartType !== 'combined') {
+        return;
+    }
+
+    const fetchCombinedTrendData = async () => {
+      try {
+        const { startDate, endDate, selectedVerger, selectedGrpVar, selectedVariete } = debouncedFilters;
+
+        // Fetch all three data types in parallel
+        const params = {
+          startDate,
+          endDate,
+          timePeriod: selectedTimePeriod,
+          vergerId: selectedVerger.value
+        };
+
+        // Apply variety filters if selected
+        if (selectedGrpVar && selectedGrpVar.value !== null && selectedGrpVar.value !== undefined) {
+          params.grpVarId = selectedGrpVar.value;
+        }
+        if (selectedVariete && selectedVariete.value !== null && selectedVariete.value !== undefined) {
+          params.varieteId = selectedVariete.value;
+        }
+
+        // Fetch all three data types
+        const [receptionData, exportData, ecartData] = await Promise.all([
+          apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'reception' }),
+          apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'export' }),
+          apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'ecart' })
+        ]);
+
+        // Combine the data by date/label
+        const combinedDataMap = new Map();
+
+        // Process reception data
+        (receptionData.trends || []).forEach(item => {
+          const key = item.label;
+          if (!combinedDataMap.has(key)) {
+            combinedDataMap.set(key, {
+              label: item.label,
+              date: item.date,
+              reception: 0,
+              export: 0,
+              ecart: 0
+            });
+          }
+          combinedDataMap.get(key).reception = parseFloat(item.value) || 0;
+        });
+
+        // Process export data
+        (exportData.trends || []).forEach(item => {
+          const key = item.label;
+          if (!combinedDataMap.has(key)) {
+            combinedDataMap.set(key, {
+              label: item.label,
+              date: item.date,
+              reception: 0,
+              export: 0,
+              ecart: 0
+            });
+          }
+          combinedDataMap.get(key).export = parseFloat(item.value) || 0;
+        });
+
+        // Process ecart data
+        (ecartData.trends || []).forEach(item => {
+          const key = item.label;
+          if (!combinedDataMap.has(key)) {
+            combinedDataMap.set(key, {
+              label: item.label,
+              date: item.date,
+              reception: 0,
+              export: 0,
+              ecart: 0
+            });
+          }
+          combinedDataMap.get(key).ecart = parseFloat(item.value) || 0;
+        });
+
+        const combinedData = Array.from(combinedDataMap.values());
+        console.log('Combined data:', combinedData);
+        setCombinedTrendData(combinedData);
+
+      } catch (err) {
+        console.error("Failed to load combined trend data:", err);
+        setCombinedTrendData([]);
+      }
+    };
+    fetchCombinedTrendData();
   }, [debouncedFilters, selectedChartType, selectedTimePeriod, isLoading]);
 
   const filteredVarieteOptions = useMemo(() => {
@@ -456,6 +561,24 @@ const DashboardPage = () => {
                     >
                       ⚖️ Ecart
                     </button>
+                    <button
+                      className={`chart-type-btn ${selectedChartType === 'combined' ? 'active' : ''}`}
+                      onClick={() => setSelectedChartType('combined')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: `2px solid ${selectedChartType === 'combined' ? '#e83e8c' : '#dee2e6'}`,
+                        backgroundColor: selectedChartType === 'combined' ? '#e83e8c' : '#ffffff',
+                        color: selectedChartType === 'combined' ? '#ffffff' : '#495057',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      📊 Combined
+                    </button>
                   </div>
                 </div>
                 <div>
@@ -552,6 +675,16 @@ const DashboardPage = () => {
                     <h3>Orchard Performance Trends</h3>
                     {!filters.selectedVerger ? (
                         <p>Please select an orchard to view trends.</p>
+                    ) : selectedChartType === 'combined' ? (
+                        combinedTrendData.length > 0 ? (
+                            <CombinedTrendChart
+                                data={combinedTrendData}
+                                timePeriod={selectedTimePeriod}
+                                title={`Combined Orchard Trends - ${filters.selectedVerger.label}`}
+                            />
+                        ) : (
+                            <p>No combined trend data available for the selected orchard.</p>
+                        )
                     ) : periodicTrendData.length > 0 ? (
                         <TrendChart
                             data={periodicTrendData}
