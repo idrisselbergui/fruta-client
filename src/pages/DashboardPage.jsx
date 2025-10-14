@@ -8,6 +8,7 @@ import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
 import generateDetailedExportPDF from '../utils/pdfGenerator';
+import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
 const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
@@ -68,6 +69,9 @@ const DashboardPage = () => {
 
   // Combined chart data state
   const [combinedTrendData, setCombinedTrendData] = useState([]);
+
+  // Detail table visibility state
+  const [showDetailTable, setShowDetailTable] = useState(false);
 
   // Loading and Error states
   const [isLoading, setIsLoading] = useState(true); // For initial page load only
@@ -381,6 +385,60 @@ const DashboardPage = () => {
       alert('Please select a destination first');
     }
   };
+
+  const handleExportChart = async () => {
+    try {
+      if (!filters.selectedVerger) {
+        alert('Please select an orchard first');
+        return;
+      }
+
+      // Ensure table is visible if it should be included
+      if (!showDetailTable) {
+        setShowDetailTable(true);
+        // Wait a bit for the table to render
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Show loading state
+      const originalButtonText = document.querySelector('.btn-primary').textContent;
+      document.querySelector('.btn-primary').textContent = '⏳ Generating PDF...';
+      document.querySelector('.btn-primary').disabled = true;
+
+      const chartTypeLabel = selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1);
+      const orchardName = filters.selectedVerger.label;
+
+      console.log('Starting PDF generation...');
+      console.log('Chart element:', document.getElementById('trend-chart-container'));
+      console.log('Table element:', document.getElementById('detail-data-table'));
+
+      // Generate PDF with chart and table
+      await generateChartPDF(
+        document.getElementById('trend-chart-container'),
+        document.getElementById('detail-data-table'),
+        {
+          title: 'Orchard Performance Report',
+          orchardName: orchardName,
+          chartType: chartTypeLabel,
+          timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
+          includeTable: true // Always include table in PDF
+        }
+      );
+
+      // Restore button state
+      document.querySelector('.btn-primary').textContent = originalButtonText;
+      document.querySelector('.btn-primary').disabled = false;
+
+      console.log('PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF: ' + error.message);
+
+      // Restore button state on error
+      document.querySelector('.btn-primary').textContent = '📄 Export Chart Data';
+      document.querySelector('.btn-primary').disabled = false;
+    }
+  };
   
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
@@ -669,9 +727,43 @@ const DashboardPage = () => {
               <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6c757d' }}>
                 Current view: <strong>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</strong> data by <strong>{selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1)}</strong>
               </div>
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleExportChart()}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  📄 Export Chart Data
+                </button>
+                <button
+                  onClick={() => setShowDetailTable(!showDetailTable)}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: showDetailTable ? '#6c757d' : '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  {showDetailTable ? '📊 Hide Details' : '📋 Show Details'}
+                </button>
+              </div>
             </div>
             <div className="full-width-chart">
-                <div className="chart-container">
+                <div id="trend-chart-container" className="chart-container">
                     <h3>Orchard Performance Trends</h3>
                     {!filters.selectedVerger ? (
                         <p>Please select an orchard to view trends.</p>
@@ -697,6 +789,61 @@ const DashboardPage = () => {
                     )}
                 </div>
             </div>
+
+            {/* Detail Table */}
+            {showDetailTable && (
+                <div id="detail-data-table" className="detail-table-container" style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                    <h4 style={{ marginBottom: '1rem', color: '#495057' }}>
+                        📊 Chart Data Details - {selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)} by {selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1)}
+                    </h4>
+                    <div className="table-responsive">
+                        <table className="detail-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Date</th>
+                                    {selectedChartType === 'combined' ? (
+                                        <>
+                                            <th>Reception</th>
+                                            <th>Export</th>
+                                            <th>Ecart</th>
+                                        </>
+                                    ) : (
+                                        <th>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
+                                    )}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {selectedChartType === 'combined' && combinedTrendData.length > 0 ? (
+                                    combinedTrendData.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>{item.label}</td>
+                                            <td>{item.date}</td>
+                                            <td>{formatNumberWithSpaces(item.reception || 0)}</td>
+                                            <td>{formatNumberWithSpaces(item.export || 0)}</td>
+                                            <td>{formatNumberWithSpaces(item.ecart || 0)}</td>
+                                        </tr>
+                                    ))
+                                ) : periodicTrendData.length > 0 ? (
+                                    periodicTrendData.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>{item.label}</td>
+                                            <td>{item.date}</td>
+                                            <td>{formatNumberWithSpaces(item.value || 0)}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ textAlign: 'center', color: '#6c757d' }}>
+                                            No data available
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
           </CollapsibleCard>
           
           <CollapsibleCard title="Data Details" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
