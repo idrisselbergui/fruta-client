@@ -70,8 +70,7 @@ const DashboardPage = () => {
   // Combined chart data state
   const [combinedTrendData, setCombinedTrendData] = useState([]);
 
-  // Detail table visibility state
-  const [showDetailTable, setShowDetailTable] = useState(false);
+
 
   // Loading and Error states
   const [isLoading, setIsLoading] = useState(true); // For initial page load only
@@ -393,12 +392,7 @@ const DashboardPage = () => {
         return;
       }
 
-      // Ensure table is visible if it should be included
-      if (!showDetailTable) {
-        setShowDetailTable(true);
-        // Wait a bit for the table to render
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      // Table is always visible now
 
       // Show loading state
       const originalButtonText = document.querySelector('.btn-primary').textContent;
@@ -742,23 +736,7 @@ const DashboardPage = () => {
                     fontWeight: '500'
                   }}
                 >
-                  📄 Export Chart Data
-                </button>
-                <button
-                  onClick={() => setShowDetailTable(!showDetailTable)}
-                  className="btn btn-secondary"
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: showDetailTable ? '#6c757d' : '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500'
-                  }}
-                >
-                  {showDetailTable ? '📊 Hide Details' : '📋 Show Details'}
+                  📄 Export Chart & Data
                 </button>
               </div>
             </div>
@@ -790,60 +768,80 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            {/* Detail Table */}
-            {showDetailTable && (
-                <div id="detail-data-table" className="detail-table-container" style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-                    <h4 style={{ marginBottom: '1rem', color: '#495057' }}>
-                        📊 Chart Data Details - {selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)} by {selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1)}
-                    </h4>
-                    <div className="table-responsive">
-                        <table className="detail-data-table">
-                            <thead>
-                                <tr>
-                                    <th>Period</th>
-                                    <th>Date</th>
-                                    {selectedChartType === 'combined' ? (
-                                        <>
-                                            <th>Reception</th>
-                                            <th>Export</th>
-                                            <th>Ecart</th>
-                                        </>
-                                    ) : (
-                                        <th>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
-                                    )}
+            {/* Hidden Table for PDF Generation - Not Visible on Screen */}
+            <div id="detail-data-table" className="detail-data-table" style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden', pointerEvents: 'none' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Period</th>
+                            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Start Date</th>
+                            {selectedChartType === 'combined' ? (
+                                <>
+                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Reception</th>
+                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Export</th>
+                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Ecart</th>
+                                </>
+                            ) : (
+                                <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {selectedChartType === 'combined' && combinedTrendData.length > 0 ? (
+                            combinedTrendData.map((item, index) => (
+                                <tr key={index}>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.reception || 0)}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.export || 0)}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.ecart || 0)}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {selectedChartType === 'combined' && combinedTrendData.length > 0 ? (
-                                    combinedTrendData.map((item, index) => (
-                                        <tr key={index}>
-                                            <td>{item.label}</td>
-                                            <td>{item.date}</td>
-                                            <td>{formatNumberWithSpaces(item.reception || 0)}</td>
-                                            <td>{formatNumberWithSpaces(item.export || 0)}</td>
-                                            <td>{formatNumberWithSpaces(item.ecart || 0)}</td>
-                                        </tr>
-                                    ))
-                                ) : periodicTrendData.length > 0 ? (
-                                    periodicTrendData.map((item, index) => (
-                                        <tr key={index}>
-                                            <td>{item.label}</td>
-                                            <td>{item.date}</td>
-                                            <td>{formatNumberWithSpaces(item.value || 0)}</td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ textAlign: 'center', color: '#6c757d' }}>
-                                            No data available
+                            ))
+                        ) : periodicTrendData.length > 0 ? (
+                            periodicTrendData.map((item, index) => (
+                                <tr key={index}>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.value || 0)}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center', color: '#6c757d' }}>
+                                    No data available
+                                </td>
+                            </tr>
+                        )}
+
+                        {/* Totals Row */}
+                        {((selectedChartType === 'combined' && combinedTrendData.length > 0) || (selectedChartType !== 'combined' && periodicTrendData.length > 0)) && (
+                            <tr style={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
+                                <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>TOTAL</td>
+                                <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>-</td>
+                                {selectedChartType === 'combined' ? (
+                                    <>
+                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.reception || 0), 0))}
                                         </td>
-                                    </tr>
+                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.export || 0), 0))}
+                                        </td>
+                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.ecart || 0), 0))}
+                                        </td>
+                                    </>
+                                ) : (
+                                    <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                                        {formatNumberWithSpaces(periodicTrendData.reduce((sum, item) => sum + (item.value || 0), 0))}
+                                    </td>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+
           </CollapsibleCard>
           
           <CollapsibleCard title="Data Details" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
