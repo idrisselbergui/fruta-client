@@ -1014,7 +1014,7 @@ const handleExportEcartGroupDetailsPDF = () => {
                 }}
                 title="Exporter le tableau des variétés en PDF"
               >
-                📄 PDF Variétés
+                📄 Détails Variétés
               </button>
               <button
                 onClick={handleExportGroupVarietePDF}
@@ -1031,7 +1031,7 @@ const handleExportEcartGroupDetailsPDF = () => {
                 }}
                 title="Exporter le tableau des groupes de variétés en PDF"
               >
-                📄 PDF Groupes Variétés
+                📄 Détails Groupes Variétés
               </button>
             </div>
             <div className="dashboard-table-container">
