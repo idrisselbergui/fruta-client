@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import generateDetailedExportPDF from '../utils/pdfGenerator';
+import generateDetailedExportPDF, { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
@@ -36,9 +36,11 @@ const DashboardPage = () => {
   
   // Data states
   const [dashboardData, setDashboardData] = useState(null);
+  const [groupedData, setGroupedData] = useState({ tableRows: [] });
   const [destinationChartData, setDestinationChartData] = useState({ data: [], keys: [] });
   const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
   const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
+  const [ecartGroupDetails, setEcartGroupDetails] = useState({ data: [], totalPdsfru: 0 });
   const [periodicTrendData, setPeriodicTrendData] = useState([]);
   
   // Dropdown options states
@@ -140,6 +142,10 @@ const DashboardPage = () => {
         const ecartParams = { ...baseParams };
         if (selectedEcartType) ecartParams.ecartTypeId = selectedEcartType.value;
         promises.push(apiGet('/api/dashboard/ecart-details', ecartParams));
+        // Ecart Group Details
+        const ecartGroupParams = { ...baseParams };
+        if (selectedEcartType) ecartGroupParams.ecartTypeId = selectedEcartType.value;
+        promises.push(apiGet('/api/dashboard/ecart-details-grouped', ecartGroupParams));
         // Destination Chart
         const destChartParams = { ...baseParams };
         if (selectedDestination) destChartParams.destinationId = selectedDestination.value;
@@ -148,10 +154,11 @@ const DashboardPage = () => {
         const salesChartParams = { ...baseParams };
         promises.push(selectedVerger ? apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams) : Promise.resolve({ data: [], keys: [] }));
 
-        const [mainData, ecartData, destChartData, salesChartData] = await Promise.all(promises);
+        const [mainData, ecartData, ecartGroupData, destChartData, salesChartData] = await Promise.all(promises);
 
         setDashboardData(mainData);
         setEcartDetails({ data: ecartData.data, totalPdsfru: ecartData.totalPdsfru });
+        setEcartGroupDetails({ data: ecartGroupData.data, totalPdsfru: ecartGroupData.totalPdsfru });
         setDestinationChartData(destChartData);
         setSalesByDestinationChartData(salesChartData);
 
@@ -298,6 +305,31 @@ const DashboardPage = () => {
     fetchCombinedTrendData();
   }, [debouncedFilters, selectedChartType, selectedTimePeriod, isLoading]);
 
+  // Fetch grouped data for PDF generation
+  useEffect(() => {
+    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate) {
+        return;
+    }
+
+    const fetchGroupedData = async () => {
+      const { startDate, endDate, selectedVerger, selectedGrpVar, selectedVariete } = debouncedFilters;
+
+      const baseParams = { startDate, endDate };
+      if (selectedVerger) baseParams.vergerId = selectedVerger.value;
+      if (selectedGrpVar) baseParams.grpVarId = selectedGrpVar.value;
+      if (selectedVariete) baseParams.varieteId = selectedVariete.value;
+
+      try {
+        const groupedResult = await apiGet('/api/dashboard/data-grouped-by-variety-group', baseParams);
+        setGroupedData(groupedResult);
+      } catch (err) {
+        console.error("Failed to load grouped data:", err);
+        setGroupedData({ tableRows: [] });
+      }
+    };
+    fetchGroupedData();
+  }, [debouncedFilters, isLoading]);
+
   const filteredVarieteOptions = useMemo(() => {
     if (!filters.selectedGrpVar) return varieteOptions;
     return varieteOptions.filter(v => v.grpVarId === filters.selectedGrpVar.value);
@@ -334,14 +366,31 @@ const DashboardPage = () => {
 
   const sortedEcartDetails = useMemo(() => {
     if (!ecartDetails?.data) return [];
-    return [...ecartDetails.data].sort((a, b) => {
+
+    // Enhance ecart details with group information
+    const enhancedEcartDetails = ecartDetails.data.map(row => {
+      // Find variety to get group id, then find group name
+      const variety = varieteOptions.find(v => v.codvar === row.varieteCode || v.value === row.varieteCode);
+      let groupName = '';
+      if (variety?.grpVarId) {
+        const group = grpVarOptions.find(g => g.codgrv === variety.grpVarId || g.value === variety.grpVarId);
+        groupName = group?.nomgrv || group?.label || '';
+      }
+
+      return {
+        ...row,
+        groupVarieteName: groupName
+      };
+    });
+
+    return [...enhancedEcartDetails].sort((a, b) => {
         const aValue = a[ecartSortConfig.key];
         const bValue = b[ecartSortConfig.key];
         if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
     });
-  }, [ecartDetails.data, ecartSortConfig]);
+  }, [ecartDetails.data, ecartSortConfig, varieteOptions, grpVarOptions]);
   
   const handleSort = (key, isEcart) => {
     const currentConfig = isEcart ? ecartSortConfig : sortConfig;
@@ -431,6 +480,110 @@ const DashboardPage = () => {
       // Restore button state on error
       document.querySelector('.btn-primary').textContent = '📄 Export Chart Data';
       document.querySelector('.btn-primary').disabled = false;
+    }
+  };
+
+  const handleExportVarietesPDF = () => {
+    console.log('Varietes PDF button clicked');
+    console.log('Dashboard data:', dashboardData);
+
+    if (!dashboardData?.tableRows?.length) {
+      alert('Aucune donnée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      return;
+    }
+
+    try {
+      generateVarietesPDF(
+        dashboardData.tableRows,
+        grpVarOptions,
+        varieteOptions,
+        filters
+      );
+      console.log('Varietes PDF generation completed');
+    } catch (error) {
+      console.error('Error generating varietes PDF:', error);
+      alert('Erreur lors de la génération du PDF des variétés: ' + error.message);
+    }
+  };
+
+  const handleExportGroupVarietePDF = () => {
+    console.log('Group variete PDF button clicked');
+    console.log('Grouped data:', groupedData);
+
+    if (!groupedData?.tableRows?.length) {
+      alert('Aucune donnée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      return;
+    }
+
+    try {
+      generateGroupVarietePDF(
+        groupedData.tableRows,
+        grpVarOptions,
+        varieteOptions,
+        filters
+      );
+      console.log('Group variete PDF generation completed');
+    } catch (error) {
+      console.error('Error generating group variete PDF:', error);
+      alert('Erreur lors de la génération du PDF des groupes de variétés: ' + error.message);
+    }
+  };
+
+  const handleExportEcartDetailsPDF = () => {
+    console.log('Ecart details PDF button clicked');
+    console.log('Ecart details:', ecartDetails);
+
+    if (!ecartDetails?.data?.length) {
+      alert('Aucune donnée d\'écart disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      return;
+    }
+
+    try {
+      generateEcartDetailsPDF(
+        ecartDetails,
+        filters
+      );
+      console.log('Ecart details PDF generation completed');
+    } catch (error) {
+      console.error('Error generating ecart details PDF:', error);
+      alert('Erreur lors de la génération du PDF des détails d\'écart: ' + error.message);
+    }
+  };
+
+const handleExportEcartGroupDetailsPDF = () => {
+    console.log('Ecart group details PDF button clicked');
+    console.log('Ecart group details:', ecartGroupDetails);
+
+    if (!ecartGroupDetails?.data?.length) {
+      alert('Aucune donnée d\'écart groupée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      return;
+    }
+
+    // Enhance grouped ecart data with group information if needed
+    const enhancedEcartGroupDetails = {
+      ...ecartGroupDetails,
+      data: ecartGroupDetails.data.map(row => {
+        // If groupVarieteName is not already present, try to find it
+        if (!row.groupVarieteName && row.groupVarieteId && grpVarOptions) {
+          const group = grpVarOptions.find(g => g.codgrv === row.groupVarieteId || g.value === row.groupVarieteId);
+          return {
+            ...row,
+            groupVarieteName: group?.nomgrv || group?.label || ''
+          };
+        }
+        return row;
+      })
+    };
+
+    try {
+      generateEcartGroupDetailsPDF(
+        enhancedEcartGroupDetails,
+        filters
+      );
+      console.log('Ecart group details PDF generation completed');
+    } catch (error) {
+      console.error('Error generating ecart group details PDF:', error);
+      alert('Erreur lors de la génération du PDF des détails d\'écart groupés: ' + error.message);
     }
   };
   
@@ -845,6 +998,42 @@ const DashboardPage = () => {
           </CollapsibleCard>
           
           <CollapsibleCard title="Détails des Données" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button
+                onClick={handleExportVarietesPDF}
+                className="btn btn-secondary"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+                title="Exporter le tableau des variétés en PDF"
+              >
+                📄 PDF Variétés
+              </button>
+              <button
+                onClick={handleExportGroupVarietePDF}
+                className="btn btn-secondary"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+                title="Exporter le tableau des groupes de variétés en PDF"
+              >
+                📄 PDF Groupes Variétés
+              </button>
+            </div>
             <div className="dashboard-table-container">
               <table className="details-table">
                 <thead>
@@ -872,8 +1061,10 @@ const DashboardPage = () => {
           </CollapsibleCard>
 
           <CollapsibleCard title="Détails des Écarts" open={cardStates.ecartDetails} onToggle={(isOpen) => handleCardToggle('ecartDetails', isOpen)}>
+           
             <div className="ecart-filter-container">
                 <div className="filter-item">
+                  
                     <label>Filtrer par Type d'Écart</label>
                     <Select
                         options={ecartTypeOptions}
@@ -882,11 +1073,48 @@ const DashboardPage = () => {
                         isClearable
                         placeholder="Tous les Types d'Écart..."
                     />
+                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <button
+              onClick={handleExportEcartDetailsPDF}
+              className="btn btn-secondary"
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
+              title="Exporter les détails d'écart en PDF (avec caisses)"
+            >
+              📄  Écarts Par variete
+            </button>
+            <button
+              onClick={handleExportEcartGroupDetailsPDF}
+              className="btn btn-secondary"
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
+              title="Exporter les détails d'écart groupés en PDF"
+            >
+              📄 Écarts Par Group Variete
+            </button>
+            </div>
                 </div>
                 <div className="stat-card ecart-card ecart-total-card">
                     <h3>Total Poids Fruit (Ecart)</h3>
                     <p className="stat-value">{formatNumberWithSpaces(ecartDetails.totalPdsfru)}</p>
                 </div>
+                
             </div>
             {isDataLoading ? <LoadingSpinner /> : (
               <div className="dashboard-table-container">
@@ -894,8 +1122,9 @@ const DashboardPage = () => {
                   <thead>
                     <tr>
                       <th className="sortable-header" onClick={() => handleSort('vergerName', true)}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleSort('varieteName', true)}>Variety{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleSort('ecartType', true)}>Ecart Type{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('groupVarieteName', true)}>Groupe de Variété{ecartSortConfig.key === 'groupVarieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('varieteName', true)}>Variété{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                      <th className="sortable-header" onClick={() => handleSort('ecartType', true)}>Type d'Écart{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleSort('totalPdsfru', true)}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleSort('totalNbrcai', true)}>Total Caisses{ecartSortConfig.key === 'totalNbrcai' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     </tr>
@@ -904,10 +1133,11 @@ const DashboardPage = () => {
                     {sortedEcartDetails.map((row, index) => (
                       <tr key={index}>
                         <td>{row.vergerName}</td>
+                        <td>{row.groupVarieteName}</td>
                         <td>{row.varieteName}</td>
                         <td>{row.ecartType}</td>
                         <td>{formatNumberWithSpaces(row.totalPdsfru)}</td>
-                        <td>{formatNumberWithSpaces(row.totalNbrcai)}</td>
+                        <td>{formatNumberWithSpaces(row.totalNbrcai, 0)}</td>
                       </tr>
                     ))}
                   </tbody>
