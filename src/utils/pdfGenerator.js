@@ -33,7 +33,7 @@ const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByD
 
   // Add clear logo in top right corner
   try {
-    const logoPath = './public/diaf.png';
+    const logoPath = '/diaf.png';
     // Add logo in top right corner (clear and visible)
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
@@ -176,7 +176,7 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
 
   // Add clear logo in top right corner
   try {
-    const logoPath = './public/diaf.png';
+    const logoPath = '/diaf.png';
     // Add logo in top right corner (clear and visible)
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
@@ -297,7 +297,7 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
 
   // Add clear logo in top right corner
   try {
-    const logoPath = './public/diaf.png';
+    const logoPath = '/diaf.png';
     // Add logo in top right corner (clear and visible)
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
@@ -422,7 +422,7 @@ const generateEcartDetailsPDF = (ecartDetails, filters) => {
 
   // Add clear logo in top right corner
   try {
-    const logoPath = './public/diaf.png';
+    const logoPath = '/diaf.png';
     // Add logo in top right corner (clear and visible)
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
@@ -543,7 +543,7 @@ const generateEcartGroupDetailsPDF = (ecartGroupDetails, filters) => {
 
   // Add clear logo in top right corner
   try {
-    const logoPath = './public/diaf.png';
+    const logoPath = '/diaf.png';
     // Add logo in top right corner (clear and visible)
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
