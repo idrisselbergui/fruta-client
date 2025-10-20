@@ -367,30 +367,14 @@ const DashboardPage = () => {
   const sortedEcartDetails = useMemo(() => {
     if (!ecartDetails?.data) return [];
 
-    // Enhance ecart details with group information
-    const enhancedEcartDetails = ecartDetails.data.map(row => {
-      // Find variety to get group id, then find group name
-      const variety = varieteOptions.find(v => v.codvar === row.varieteCode || v.value === row.varieteCode);
-      let groupName = '';
-      if (variety?.grpVarId) {
-        const group = grpVarOptions.find(g => g.codgrv === variety.grpVarId || g.value === variety.grpVarId);
-        groupName = group?.nomgrv || group?.label || '';
-      }
-
-      return {
-        ...row,
-        groupVarieteName: groupName
-      };
-    });
-
-    return [...enhancedEcartDetails].sort((a, b) => {
+    return [...ecartDetails.data].sort((a, b) => {
         const aValue = a[ecartSortConfig.key];
         const bValue = b[ecartSortConfig.key];
         if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
     });
-  }, [ecartDetails.data, ecartSortConfig, varieteOptions, grpVarOptions]);
+  }, [ecartDetails.data, ecartSortConfig]);
   
   const handleSort = (key, isEcart) => {
     const currentConfig = isEcart ? ecartSortConfig : sortConfig;
@@ -1122,7 +1106,6 @@ const handleExportEcartGroupDetailsPDF = () => {
                   <thead>
                     <tr>
                       <th className="sortable-header" onClick={() => handleSort('vergerName', true)}>Verger{ecartSortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
-                      <th className="sortable-header" onClick={() => handleSort('groupVarieteName', true)}>Groupe de Variété{ecartSortConfig.key === 'groupVarieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleSort('varieteName', true)}>Variété{ecartSortConfig.key === 'varieteName' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleSort('ecartType', true)}>Type d'Écart{ecartSortConfig.key === 'ecartType' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                       <th className="sortable-header" onClick={() => handleSort('totalPdsfru', true)}>Total Poids Fruit{ecartSortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{ecartSortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
@@ -1133,7 +1116,6 @@ const handleExportEcartGroupDetailsPDF = () => {
                     {sortedEcartDetails.map((row, index) => (
                       <tr key={index}>
                         <td>{row.vergerName}</td>
-                        <td>{row.groupVarieteName}</td>
                         <td>{row.varieteName}</td>
                         <td>{row.ecartType}</td>
                         <td>{formatNumberWithSpaces(row.totalPdsfru)}</td>
