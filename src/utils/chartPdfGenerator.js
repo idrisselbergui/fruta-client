@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 /**
  * Generates a PDF document containing the chart and data table
@@ -9,7 +10,7 @@ import html2canvas from 'html2canvas';
  */
 export const generateChartPDF = async (chartElement, tableElement, options = {}) => {
   const {
-    title = 'Orchard Performance Report',
+    title = 'Rapport de Performance du Verger',
     orchardName = '',
     chartType = 'Combined',
     timePeriod = 'Monthly',
@@ -32,13 +33,13 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     // Add orchard and chart info
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Orchard: ${orchardName}`, 20, currentY);
+    pdf.text(`Verger: ${orchardName}`, 20, currentY);
     currentY += 7;
-    pdf.text(`Chart Type: ${chartType}`, 20, currentY);
+    pdf.text(`Type de Graphique: ${chartType}`, 20, currentY);
     currentY += 7;
-    pdf.text(`Time Period: ${timePeriod}`, 20, currentY);
+    pdf.text(`Période: ${timePeriod}`, 20, currentY);
     currentY += 7;
-    pdf.text(`Generated: ${new Date().toLocaleDateString('fr-FR')}`, 20, currentY);
+    pdf.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, currentY);
     currentY += 20;
 
     // Capture chart as image
@@ -63,14 +64,14 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
           currentY = 20;
         }
 
-        pdf.text('Chart Visualization:', 20, currentY);
+        pdf.text('Visualisation du Graphique:', 20, currentY);
         currentY += 10;
 
         pdf.addImage(imgData, 'PNG', 20, currentY, imgWidth, imgHeight);
         currentY += imgHeight + 15;
       } catch (chartError) {
         console.error('Error capturing chart:', chartError);
-        pdf.text('Chart could not be rendered in PDF', 20, currentY);
+        pdf.text('Le graphique n\'a pas pu être rendu dans le PDF', 20, currentY);
         currentY += 10;
       }
     }
@@ -78,98 +79,44 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     // Add table data if requested and table element exists
     if (includeTable && tableElement) {
       // Check if we need a new page for the table
-      if (currentY > pageHeight - 80) {
+      if (currentY > pageHeight - 40) { // Give more space for table header
         pdf.addPage();
         currentY = 20;
       }
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
-      pdf.text('Chart Data Details:', 20, currentY);
-      currentY += 15;
+      pdf.text('Détails des Données du Graphique:', 20, currentY);
+      currentY += 10;
 
       try {
-        // Extract table data with better error handling
         const tableData = extractTableData(tableElement);
-        console.log('Extracted table data:', tableData); // Debug logging
-
-        if (!tableData.headers || tableData.headers.length === 0) {
+        if (!tableData.headers || tableData.headers.length === 0 || !tableData.rows || tableData.rows.length === 0) {
           pdf.setFont('helvetica', 'italic');
-          pdf.text('No table headers found', 20, currentY);
-          currentY += 10;
+          pdf.text('Aucune donnée de tableau trouvée ou le tableau est vide.', 20, currentY);
         } else {
-          // Calculate column widths based on content
-          const colWidth = Math.max(30, (pageWidth - 40) / tableData.headers.length);
-
-          // Add table headers
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setFillColor(240, 240, 240);
-
-          // Header background
-          pdf.rect(20, currentY - 3, pageWidth - 40, 8, 'F');
-
-          tableData.headers.forEach((header, index) => {
-            const x = 20 + (index * colWidth);
-            pdf.setTextColor(0, 0, 0);
-            const shortHeader = header.length > 12 ? header.substring(0, 12) + '...' : header;
-            pdf.text(shortHeader, x + 2, currentY + 3);
+          autoTable(pdf, {
+            startY: currentY,
+            head: [tableData.headers],
+            body: tableData.rows,
+            theme: 'grid',
+            styles: {
+              fontSize: 8,
+              cellPadding: 2,
+            },
+            headStyles: {
+              fillColor: [22, 160, 133],
+              textColor: 255,
+              fontStyle: 'bold',
+            },
+            margin: { left: 20, right: 20 },
           });
-          currentY += 10;
-
-          // Add table rows
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(9);
-
-          tableData.rows.slice(0, 25).forEach((row, rowIndex) => { // Increased to 25 rows
-            if (currentY > pageHeight - 20) {
-              pdf.addPage();
-              currentY = 20;
-
-              // Re-add headers on new page
-              pdf.setFont('helvetica', 'bold');
-              pdf.setFillColor(240, 240, 240);
-              pdf.rect(20, currentY - 3, pageWidth - 40, 8, 'F');
-
-              tableData.headers.forEach((header, index) => {
-                const x = 20 + (index * colWidth);
-                pdf.setTextColor(0, 0, 0);
-                const shortHeader = header.length > 12 ? header.substring(0, 12) + '...' : header;
-                pdf.text(shortHeader, x + 2, currentY + 3);
-              });
-              currentY += 10;
-              pdf.setFont('helvetica', 'normal');
-            }
-
-            // Alternate row background
-            if (rowIndex % 2 === 0) {
-              pdf.setFillColor(250, 250, 250);
-              pdf.rect(20, currentY - 2, pageWidth - 40, 6, 'F');
-            }
-
-            row.forEach((cell, cellIndex) => {
-              const x = 20 + (cellIndex * colWidth);
-              const cellText = String(cell || '').substring(0, 20); // Truncate long values
-              pdf.setTextColor(0, 0, 0);
-              pdf.text(cellText, x + 2, currentY + 3);
-            });
-            currentY += 7;
-          });
-
-          if (tableData.rows.length > 25) {
-            pdf.setFont('helvetica', 'italic');
-            pdf.setTextColor(100, 100, 100);
-            pdf.text(`... and ${tableData.rows.length - 25} more rows (total: ${tableData.rows.length})`, 20, currentY + 5);
-          }
         }
-
       } catch (tableError) {
-        console.error('Error processing table:', tableError);
+        console.error('Error processing table for PDF:', tableError);
         pdf.setFont('helvetica', 'italic');
-        pdf.setTextColor(150, 150, 150);
-        pdf.text('Table data could not be processed - showing raw data below:', 20, currentY);
-        currentY += 10;
-        pdf.text('Table element found but data extraction failed', 20, currentY);
+        pdf.setTextColor(150, 0, 0);
+        pdf.text('Erreur lors du traitement du tableau pour le PDF.', 20, currentY);
       }
     }
 
@@ -180,7 +127,7 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'italic');
       pdf.text(
-        `Page ${i} of ${totalPages} - Generated by Fruta Dashboard`,
+        `Page ${i} de ${totalPages} - Généré par Fruta Dashboard`,
         pageWidth / 2,
         pageHeight - 10,
         { align: 'center' }
@@ -188,14 +135,14 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     }
 
     // Save the PDF
-    const filename = `orchard_report_${orchardName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${Date.now()}.pdf`;
+    const filename = `rapport_performance_verger_${orchardName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${Date.now()}.pdf`;
     pdf.save(filename);
 
     return filename;
 
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF report');
+    throw new Error('Échec de génération du rapport PDF');
   }
 };
 
@@ -223,7 +170,7 @@ const extractTableData = (tableElement) => {
     if (firstRow) {
       const cellCount = firstRow.querySelectorAll('td').length;
       for (let i = 1; i <= cellCount; i++) {
-        headers.push(`Column ${i}`);
+        headers.push(`Colonne ${i}`);
       }
     }
   } else {
@@ -272,7 +219,7 @@ export const useChartPDFGenerator = (chartId, tableId) => {
     const tableElement = document.getElementById(tableId);
 
     if (!chartElement) {
-      throw new Error('Chart element not found');
+      throw new Error('Element graphique introuvable');
     }
 
     return await generateChartPDF(chartElement, tableElement, options);

@@ -410,7 +410,7 @@ const DashboardPage = () => {
         console.log('PDF generation completed');
       } catch (error) {
         console.error('Error generating PDF:', error);
-        alert('Error generating PDF: ' + error.message);
+      alert('Erreur lors de la génération du PDF: ' + error.message);
       }
     } else {
       console.log('No destination selected');
@@ -444,7 +444,7 @@ const DashboardPage = () => {
         document.getElementById('trend-chart-container'),
         document.getElementById('detail-data-table'),
         {
-          title: 'Orchard Performance Report',
+          title: 'Rapport de Performance du Verger',
           orchardName: orchardName,
           chartType: chartTypeLabel,
           timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
@@ -459,7 +459,7 @@ const DashboardPage = () => {
       console.log('PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF: ' + error.message);
+      alert('Erreur lors de la génération du PDF: ' + error.message);
 
       // Restore button state on error
       document.querySelector('.btn-primary').textContent = '📄 Export Chart Data';
