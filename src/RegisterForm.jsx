@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { apiPost, apiPut } from './apiService';
+import { apiPost, apiPut, getUserSession } from './apiService';
 import './LoginForm.css';
 
-const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName = 'frutaaaaa_db' }) => {
+const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [permission, setPermission] = useState('user');
@@ -35,7 +35,7 @@ const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName =
           username,
           password,
           permission: permission === 'admin' ? 1 : permission === 'user' ? 0 : 2,
-          database: databaseName
+          database: getUserSession()?.database || 'frutaaaaa_db'
         }, databaseName);
         setMessage('User updated successfully!');
         if (onUserUpdated) onUserUpdated();
@@ -46,7 +46,7 @@ const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName =
           username,
           password,
           permission: permission === 'admin' ? 1 : permission === 'user' ? 0 : 2,
-          database: databaseName
+          database: getUserSession()?.database || 'frutaaaaa_db'
         }, databaseName);
         setMessage(data.message);
         // Clear form on success

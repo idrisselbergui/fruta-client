@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import RegisterForm from '../RegisterForm';
-import { getUsers, updateUser, deleteUser } from '../apiService';
+import { getUsers, updateUser, deleteUser, getUserSession } from '../apiService';
 
 const AdminPage = () => {
   const [users, setUsers] = useState([]);
@@ -9,12 +9,12 @@ const AdminPage = () => {
   const [editForm, setEditForm] = useState({ username: '', password: '', permission: '' });
   const [showAddForm, setShowAddForm] = useState(false);
   const [formEditingUser, setFormEditingUser] = useState(null);
-  const [databaseName, setDatabaseName] = useState('frutaaaaa_db'); // Default database name
+
 
   // Fetch users from API
   const fetchUsers = async () => {
     try {
-      const data = await getUsers(databaseName);
+      const data = await getUsers(null);
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -42,8 +42,8 @@ const AdminPage = () => {
     try {
       await updateUser(userId, {
         ...editForm,
-        database: databaseName
-      }, databaseName);
+        database: getUserSession()?.database || 'frutaaaaa_db'
+      }, null);
       setEditingUser(null);
       fetchUsers(); // Refresh the list
     } catch (error) {
@@ -55,23 +55,8 @@ const AdminPage = () => {
   const handleDelete = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        // For delete, we'll need to create a custom request since the API might expect database in body
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://localhost:44374'}/api/users/${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Database-Name': databaseName,
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({ database: databaseName })
-        });
-
-        if (response.ok) {
-          fetchUsers(); // Refresh the list
-        } else {
-          const errorData = await response.json().catch(() => ({ message: 'Delete failed' }));
-          throw new Error(errorData.message);
-        }
+        await deleteUser(userId, null);
+        fetchUsers(); // Refresh the list
       } catch (error) {
         console.error('Error deleting user:', error);
         alert(`Error deleting user: ${error.message}`);
@@ -118,7 +103,6 @@ const AdminPage = () => {
               setFormEditingUser(null);
               setShowAddForm(false);
             }}
-            databaseName={databaseName}
           />
         </div>
       )}

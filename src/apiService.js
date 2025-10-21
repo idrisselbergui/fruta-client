@@ -120,4 +120,4 @@ export const deleteUser = (userId, databaseName = null) => {
 };
 
 // Export API_BASE_URL for debugging
-export { API_BASE_URL };
+export { API_BASE_URL, getUserSession };
