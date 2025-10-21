@@ -41,7 +41,9 @@ const AdminPage = () => {
   const handleUpdate = async (userId) => {
     try {
       await updateUser(userId, {
-        ...editForm,
+        username: editForm.username,
+        password: editForm.password,
+        permission: editForm.permission === 'admin' ? 1 : editForm.permission === 'user' ? 0 : 2,
         database: getUserSession()?.database || 'frutaaaaa_db'
       }, null);
       setEditingUser(null);
