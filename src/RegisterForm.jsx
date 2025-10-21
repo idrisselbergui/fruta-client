@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiPost, apiPut, getUserSession } from './apiService';
 import './LoginForm.css';
 
-const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName }) => {
+const RegisterForm = ({ editingUser, onUserUpdated, onCancelEdit, databaseName = getUserSession()?.database || 'frutaaaaa_db' }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [permission, setPermission] = useState('user');

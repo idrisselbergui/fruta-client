@@ -11,46 +11,51 @@ const Header = ({ user, onLogout }) => {
         </NavLink>
       </div>
       <nav className="navigation-menu">
-        <NavLink 
-          to="/home" 
+        <NavLink
+          to="/home"
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
         >
           Home
         </NavLink>
-         {user && user.permission === 1 && (
-        <NavLink 
-          to="/dashboard" 
+
+        {/* Dashboard is accessible to all users */}
+        <NavLink
+          to="/dashboard"
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
         >
           Dashboard
         </NavLink>
-         )}
-        <NavLink 
-          to="/programs" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          Programs
-        </NavLink>
-        <NavLink 
-          to="/traits" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          Products
-        </NavLink>
-        <NavLink 
-          to="/traitements" 
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          Treatments
-        </NavLink>
+
+        {/* Admin users (permission === 1) can access all pages */}
         {user && user.permission === 1 && (
-          <NavLink 
-            to="/admin" 
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Admin
-          </NavLink>
+          <>
+            <NavLink
+              to="/programs"
+              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+            >
+              Programs
+            </NavLink>
+            <NavLink
+              to="/traits"
+              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+            >
+              Products
+            </NavLink>
+            <NavLink
+              to="/traitements"
+              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+            >
+              Treatments
+            </NavLink>
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+            >
+              Admin
+            </NavLink>
+          </>
         )}
+
         {user && (
           <button onClick={onLogout} className="logout-button-header" aria-label="Logout">
             Logout

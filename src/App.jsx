@@ -1,15 +1,29 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, Outlet, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import LoginForm from './LoginForm';
 import ProtectedRoute from './ProtectedRoute';
 import Layout from './components/Layout';
-import DailyProgramPage from './pages/DailyProgramPage'; 
+import DailyProgramPage from './pages/DailyProgramPage';
 import ProgramListPage from './pages/ProgramListPage';
 import DashboardPage from './pages/DashboardPage';
 import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
 import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
+
+// Component to protect routes that require admin permissions (permission === 1)
+const AdminProtectedRoute = ({ user, children }) => {
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user.permission !== 1) {
+    // If user is not an admin, redirect to dashboard (which is accessible to all)
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
     <Outlet />
@@ -42,14 +56,34 @@ function App() {
 
       <Route element={<AppLayout user={user} onLogout={handleLogout} />}>
         <Route path="/home" element={<HomePage user={user} />} />
-        <Route path="/daily-program" element={<DailyProgramPage />} /> 
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/programs" element={<ProgramListPage />} />
-        <Route path="/program/new" element={<DailyProgramPage />} />
-        <Route path="/program/edit/:id" element={<DailyProgramPage />} />
-        {/* --- 2. ADD THE ROUTE FOR THE NEW PAGE --- */}
-        <Route path="/traits" element={<TraitPage />} />
-        <Route path="/traitements" element={<TraitementPage />} />
+
+        {/* Admin-only routes (permission === 1) */}
+        <Route path="/programs" element={
+          <AdminProtectedRoute user={user}>
+            <ProgramListPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/program/new" element={
+          <AdminProtectedRoute user={user}>
+            <DailyProgramPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/program/edit/:id" element={
+          <AdminProtectedRoute user={user}>
+            <DailyProgramPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/traits" element={
+          <AdminProtectedRoute user={user}>
+            <TraitPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/traitements" element={
+          <AdminProtectedRoute user={user}>
+            <TraitementPage />
+          </AdminProtectedRoute>
+        } />
         <Route
           path="/admin"
           element={
