@@ -24,6 +24,14 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     const pageHeight = pdf.internal.pageSize.getHeight();
     let currentY = 20;
 
+    // Add logo
+    try {
+      const logoPath = '/diaf.png';
+      pdf.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+    } catch (error) {
+      console.log('Logo not found, continuing without logo');
+    }
+
     // Add title
     pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
