@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, Outlet, Navigate } from 'rea
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import LoginForm from './LoginForm';
-import ProtectedRoute from './ProtectedRoute';
+import { ProtectedRoute, UserProtectedRoute, ReadOnlyProtectedRoute } from './ProtectedRoute';
 import Layout from './components/Layout';
 import DailyProgramPage from './pages/DailyProgramPage';
 import ProgramListPage from './pages/ProgramListPage';
@@ -24,6 +24,8 @@ const AdminProtectedRoute = ({ user, children }) => {
 
   return children;
 };
+
+
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
     <Outlet />
@@ -58,32 +60,34 @@ function App() {
         <Route path="/home" element={<HomePage user={user} />} />
         <Route path="/dashboard" element={<DashboardPage />} />
 
-        {/* Admin-only routes (permission === 1) */}
+        {/* Routes accessible to regular users (permission 0) and admins (permission 1) */}
         <Route path="/programs" element={
-          <AdminProtectedRoute user={user}>
+          <UserProtectedRoute user={user}>
             <ProgramListPage />
-          </AdminProtectedRoute>
+          </UserProtectedRoute>
         } />
         <Route path="/program/new" element={
-          <AdminProtectedRoute user={user}>
+          <UserProtectedRoute user={user}>
             <DailyProgramPage />
-          </AdminProtectedRoute>
+          </UserProtectedRoute>
         } />
         <Route path="/program/edit/:id" element={
-          <AdminProtectedRoute user={user}>
+          <UserProtectedRoute user={user}>
             <DailyProgramPage />
-          </AdminProtectedRoute>
+          </UserProtectedRoute>
         } />
         <Route path="/traits" element={
-          <AdminProtectedRoute user={user}>
+          <UserProtectedRoute user={user}>
             <TraitPage />
-          </AdminProtectedRoute>
+          </UserProtectedRoute>
         } />
         <Route path="/traitements" element={
-          <AdminProtectedRoute user={user}>
+          <UserProtectedRoute user={user}>
             <TraitementPage />
-          </AdminProtectedRoute>
+          </UserProtectedRoute>
         } />
+
+        {/* Admin-only route (permission === 1) */}
         <Route
           path="/admin"
           element={

@@ -26,8 +26,8 @@ const Header = ({ user, onLogout }) => {
           Dashboard
         </NavLink>
 
-        {/* Admin users (permission === 1) can access all pages */}
-        {user && user.permission === 1 && (
+        {/* Regular users (permission 0) and admins (permission 1) can access these pages */}
+        {user && (user.permission === 0 || user.permission === 1) && (
           <>
             <NavLink
               to="/programs"
@@ -47,13 +47,17 @@ const Header = ({ user, onLogout }) => {
             >
               Treatments
             </NavLink>
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              Admin
-            </NavLink>
           </>
+        )}
+
+        {/* Admin users (permission === 1) can access admin page */}
+        {user && user.permission === 1 && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Admin
+          </NavLink>
         )}
 
         {user && (
