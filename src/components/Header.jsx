@@ -47,6 +47,12 @@ const Header = ({ user, onLogout }) => {
             >
               Treatments
             </NavLink>
+            <NavLink
+              to="/ecart-direct"
+              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+            >
+              Ecart Direct
+            </NavLink>
           </>
         )}
 

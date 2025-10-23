@@ -10,6 +10,7 @@ import ProgramListPage from './pages/ProgramListPage';
 import DashboardPage from './pages/DashboardPage';
 import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
 import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
+import EcartDirectPage from './pages/EcartDirectPage';
 
 // Component to protect routes that require admin permissions (permission === 1)
 const AdminProtectedRoute = ({ user, children }) => {
@@ -84,6 +85,11 @@ function App() {
         <Route path="/traitements" element={
           <UserProtectedRoute user={user}>
             <TraitementPage />
+          </UserProtectedRoute>
+        } />
+        <Route path="/ecart-direct" element={
+          <UserProtectedRoute user={user}>
+            <EcartDirectPage />
           </UserProtectedRoute>
         } />
 
