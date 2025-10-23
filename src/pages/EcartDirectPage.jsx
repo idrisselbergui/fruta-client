@@ -6,6 +6,8 @@ import './EcartDirectPage.css';
 
 const EcartDirectPage = () => {
     const [ecartDirects, setEcartDirects] = useState([]);
+    const [vergers, setVergers] = useState([]);
+    const [varietes, setVarietes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,10 +16,16 @@ const EcartDirectPage = () => {
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const data = await apiGet('/api/ecartdirect');
-            setEcartDirects(data);
+            const [ecartData, vergerData, varieteData] = await Promise.all([
+                apiGet('/api/ecartdirect'),
+                apiGet('/api/lookup/vergers'),
+                apiGet('/api/lookup/varietes')
+            ]);
+            setEcartDirects(ecartData);
+            setVergers(vergerData);
+            setVarietes(varieteData);
         } catch (err) {
-            setError('Failed to fetch Ecart Direct records.');
+            setError('Failed to fetch data.');
         } finally {
             setIsLoading(false);
         }
@@ -44,7 +52,9 @@ const EcartDirectPage = () => {
             if (currentItem) {
                 await apiPut(`/api/ecartdirect/${currentItem.numpal}`, itemData);
             } else {
-                await apiPost('/api/ecartdirect', itemData);
+                // Exclude numpal for new items as it's auto-generated
+                const { numpal, ...dataWithoutNumpal } = itemData;
+                await apiPost('/api/ecartdirect', dataWithoutNumpal);
             }
             handleCloseModal();
             fetchData();
@@ -85,23 +95,29 @@ const EcartDirectPage = () => {
                             <th>Code Variété</th>
                             <th>Date Palette</th>
                             <th>Numéro BL</th>
+                            <th>Poids Fruit</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {ecartDirects.map(item => (
-                            <tr key={item.numpal}>
-                                <td>{item.numpal}</td>
-                                <td>{item.refver}</td>
-                                <td>{item.codvar}</td>
-                                <td>{item.dtepal ? new Date(item.dtepal).toLocaleDateString() : ''}</td>
-                                <td>{item.numbl}</td>
-                                <td className="action-buttons">
-                                    <button className="edit-btn" onClick={() => handleOpenModal(item)}>Edit</button>
-                                    <button className="delete-btn" onClick={() => handleDelete(item.numpal)}>Delete</button>
-                                </td>
-                            </tr>
-                        ))}
+                        {ecartDirects.map(item => {
+                            const verger = vergers.find(v => v.refver === item.refver);
+                            const variete = varietes.find(v => v.codvar === item.codvar);
+                            return (
+                                <tr key={item.numpal}>
+                                    <td>{item.numpal}</td>
+                                    <td>{verger?.nomver || 'N/A'}</td>
+                                    <td>{variete?.nomvar || 'N/A'}</td>
+                                    <td>{item.dtepal ? new Date(item.dtepal).toLocaleDateString() : ''}</td>
+                                    <td>{item.numbl}</td>
+                                    <td>{item.pdsfru}</td>
+                                    <td className="action-buttons">
+                                        <button className="edit-btn" onClick={() => handleOpenModal(item)}>Edit</button>
+                                        <button className="delete-btn" onClick={() => handleDelete(item.numpal)}>Delete</button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -111,6 +127,8 @@ const EcartDirectPage = () => {
                     onClose={handleCloseModal}
                     onSave={handleSave}
                     currentData={currentItem}
+                    vergers={vergers}
+                    varietes={varietes}
                 />
             )}
         </div>
