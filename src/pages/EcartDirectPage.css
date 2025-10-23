@@ -4,6 +4,8 @@
     margin: 0 auto;
     padding: 2rem;
     min-height: 100vh;
+    background-color: #f9f9f9;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .page-header {
@@ -11,21 +13,26 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 2px solid #eee;
     padding-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .page-header h1 {
     margin: 0;
-    font-size: 2rem;
-    color: #2c3e50;
+    font-size: 2.5rem;
+    color: #333;
 }
 
 .table-container {
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    overflow-x: auto;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
 }
 
 .data-table {
@@ -35,21 +42,27 @@
 
 .data-table th,
 .data-table td {
-    padding: 1rem;
+    padding: 1.2rem;
     text-align: left;
     border-bottom: 1px solid #e9ecef;
 }
 
 .data-table th {
-    background-color: #f8f9fa;
+    background-color: #f2f2f2;
     font-weight: 600;
-    color: #495057;
+    color: #555;
     font-size: 0.85rem;
     text-transform: uppercase;
 }
 
+.data-table tbody tr {
+    transition: all 0.3s ease;
+}
+
 .data-table tbody tr:hover {
-    background-color: #f1f7ff;
+    background-color: #f1f1f1;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .action-buttons {
@@ -59,23 +72,73 @@
 
 /* Button Styles */
 .add-btn, .edit-btn, .delete-btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0.7rem 1.4rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 25px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
-.add-btn:hover, .edit-btn:hover, .delete-btn:hover { transform: translateY(-2px); }
+.add-btn:hover, .edit-btn:hover, .delete-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
 .add-btn { background-color: #007bff; color: white; }
 .edit-btn { background-color: #ffc107; color: #333; }
 .delete-btn { background-color: #dc3545; color: white; }
 
 .error-message {
-    color: #dc3545;
+    color: #721c24;
     padding: 1rem;
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
-    border-radius: 6px;
+    border-radius: 10px;
     margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn {
+    padding: 0.4rem 0.8rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 70px;
+    max-width: 200px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pagination-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+.pagination-info {
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 600;
+    padding: 0 1rem;
 }

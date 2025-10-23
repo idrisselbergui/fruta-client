@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import './EcartDirectModal.css';
 
 const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes, typeEcarts }) => {
+    const today = new Date().toISOString().split('T')[0];
+
     const [formData, setFormData] = useState(
-        currentData || { numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '', codtype: '' }
+        currentData || { numpal: '', refver: '', codvar: '', dtepal: today, numbl: '', pdsfru: '', codtype: '' }
     );
 
     useEffect(() => {
         if (currentData) {
             setFormData({
                 ...currentData,
-                dtepal: currentData.dtepal ? new Date(currentData.dtepal).toISOString().split('T')[0] : ''
+                dtepal: currentData.dtepal ? new Date(currentData.dtepal).toISOString().split('T')[0] : today
             });
         } else {
-            setFormData({ numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '', codtype: '' });
+            setFormData({ numpal: '', refver: '', codvar: '', dtepal: today, numbl: '', pdsfru: '', codtype: '' });
         }
-    }, [currentData]);
+    }, [currentData, today]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

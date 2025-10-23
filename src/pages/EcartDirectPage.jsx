@@ -13,6 +13,8 @@ const EcartDirectPage = () => {
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(20);
 
     const fetchData = useCallback(async () => {
         try {
@@ -78,6 +80,19 @@ const EcartDirectPage = () => {
         }
     };
 
+    // Sort data by numpal descending
+    const sortedEcartDirects = ecartDirects.sort((a, b) => b.numpal - a.numpal);
+
+    // Calculate pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = sortedEcartDirects.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(sortedEcartDirects.length / itemsPerPage);
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
     if (isLoading) return <LoadingSpinner />;
 
     return (
@@ -104,7 +119,7 @@ const EcartDirectPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {ecartDirects.map(item => {
+                        {currentItems.map(item => {
                             const verger = vergers.find(v => v.refver === item.refver);
                             const variete = varietes.find(v => v.codvar === item.codvar);
                             return (
@@ -125,6 +140,27 @@ const EcartDirectPage = () => {
                         })}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="pagination-container">
+                <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="pagination-btn"
+                >
+                    Previous
+                </button>
+                <span className="pagination-info">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="pagination-btn"
+                >
+                    Next
+                </button>
             </div>
 
             {isModalOpen && (
