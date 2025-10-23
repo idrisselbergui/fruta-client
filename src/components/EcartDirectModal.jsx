@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './EcartDirectModal.css';
 
-const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) => {
+const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes, typeEcarts }) => {
     const [formData, setFormData] = useState(
-        currentData || { numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '' }
+        currentData || { numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '', codtype: '' }
     );
 
     useEffect(() => {
@@ -13,7 +13,7 @@ const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) =
                 dtepal: currentData.dtepal ? new Date(currentData.dtepal).toISOString().split('T')[0] : ''
             });
         } else {
-            setFormData({ numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '' });
+            setFormData({ numpal: '', refver: '', codvar: '', dtepal: '', numbl: '', pdsfru: '', codtype: '' });
         }
     }, [currentData]);
 
@@ -36,18 +36,25 @@ const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) =
                 <div className="modal-body">
                     <form onSubmit={handleSubmit}>
                         <div className="input-group">
-                            <label>Numéro Palette</label>
+                            <label>Numéro BL</label>
                             <input
                                 type="number"
-                                name="numpal"
-                                value={formData.numpal || ''}
+                                name="numbl"
+                                value={formData.numbl || ''}
                                 onChange={handleChange}
-                                required
-                                readOnly
                             />
                         </div>
                         <div className="input-group">
-                            <label>Réf. Verger</label>
+                            <label>Date</label>
+                            <input
+                                type="date"
+                                name="dtepal"
+                                value={formData.dtepal || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label>Verger</label>
                             <select
                                 name="refver"
                                 value={formData.refver || ''}
@@ -57,13 +64,13 @@ const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) =
                                 <option value="">Select Verger</option>
                                 {vergers.map(verger => (
                                     <option key={verger.refver} value={verger.refver}>
-                                        {verger.refver} - {verger.nomver || 'N/A'}
+                                        {verger.nomver || 'N/A'}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div className="input-group">
-                            <label>Code Variété</label>
+                            <label>Variete</label>
                             <select
                                 name="codvar"
                                 value={formData.codvar || ''}
@@ -73,28 +80,10 @@ const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) =
                                 <option value="">Select Variete</option>
                                 {varietes.map(variete => (
                                     <option key={variete.codvar} value={variete.codvar}>
-                                        {variete.codvar} - {variete.nomvar || 'N/A'}
+                                        {variete.nomvar || 'N/A'}
                                     </option>
                                 ))}
                             </select>
-                        </div>
-                        <div className="input-group">
-                            <label>Date Palette</label>
-                            <input
-                                type="date"
-                                name="dtepal"
-                                value={formData.dtepal || ''}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div className="input-group">
-                            <label>Numéro BL</label>
-                            <input
-                                type="number"
-                                name="numbl"
-                                value={formData.numbl || ''}
-                                onChange={handleChange}
-                            />
                         </div>
                         <div className="input-group">
                             <label>Poids Fruit</label>
@@ -105,6 +94,22 @@ const EcartDirectModal = ({ onClose, onSave, currentData, vergers, varietes }) =
                                 value={formData.pdsfru || ''}
                                 onChange={handleChange}
                             />
+                        </div>
+                        <div className="input-group">
+                            <label>Type Ecart</label>
+                            <select
+                                name="codtype"
+                                value={formData.codtype || ''}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="">Select Type Ecart</option>
+                                {typeEcarts.map(typeEcart => (
+                                    <option key={typeEcart.codtype} value={typeEcart.codtype}>
+                                        {typeEcart.destype || 'N/A'}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div className="modal-actions">
                             <button type="button" className="clear-btn" onClick={onClose}>Cancel</button>

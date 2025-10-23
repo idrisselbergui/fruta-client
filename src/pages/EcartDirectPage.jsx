@@ -8,6 +8,7 @@ const EcartDirectPage = () => {
     const [ecartDirects, setEcartDirects] = useState([]);
     const [vergers, setVergers] = useState([]);
     const [varietes, setVarietes] = useState([]);
+    const [typeEcarts, setTypeEcarts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,14 +17,16 @@ const EcartDirectPage = () => {
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const [ecartData, vergerData, varieteData] = await Promise.all([
+            const [ecartData, vergerData, varieteData, typeEcartData] = await Promise.all([
                 apiGet('/api/ecartdirect'),
                 apiGet('/api/lookup/vergers'),
-                apiGet('/api/lookup/varietes')
+                apiGet('/api/lookup/varietes'),
+                apiGet('/api/lookup/typeecarts')
             ]);
             setEcartDirects(ecartData);
             setVergers(vergerData);
             setVarietes(varieteData);
+            setTypeEcarts(typeEcartData);
         } catch (err) {
             setError('Failed to fetch data.');
         } finally {
@@ -91,11 +94,12 @@ const EcartDirectPage = () => {
                     <thead>
                         <tr>
                             <th>Numéro Palette</th>
-                            <th>Réf. Verger</th>
-                            <th>Code Variété</th>
-                            <th>Date Palette</th>
+                            <th>Verger</th>
+                            <th>Variete</th>
+                            <th>Date</th>
                             <th>Numéro BL</th>
                             <th>Poids Fruit</th>
+                            <th>Type Ecart</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -111,6 +115,7 @@ const EcartDirectPage = () => {
                                     <td>{item.dtepal ? new Date(item.dtepal).toLocaleDateString() : ''}</td>
                                     <td>{item.numbl}</td>
                                     <td>{item.pdsfru}</td>
+                                    <td>{item.typeEcart?.destype || 'N/A'}</td>
                                     <td className="action-buttons">
                                         <button className="edit-btn" onClick={() => handleOpenModal(item)}>Edit</button>
                                         <button className="delete-btn" onClick={() => handleDelete(item.numpal)}>Delete</button>
@@ -129,6 +134,7 @@ const EcartDirectPage = () => {
                     currentData={currentItem}
                     vergers={vergers}
                     varietes={varietes}
+                    typeEcarts={typeEcarts}
                 />
             )}
         </div>
