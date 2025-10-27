@@ -142,3 +142,34 @@
     font-weight: 600;
     padding: 0 1rem;
 }
+
+/* Dashboard Filters Styles */
+.dashboard-filters {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item label {
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.filter-item input {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+}

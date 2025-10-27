@@ -648,5 +648,282 @@ const generateEcartGroupDetailsPDF = (ecartGroupDetails, filters) => {
   }
 };
 
+const generateEcartDirectGroupedPDF = (ecartDirectData, vergers, varietes, typeEcarts, filters) => {
+  console.log('Starting Ecart Direct grouped PDF generation');
+
+  if (!ecartDirectData?.length) {
+    console.error('No ecart direct data available for PDF');
+    throw new Error('No data available. Please ensure data is loaded.');
+  }
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Add clear logo in top right corner
+  try {
+    const logoPath = '/diaf.png';
+    // Add logo in top right corner (clear and visible)
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+  } catch (error) {
+    console.log('Logo not found, continuing without logo');
+  }
+
+  // Header
+  doc.setFontSize(18);
+  doc.text('Rapport Écarts Directs (Groupés)', 20, 20);
+
+  doc.setFontSize(10);
+  doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+  if (filters.startDate && filters.endDate) {
+    doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  } else if (filters.startDate) {
+    doc.text(`À partir du: ${filters.startDate}`, 20, 37);
+  } else if (filters.endDate) {
+    doc.text(`Jusqu'au: ${filters.endDate}`, 20, 37);
+  }
+
+  let yPosition = 50;
+
+  // Group data by verger -> variete -> typeecart
+  const groupedData = {};
+
+  ecartDirectData.forEach(item => {
+    const verger = vergers.find(v => v.refver === item.refver);
+    const variete = varietes.find(v => v.codvar === item.codvar);
+    const typeEcart = typeEcarts.find(t => t.codtype === item.codtype);
+
+    const vergerKey = verger ? verger.nomver : 'N/A';
+    const varieteKey = variete ? variete.nomvar : 'N/A';
+    const typeEcartKey = typeEcart ? typeEcart.destype : 'N/A';
+
+    if (!groupedData[vergerKey]) groupedData[vergerKey] = {};
+    if (!groupedData[vergerKey][varieteKey]) groupedData[vergerKey][varieteKey] = {};
+    if (!groupedData[vergerKey][varieteKey][typeEcartKey]) {
+      groupedData[vergerKey][varieteKey][typeEcartKey] = 0;
+    }
+
+    groupedData[vergerKey][varieteKey][typeEcartKey] += parseFloat(item.pdsfru) || 0;
+  });
+
+  // Create table data for hierarchical display
+  const tableData = [];
+  const headerRow = ['Verger', 'Variété', 'Type d\'Écart', 'Poids Fruit Total'];
+  tableData.push(headerRow);
+
+  let grandTotal = 0;
+
+  // Sort verg ers alphabetically
+  const sortedVergers = Object.keys(groupedData).sort();
+
+  sortedVergers.forEach(vergerName => {
+    let vergerTotal = 0;
+    const sortedVarietes = Object.keys(groupedData[vergerName]).sort();
+
+    sortedVarietes.forEach(varieteName => {
+      let varieteTotal = 0;
+      const sortedTypeEcarts = Object.keys(groupedData[vergerName][varieteName]).sort();
+
+      sortedTypeEcarts.forEach(typeEcartName => {
+        const weight = groupedData[vergerName][varieteName][typeEcartName];
+        tableData.push([
+          vergerName.toUpperCase(),
+          varieteName.toUpperCase(),
+          typeEcartName.toUpperCase(),
+          formatNumberWithSpaces(weight, 2)
+        ]);
+        varieteTotal += weight;
+        vergerTotal += weight;
+        grandTotal += weight;
+      });
+    });
+  });
+
+  // Grand total
+  tableData.push([
+    'TOTAL GÉNÉRAL',
+    '',
+    '',
+    formatNumberWithSpaces(grandTotal, 2)
+  ]);
+
+  console.log('Final table data for ecart direct grouped PDF:', tableData);
+
+  // Generate the table
+  autoTable(doc, {
+    startY: yPosition,
+    head: [headerRow],
+    body: tableData.slice(1),
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 3
+    },
+    headStyles: {
+      fillColor: [220, 53, 69], // Red color for ecart theme
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 9
+    },
+    columnStyles: {
+      0: { cellWidth: 50, fontStyle: 'bold' },
+      1: { cellWidth: 50, fontStyle: 'bold' },
+      2: { cellWidth: 50 },
+      3: { cellWidth: 30, halign: 'right' }
+    },
+    margin: { left: 10, right: 10 },
+    alternateRowStyles: { fillColor: [245, 245, 245] }
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
+
+  // Save the PDF
+  const fileName = `rapport-ecarts-direct-groupes-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  try {
+    doc.save(fileName);
+    console.log('Ecart Direct Grouped PDF saved successfully:', fileName);
+    return fileName;
+  } catch (error) {
+    console.error('Error saving ecart direct grouped PDF:', error);
+    throw error;
+  }
+};
+
+const generateEcartDirectDetailsPDF = (ecartDirectData, vergers, varietes, typeEcarts, filters) => {
+  console.log('Starting Ecart Direct details PDF generation');
+
+  if (!ecartDirectData?.length) {
+    console.error('No ecart direct data available for details PDF');
+    throw new Error('No data available. Please ensure data is loaded.');
+  }
+
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Add clear logo in top right corner
+  try {
+    const logoPath = '/diaf.png';
+    // Add logo in top right corner (clear and visible)
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+  } catch (error) {
+    console.log('Logo not found, continuing without logo');
+  }
+
+  // Header
+  doc.setFontSize(18);
+  doc.text('Rapport Écarts Directs (Détails)', 20, 20);
+
+  doc.setFontSize(10);
+  doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+  if (filters.startDate && filters.endDate) {
+    doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  } else if (filters.startDate) {
+    doc.text(`À partir du: ${filters.startDate}`, 20, 37);
+  } else if (filters.endDate) {
+    doc.text(`Jusqu'au: ${filters.endDate}`, 20, 37);
+  }
+
+  let yPosition = 50;
+
+  // Create table data - same as displayed in the table
+  const tableData = [];
+  const headerRow = ['N° Palette', 'Verger', 'Variété', 'Date', 'N° BL', 'Poids Fruit', 'Type d\'Écart'];
+  tableData.push(headerRow);
+
+  let totalPdsfru = 0;
+
+  // Sort by numpal descending (same as table)
+  const sortedData = [...ecartDirectData].sort((a, b) => b.numpal - a.numpal);
+
+  sortedData.forEach(row => {
+    const verger = vergers.find(v => v.refver === row.refver);
+    const variete = varietes.find(v => v.codvar === row.codvar);
+    const typeEcart = typeEcarts.find(t => t.codtype === row.codtype);
+
+    const rowData = [
+      row.numpal,
+      (verger?.nomver || 'N/A').toUpperCase(),
+      (variete?.nomvar || 'N/A').toUpperCase(),
+      row.dtepal ? new Date(row.dtepal).toLocaleDateString('fr-FR') : '',
+      row.numbl || '',
+      formatNumberWithSpaces(parseFloat(row.pdsfru) || 0, 2),
+      (typeEcart?.destype || 'N/A').toUpperCase()
+    ];
+    tableData.push(rowData);
+
+    totalPdsfru += parseFloat(row.pdsfru) || 0;
+  });
+
+  // Add total row
+  tableData.push([
+    'TOTAL',
+    '',
+    '',
+    '',
+    '',
+    formatNumberWithSpaces(totalPdsfru, 2),
+    ''
+  ]);
+
+  console.log('Final table data for ecart direct details PDF:', tableData);
+
+  // Generate the table
+  autoTable(doc, {
+    startY: yPosition,
+    head: [headerRow],
+    body: tableData.slice(1),
+    theme: 'grid',
+    styles: {
+      fontSize: 7,
+      cellPadding: 2
+    },
+    headStyles: {
+      fillColor: [220, 53, 69], // Red color for ecart theme
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 8
+    },
+    columnStyles: {
+      0: { cellWidth: 25, halign: 'center' },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 35 },
+      3: { cellWidth: 25, halign: 'center' },
+      4: { cellWidth: 25, halign: 'center' },
+      5: { cellWidth: 30, halign: 'right' },
+      6: { cellWidth: 40 }
+    },
+    margin: { left: 10, right: 10 },
+    alternateRowStyles: { fillColor: [245, 245, 245] }
+  });
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
+
+  // Save the PDF
+  const fileName = `rapport-ecarts-direct-details-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  try {
+    doc.save(fileName);
+    console.log('Ecart Direct Details PDF saved successfully:', fileName);
+    return fileName;
+  } catch (error) {
+    console.error('Error saving ecart direct details PDF:', error);
+    throw error;
+  }
+};
+
 export default generateDetailedExportPDF;
-export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF };
+export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF };
