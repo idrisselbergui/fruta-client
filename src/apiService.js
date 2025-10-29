@@ -119,5 +119,14 @@ export const deleteUser = (userId, databaseName = null) => {
   return apiDelete(`/api/users/${userId}`, databaseName);
 };
 
+// Permission management functions
+export const getUserPermissions = (userId, databaseName = null) => {
+  return apiGet(`/api/users/permissions/${userId}`, null, databaseName);
+};
+
+export const updateUserPermissions = (userId, permissions, databaseName = null) => {
+  return apiPost(`/api/users/permissions/${userId}`, { permissions }, databaseName);
+};
+
 // Export API_BASE_URL for debugging
 export { API_BASE_URL, getUserSession };

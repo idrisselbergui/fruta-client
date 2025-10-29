@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, Outlet, Navigate } from 'rea
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import LoginForm from './LoginForm';
-import { ProtectedRoute, UserProtectedRoute, ReadOnlyProtectedRoute } from './ProtectedRoute';
+import { PageProtectedRoute } from './ProtectedRoute';
 import Layout from './components/Layout';
 import DailyProgramPage from './pages/DailyProgramPage';
 import ProgramListPage from './pages/ProgramListPage';
@@ -12,19 +12,7 @@ import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
 import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
 import EcartDirectPage from './pages/EcartDirectPage';
 
-// Component to protect routes that require admin permissions (permission === 1)
-const AdminProtectedRoute = ({ user, children }) => {
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
 
-  if (user.permission !== 1) {
-    // If user is not an admin, redirect to dashboard (which is accessible to all)
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-};
 
 
 const AppLayout = ({ user, onLogout }) => (
@@ -61,45 +49,45 @@ function App() {
         <Route path="/home" element={<HomePage user={user} />} />
         <Route path="/dashboard" element={<DashboardPage />} />
 
-        {/* Routes accessible to regular users (permission 0) and admins (permission 1) */}
+        {/* Routes protected by page-specific permissions */}
         <Route path="/programs" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="programs">
             <ProgramListPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
         <Route path="/program/new" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="program-new">
             <DailyProgramPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
         <Route path="/program/edit/:id" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="program-edit">
             <DailyProgramPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
         <Route path="/traits" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="traits">
             <TraitPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
         <Route path="/traitements" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="traitements">
             <TraitementPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
         <Route path="/ecart-direct" element={
-          <UserProtectedRoute user={user}>
+          <PageProtectedRoute user={user} pageName="ecart-direct">
             <EcartDirectPage />
-          </UserProtectedRoute>
+          </PageProtectedRoute>
         } />
 
-        {/* Admin-only route (permission === 1) */}
+        {/* Admin route (protected by permissions) */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute user={user}>
+            <PageProtectedRoute user={user} pageName="admin">
               <AdminPage />
-            </ProtectedRoute>
+            </PageProtectedRoute>
           }
         />
       </Route>

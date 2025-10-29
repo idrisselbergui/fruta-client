@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { hasPagePermission } from '../ProtectedRoute';
 import './Header.css';
 
 const Header = ({ user, onLogout }) => {
@@ -18,46 +19,50 @@ const Header = ({ user, onLogout }) => {
           Home
         </NavLink>
 
-        {/* Dashboard is accessible to all users */}
+         {user && hasPagePermission(user, "dashboard") && (
         <NavLink
           to="/dashboard"
           className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
         >
           Dashboard
         </NavLink>
-
-        {/* Regular users (permission 0) and admins (permission 1) can access these pages */}
-        {user && (user.permission === 0 || user.permission === 1) && (
-          <>
-            <NavLink
-              to="/programs"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              Programs
-            </NavLink>
-            <NavLink
-              to="/traits"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              Products
-            </NavLink>
-            <NavLink
-              to="/traitements"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              Treatments
-            </NavLink>
-            <NavLink
-              to="/ecart-direct"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              Ecart Direct
-            </NavLink>
-          </>
+   )}   
+        {/* Page-specific navigation based on user permissions */}
+        {user && hasPagePermission(user, "programs") && (
+          <NavLink
+            to="/programs"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Programs
+          </NavLink>
+        )}
+        {user && hasPagePermission(user, "traits") && (
+          <NavLink
+            to="/traits"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Products
+          </NavLink>
+        )}
+        {user && hasPagePermission(user, "traitements") && (
+          <NavLink
+            to="/traitements"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Treatments
+          </NavLink>
+        )}
+        {user && hasPagePermission(user, "ecart-direct") && (
+          <NavLink
+            to="/ecart-direct"
+            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+          >
+            Ecart Direct
+          </NavLink>
         )}
 
-        {/* Admin users (permission === 1) can access admin page */}
-        {user && user.permission === 1 && (
+        {/* Admin page access based on permissions */}
+        {user && hasPagePermission(user, "admin") && (
           <NavLink
             to="/admin"
             className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
