@@ -1,131 +1,88 @@
-.header-container {
-  position: sticky;
+/* Simple header bar - fixed at top, limited by sidebar */
+.app-header {
+  position: fixed;
   top: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(224, 224, 224, 0.5);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.logo a {
+  left: 240px; /* Start after sidebar */
+  right: 0;
+  height: 60px;
+  background: linear-gradient(90deg, #FFFFFF 0%, #E0F6FF 100%);
   display: flex;
   align-items: center;
-  text-decoration: none;
+  justify-content: flex-end;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 900;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-.logo img {
-  height: 40px; /* Reduced for better proportion */
-  width: auto;
-  transition: transform 0.3s ease;
-}
-
-.logo img:hover {
-  transform: scale(1.05);
-}
-
-.navigation-menu {
+/* Header sections - only right side used */
+.header-right {
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* Better spacing between items */
+  justify-content: flex-end;
 }
 
-.nav-link {
-  position: relative;
-  margin: 0 0.75rem;
-  text-decoration: none;
-  color: #4a5568;
+/* Logout button - matches app's blue theme */
+.header-logout-btn {
+  background: #3498db;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 500;
-  font-size: 0.95rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.nav-link:hover {
-  color: #007bff;
-  background-color: rgba(0, 123, 255, 0.08);
-  transform: translateY(-1px);
-}
-
-.nav-link.active {
-  color: #007bff;
-  background-color: rgba(0, 123, 255, 0.12);
-  font-weight: 600;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 2px;
-  background-color: #007bff;
-  border-radius: 1px;
-}
-
-/* Logout button improvements */
-.logout-button-header {
-  background: none;
-  border: 1px solid transparent;
-  color: #e53e3e;
+  padding: 8px 16px;
+  border-radius: 6px;
   cursor: pointer;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 500;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 3px rgba(52, 152, 219, 0.25);
 }
 
-.logout-button-header:hover {
-  color: #c53030;
-  background-color: rgba(229, 62, 62, 0.08);
-  border-color: rgba(229, 62, 62, 0.2);
+.header-logout-btn:hover {
+  background: #2980b9;
   transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(52, 152, 219, 0.35);
 }
 
-/* Responsive design */
+.header-logout-btn:active {
+  transform: translateY(0);
+}
+
+.logout-icon {
+  flex-shrink: 0;
+}
+
+/* Collapsed sidebar mode */
+.app-header.sidebar-collapsed {
+  left: 72px; /* Adjust for collapsed sidebar */
+}
+
+/* Mobile responsive - full width on mobile */
 @media (max-width: 768px) {
-  .header-container {
-    padding: 0.75rem 1rem;
-    flex-direction: column;
-    gap: 1rem;
+  .app-header,
+  .app-header.sidebar-collapsed {
+    left: 0; /* Full width on mobile */
+    padding: 0 16px;
+    height: 56px;
   }
 
-  .navigation-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.25rem;
-  }
-
-  .nav-link {
-    margin: 0 0.25rem;
-    padding: 0.375rem 0.5rem;
-    font-size: 0.9rem;
-  }
-
-  .logout-button-header {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.9rem;
+  .header-logout-btn {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
 
 @media (max-width: 480px) {
-  .logo img {
-    height: 32px;
+  .header-logout-btn span {
+    display: none; /* Show only icon on very small screens */
   }
 
-  .navigation-menu {
-    order: -1; /* Move nav above logo on very small screens */
+  .header-logout-btn {
+    width: 40px;
+    padding: 8px;
+    justify-content: center;
   }
 }

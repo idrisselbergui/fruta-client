@@ -3,15 +3,17 @@
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding-top: 60px; /* Account for fixed header */
 }
 
 .main-content {
   flex: 1;
   padding: 2rem;
-  margin: 0 auto;
-  max-width: 1400px;
-  width: 100%;
+  display: flex;
+  justify-content: center; /* Center content horizontally */
+  align-items: flex-start; /* Align to top, allow vertical centering if needed */
+  min-height: calc(100vh - 120px); /* Account for header + footer */
 }
 
 .content-wrapper {
@@ -21,6 +23,9 @@
   padding: 2rem;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: calc(100vh - 160px); /* Full height minus header and padding */
+  max-width: 1400px;
+  width: 100%;
 }
 
 /* Responsive adjustments */

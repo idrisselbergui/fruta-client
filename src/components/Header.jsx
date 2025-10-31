@@ -1,82 +1,23 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { hasPagePermission } from '../ProtectedRoute';
 import './Header.css';
 
-const Header = ({ user, onLogout }) => {
+const Header = ({ onLogout, isCollapsed }) => {
   return (
-    <header className="header-container">
-      <div className="logo">
-        <NavLink to="/home">
-          <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" />
-        </NavLink>
+    <header className={`app-header ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className="header-right">
+        <button
+          className="header-logout-btn"
+          onClick={onLogout}
+          aria-label="Logout"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="logout-icon">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16,17 21,12 16,7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Logout</span>
+        </button>
       </div>
-      <nav className="navigation-menu">
-        <NavLink
-          to="/home"
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          Home
-        </NavLink>
-
-         {user && hasPagePermission(user, "dashboard") && (
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-        >
-          Dashboard
-        </NavLink>
-   )}   
-        {/* Page-specific navigation based on user permissions */}
-        {user && hasPagePermission(user, "programs") && (
-          <NavLink
-            to="/programs"
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Programs
-          </NavLink>
-        )}
-        {user && hasPagePermission(user, "traits") && (
-          <NavLink
-            to="/traits"
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Products
-          </NavLink>
-        )}
-        {user && hasPagePermission(user, "traitements") && (
-          <NavLink
-            to="/traitements"
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Treatments
-          </NavLink>
-        )}
-        {user && hasPagePermission(user, "ecart-direct") && (
-          <NavLink
-            to="/ecart-direct"
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Ecart Direct
-          </NavLink>
-        )}
-
-        {/* Admin page access based on permissions */}
-        {user && hasPagePermission(user, "admin") && (
-          <NavLink
-            to="/admin"
-            className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-          >
-            Admin
-          </NavLink>
-        )}
-
-        {user && (
-          <button onClick={onLogout} className="logout-button-header" aria-label="Logout">
-            Logout
-          </button>
-        )}
-      </nav>
     </header>
   );
 };
