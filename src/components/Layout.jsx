@@ -35,12 +35,20 @@ const Layout = ({ children, user, onLogout }) => {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // On mobile, force sidebar not collapsed
+      if (mobile && sidebarCollapsed) {
+        setSidebarCollapsed(false);
+        localStorage.setItem('sidebarCollapsed', 'false');
+        localStorage.setItem('sidebarWidth', '240');
+        window.dispatchEvent(new CustomEvent('sidebarWidthChange', { detail: { width: 240 } }));
+      }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [sidebarCollapsed]);
 
   const sidebarWidth = sidebarCollapsed ? 72 : 240;
 
