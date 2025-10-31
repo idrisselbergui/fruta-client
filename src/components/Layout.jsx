@@ -47,6 +47,7 @@ const Layout = ({ children, user, onLogout }) => {
   return (
     <div className="layout-container">
       <Header
+        user={user}
         onLogout={onLogout}
         isCollapsed={sidebarCollapsed}
         onToggleSidebar={toggleSidebar}

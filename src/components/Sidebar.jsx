@@ -147,15 +147,6 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
                 <span className="user-name">{user.username || 'User'}</span>
               )}
             </div>
-            {!isCollapsed && (
-              <button
-                className="sidebar-logout-btn"
-                onClick={handleLogout}
-                aria-label="Logout"
-              >
-                Logout
-              </button>
-            )}
           </div>
         )}
       </div>

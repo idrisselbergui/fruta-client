@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-const Header = ({ onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMobileMenu, closeMobileMenu }) => {
+const Header = ({ user, onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMobileMenu, closeMobileMenu }) => {
   return (
     <header className={`app-header ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="header-left">
@@ -23,7 +23,6 @@ const Header = ({ onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMo
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}
           >
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -33,6 +32,11 @@ const Header = ({ onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMo
       </div>
 
       <div className="header-right">
+        {user && (
+          <div className="header-welcome">
+            Welcome, {user.username}
+          </div>
+        )}
         <button
           className="header-logout-btn"
           onClick={onLogout}

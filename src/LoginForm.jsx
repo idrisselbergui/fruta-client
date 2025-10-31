@@ -15,14 +15,14 @@ const LoginForm = ({ onLoginSuccess }) => {
     try {
       // --- 2. USE the new apiPost function ---
       // It automatically handles the URL, headers, and stringifying the body.
-      const data = await apiPost('/api/users/login', { 
-        database, 
-        username, 
+      const data = await apiPost('/api/users/login', {
+        database,
+        username,
         password,
         permission: 0 // This can be removed if your backend doesn't use it
       });
 
-      onLoginSuccess(data);
+      onLoginSuccess({ ...data, username });
 
     } catch (error) {
       // The apiService automatically throws an error with a message on failure
@@ -93,4 +93,3 @@ const LoginForm = ({ onLoginSuccess }) => {
 };
 
 export default LoginForm;
-

@@ -17,12 +17,22 @@
 .header-left {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+/* Welcome message styling */
+.header-welcome {
+  color: #3498db;
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 16px;
+  white-space: nowrap;
 }
 
 /* Logout button - matches app's blue theme */
@@ -67,16 +77,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   transition: all 0.2s ease;
 }
 
 .header-toggle-btn:hover {
-  color: #2980b9;
-  transform: scale(1.05);
 }
 
 .header-toggle-btn:active {
-  transform: scale(0.95);
 }
 
 /* Collapsed sidebar mode */
