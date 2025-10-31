@@ -8,14 +8,19 @@
   background: linear-gradient(90deg, #FFFFFF 0%, #E0F6FF 100%);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between; /* Space between left and right */
   padding: 0 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 900;
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* Header sections - only right side used */
+/* Header sections - left for toggle, right for logout */
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -55,6 +60,34 @@
   flex-shrink: 0;
 }
 
+/* Sidebar toggle button in header */
+.header-toggle-btn {
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  color: #3498db;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.header-toggle-btn:hover {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.4);
+  color: #2980b9;
+  transform: scale(1.05);
+}
+
+.header-toggle-btn:active {
+  transform: scale(0.95);
+}
+
 /* Collapsed sidebar mode */
 .app-header.sidebar-collapsed {
   left: 72px; /* Adjust for collapsed sidebar */
@@ -67,6 +100,10 @@
     left: 0; /* Full width on mobile */
     padding: 0 16px;
     height: 56px;
+  }
+
+  .header-toggle-btn {
+    display: none; /* Hide toggle button on mobile - hamburger is used */
   }
 
   .header-logout-btn {

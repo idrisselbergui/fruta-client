@@ -51,27 +51,27 @@
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Center logo since no collapse button */
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.4);
   min-height: 72px;
 }
 
 .sidebar-logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
   background: #ffffff;
-  padding: 6px;
+  padding: 8px;
   flex-shrink: 0;
 }
 
 .sidebar-logo-collapsed {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   background: #ffffff;
-  padding: 6px;
+  padding: 8px;
   margin: 0 auto;
 }
 
@@ -79,28 +79,7 @@
   display: none; /* Remove brand name completely */
 }
 
-.sidebar-collapse-btn {
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  min-width: 24px;
-  min-height: 24px;
-}
-
-.sidebar-collapse-btn:hover {
-  color: #374151;
-  background: rgba(255, 255, 255, 0.2);
-}
-
 .sidebar.collapsed .sidebar-header {
-  justify-content: center;
   padding: 16px;
 }
 
@@ -134,15 +113,15 @@
 }
 
 .sidebar-nav-item.active {
-  color: #3498db;
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.25) 0%, rgba(52, 152, 219, 0.05) 100%);
+  color: #87CEEB; /* Lighter blue for text */
+  background: linear-gradient(90deg, rgba(135, 206, 235, 0.2) 0%, rgba(135, 206, 235, 0.05) 100%); /* Lighter blue gradient */
   font-weight: 600;
-  border-left: 3px solid #3498db;
-  text-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+  border-left: 3px solid #87CEEB; /* Lighter blue border */
+  text-shadow: 0 0 8px rgba(135, 206, 235, 0.4); /* Lighter blue shadow */
 }
 
 .sidebar-nav-item.active .sidebar-nav-icon {
-  color: #3498db;
+  color: #87CEEB; /* Lighter blue for icon */
 }
 
 .sidebar-nav-item.collapsed {

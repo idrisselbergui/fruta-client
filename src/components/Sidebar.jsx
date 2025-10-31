@@ -89,23 +89,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, onToggleCollapse }) => {
           {isCollapsed && (
             <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" className="sidebar-logo-collapsed" />
           )}
-          <button
-            className="sidebar-collapse-btn"
-            onClick={onToggleCollapse}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }}
-            >
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
-          </button>
+         
         </div>
 
         {/* Navigation */}
