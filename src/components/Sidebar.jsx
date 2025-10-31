@@ -50,15 +50,19 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
         {/* Brand section */}
         <div className="sidebar-header">
           {!isCollapsed && (
-            <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" className="sidebar-logo" />
+            <NavLink to="/home">
+              <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" className="sidebar-logo" />
+            </NavLink>
           )}
           {!isCollapsed && (
             <span className="sidebar-brand">Frutaaaaa</span>
           )}
           {isCollapsed && (
-            <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" className="sidebar-logo-collapsed" />
+            <NavLink to="/home">
+              <img src="/frutaaaaa.png" alt="Frutaaaaa Logo" className="sidebar-logo-collapsed" />
+            </NavLink>
           )}
-         
+
         </div>
 
         {/* Navigation */}
