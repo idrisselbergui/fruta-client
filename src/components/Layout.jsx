@@ -10,6 +10,7 @@ const Layout = ({ children, user, onLogout }) => {
     return stored ? JSON.parse(stored) : false;
   });
   const [isMobile, setIsMobile] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const toggleSidebar = () => {
     const newCollapsed = !sidebarCollapsed;
@@ -22,6 +23,14 @@ const Layout = ({ children, user, onLogout }) => {
 
     // Dispatch event for potential other listeners
     window.dispatchEvent(new CustomEvent('sidebarWidthChange', { detail: { width } }));
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileOpen(false);
   };
 
   useEffect(() => {
@@ -37,12 +46,21 @@ const Layout = ({ children, user, onLogout }) => {
 
   return (
     <div className="layout-container">
-      <Header onLogout={onLogout} isCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+      <Header
+        onLogout={onLogout}
+        isCollapsed={sidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
+        isMobileOpen={isMobileOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        closeMobileMenu={closeMobileMenu}
+      />
       <Sidebar
         user={user}
         onLogout={onLogout}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebar}
+        isMobileOpen={isMobileOpen}
+        closeMobileMenu={closeMobileMenu}
       />
       <main
         className={`main-content ${isMobile ? 'mobile' : 'desktop'}`}

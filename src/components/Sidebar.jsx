@@ -1,31 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { hasPagePermission } from '../ProtectedRoute';
 import './Sidebar.css';
 
-const Sidebar = ({ user, onLogout, isCollapsed, onToggleCollapse }) => {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  // Close mobile menu when screen size changes to desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-
-
-  const toggleMobileMenu = () => {
-    setIsMobileOpen(!isMobileOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileOpen(false);
-  };
+const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu }) => {
 
   const handleLogout = () => {
     onLogout();
@@ -63,21 +41,12 @@ const Sidebar = ({ user, onLogout, isCollapsed, onToggleCollapse }) => {
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        className="mobile-menu-toggle"
-        onClick={toggleMobileMenu}
-        aria-label="Toggle menu"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-
       {/* Sidebar */}
+      {isMobileOpen && (
+        <div className="sidebar-overlay" onClick={closeMobileMenu}></div>
+      )}
       <div className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+ 
         {/* Brand section */}
         <div className="sidebar-header">
           {!isCollapsed && (

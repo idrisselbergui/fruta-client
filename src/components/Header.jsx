@@ -1,13 +1,19 @@
 import React from 'react';
 import './Header.css';
 
-const Header = ({ onLogout, isCollapsed, onToggleSidebar }) => {
+const Header = ({ onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMobileMenu, closeMobileMenu }) => {
   return (
     <header className={`app-header ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="header-left">
         <button
           className="header-toggle-btn"
-          onClick={onToggleSidebar}
+          onClick={() => {
+            if (window.innerWidth < 768) {
+              toggleMobileMenu();
+            } else {
+              onToggleSidebar();
+            }
+          }}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg
@@ -17,9 +23,11 @@ const Header = ({ onLogout, isCollapsed, onToggleSidebar }) => {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }}
+            style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}
           >
-            <polyline points="15,18 9,12 15,6"></polyline>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
       </div>
