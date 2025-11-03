@@ -80,7 +80,7 @@ const DashboardChart = ({ data, title, dataKey, color = '#007bff', unit = '' }) 
             vertical={false}
           />
           <XAxis
-            dataKey="refVer"
+            dataKey="name"
             tick={<RotatedAxisTick />}
             interval={0}
             tickLine={false}

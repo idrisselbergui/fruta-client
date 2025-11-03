@@ -667,6 +667,7 @@ const handleExportEcartGroupDetailsPDF = () => {
                             data={destinationChartData.data}
                             keys={destinationChartData.keys}
                             title={`Total Export for ${filters.selectedDestination.label}`}
+                            xAxisDataKey="name"
                         />
                     ) : (
                         <p>Veuillez sélectionner un client pour voir le graphique.</p>
