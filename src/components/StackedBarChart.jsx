@@ -7,7 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LabelList
 } from 'recharts';
 import { formatNumberWithSpaces } from '../utils/numberUtils';
 import './StackedBarChart.css';
@@ -49,6 +50,11 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
     return sum + keys.reduce((acc, key) => acc + (parseFloat(item[key]) || 0), 0);
   }, 0);
 
+  const dataWithTotals = data.map(item => ({
+    ...item,
+    total: keys.reduce((acc, key) => acc + (parseFloat(item[key]) || 0), 0)
+  }));
+
   return (
     <div className="chart-container">
       <div className="chart-header">
@@ -61,7 +67,7 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
-          data={data}
+          data={dataWithTotals}
           margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
           className="stacked-bar-chart"
         >
@@ -103,7 +109,16 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
               fill={COLORS[index % COLORS.length]} 
               radius={[4, 4, 0, 0]}
               className="bar-stack"
-            />
+            >
+              {index === keys.length - 1 && (
+                <LabelList 
+                  dataKey="total" 
+                  position="top" 
+                  formatter={(value) => formatNumberWithSpaces(value, 0)} 
+                  style={{ fill: '#4a5568', fontSize: '0.8rem', fontWeight: '500' }}
+                />
+              )}
+            </Bar>
           ))}
         </BarChart>
       </ResponsiveContainer>

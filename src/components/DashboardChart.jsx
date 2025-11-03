@@ -7,7 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
+  LabelList
 } from 'recharts';
 import { formatNumberWithSpaces } from '../utils/numberUtils';
  
@@ -106,7 +107,14 @@ const DashboardChart = ({ data, title, dataKey, color = '#007bff', unit = '' }) 
             fill={color} 
             radius={[4, 4, 0, 0]}
             className="bar-item"
-          />
+          >
+            <LabelList 
+              dataKey={dataKey} 
+              position="top" 
+              formatter={(value) => formatNumberWithSpaces(value, 0)} 
+              style={{ fill: '#4a5568', fontSize: '0.8rem', fontWeight: '500' }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

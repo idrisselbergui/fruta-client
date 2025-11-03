@@ -7,7 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
+  LabelList
 } from 'recharts';
 import { formatNumberWithSpaces } from '../utils/numberUtils';
 
@@ -253,7 +254,14 @@ const TrendChart = ({
             dot={{ fill: getChartColor(), strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6, stroke: getChartColor(), strokeWidth: 2 }}
             name={chartType.charAt(0).toUpperCase() + chartType.slice(1)}
-          />
+          >
+            <LabelList 
+              dataKey={dataKey} 
+              position="top" 
+              formatter={(value) => formatNumberWithSpaces(value, 0)} 
+              style={{ fill: '#4a5568', fontSize: '0.8rem', fontWeight: '500' }}
+            />
+          </Line>
         </LineChart>
       </ResponsiveContainer>
     </div>
