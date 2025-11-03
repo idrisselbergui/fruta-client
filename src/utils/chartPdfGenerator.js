@@ -128,20 +128,6 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
       }
     }
 
-    // Add footer
-    const totalPages = pdf.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      pdf.setPage(i);
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text(
-        `Page ${i} de ${totalPages} - Généré par Fruta Dashboard`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
-    }
-
     // Save the PDF
     const filename = `rapport_performance_verger_${orchardName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${Date.now()}.pdf`;
     pdf.save(filename);

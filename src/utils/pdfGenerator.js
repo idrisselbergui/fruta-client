@@ -52,77 +52,57 @@ const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByD
 
   let yPosition = 55;
 
-  // Create the transposed table format (Varieties as rows, Vergers as columns)
+  // Create a simple table with Verger, Variete, and Pds
   if (destinationChartData?.data && destinationChartData.data.length > 0) {
-    console.log('Processing destination chart data:', destinationChartData);
+    console.log('Processing destination chart data for simple table:', destinationChartData);
 
-    // Get all unique varieties and vergers
     const allVarieties = destinationChartData.keys || [];
-    const allVergers = [...new Set(destinationChartData.data.map(item => item.refver || 'Unknown'))].sort();
-    console.log('All varieties:', allVarieties);
-    console.log('All vergers:', allVergers);
-
-    // Create transposed data: variety -> verger -> value
-    const varietyData = {};
-    const varietyTotals = {};
+    const tableData = [];
     let grandTotal = 0;
 
-    allVarieties.forEach(variety => {
-      varietyData[variety] = {};
-      varietyTotals[variety] = 0;
-
-      allVergers.forEach(verger => {
-        varietyData[variety][verger] = 0;
-      });
-    });
-
-    // Fill in the values
+    // Flatten the data
     destinationChartData.data.forEach(item => {
-      const verger = item.refver || 'Unknown';
-
+      const vergerName = item.name || 'Unknown';
       allVarieties.forEach(variety => {
         const value = parseFloat(item[variety]) || 0;
-        varietyData[variety][verger] = Math.round(value); // Round to whole numbers
-        varietyTotals[variety] += Math.round(value);
-        grandTotal += Math.round(value);
+        if (value > 0) {
+          tableData.push({
+            verger: vergerName,
+            variete: variety,
+            pds: value
+          });
+          grandTotal += value;
+        }
       });
     });
 
-    console.log('Variety data organized:', varietyData);
-
-    // Create table data in the transposed format
-    const tableData = [];
-
-    // Add main header
-    const headerRow = ['Variété', ...allVergers.map(v => String(v).toUpperCase()), 'TotalVariété'];
-    tableData.push(headerRow);
-
-    // Add data rows (one per variety)
-    allVarieties.forEach(variety => {
-      const row = [String(variety).toUpperCase()];
-      let varietyTotal = 0;
-
-      allVergers.forEach(verger => {
-        const value = varietyData[variety][verger] || 0;
-        row.push(formatNumberWithSpaces(value, 0));
-        varietyTotal += value;
-      });
-
-      row.push(formatNumberWithSpaces(varietyTotal, 0));
-      tableData.push(row);
+    // Sort data
+    tableData.sort((a, b) => {
+      if (a.verger < b.verger) return -1;
+      if (a.verger > b.verger) return 1;
+      if (a.variete < b.variete) return -1;
+      if (a.variete > b.variete) return 1;
+      return 0;
     });
+
+    const tableBody = tableData.map(row => [
+      row.verger,
+      row.variete,
+      formatNumberWithSpaces(row.pds, 0)
+    ]);
+
+    const headerRow = ['Verger', 'Variété', 'Pds'];
 
     // Add total row
-    const totalRow = ['TOTAL', ...allVergers.map(v => ''), formatNumberWithSpaces(grandTotal, 0)];
-    tableData.push(totalRow);
+    tableBody.push(['TOTAL', '', formatNumberWithSpaces(grandTotal, 0)]);
 
-    console.log('Final table data:', tableData);
+    console.log('Final simple table data:', tableBody);
 
     // Generate the table
     autoTable(doc, {
       startY: yPosition,
       head: [headerRow],
-      body: tableData.slice(1), // Skip header row for body
+      body: tableBody,
       theme: 'grid',
       styles: {
         fontSize: 9,
@@ -134,17 +114,13 @@ const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByD
         fontStyle: 'bold'
       },
       columnStyles: {
-        0: { cellWidth: 60, fontStyle: 'bold' }
+        0: { fontStyle: 'bold' },
+        2: { halign: 'right' }
       },
       margin: { left: 10, right: 10 },
       alternateRowStyles: { fillColor: [245, 245, 245] }
     });
   }
-
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
 
   // Save the PDF
   const fileName = `export-par-verger-groupe-par-variete-${selectedDestination?.label || 'tous'}-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -262,11 +238,6 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
     margin: { left: 10, right: 10 },
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
-
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
 
   // Save the PDF
   const fileName = `details-donnee-varietes-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -388,11 +359,6 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
 
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
-
   // Save the PDF
   const fileName = `details-donnee-groupes-variete-${new Date().toISOString().split('T')[0]}.pdf`;
 
@@ -509,11 +475,6 @@ const generateEcartDetailsPDF = (ecartDetails, filters) => {
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
 
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
-
   // Save the PDF
   const fileName = `details-ecarts-${new Date().toISOString().split('T')[0]}.pdf`;
 
@@ -629,11 +590,6 @@ const generateEcartGroupDetailsPDF = (ecartGroupDetails, filters) => {
     margin: { left: 10, right: 10 },
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
-
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
 
   // Save the PDF
   const fileName = `details-ecarts-groupes-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -778,11 +734,6 @@ const generateEcartDirectGroupedPDF = (ecartDirectData, vergers, varietes, typeE
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
 
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
-
   // Save the PDF
   const fileName = `rapport-ecarts-direct-groupes-${new Date().toISOString().split('T')[0]}.pdf`;
 
@@ -906,11 +857,6 @@ const generateEcartDirectDetailsPDF = (ecartDirectData, vergers, varietes, typeE
     margin: { left: 10, right: 10 },
     alternateRowStyles: { fillColor: [245, 245, 245] }
   });
-
-  // Footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.text('Généré par Fruta Client Dashboard', 20, pageHeight - 20);
 
   // Save the PDF
   const fileName = `rapport-ecarts-direct-details-${new Date().toISOString().split('T')[0]}.pdf`;
