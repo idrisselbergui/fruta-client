@@ -29,40 +29,40 @@
 
 .table-container {
     background: #ffffff;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    font-family: system-ui, -apple-system, sans-serif;
 }
 
 .data-table th,
 .data-table td {
-    padding: 1.2rem;
+    padding: 0.5rem 1rem;
     text-align: left;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #f1f3f4;
 }
 
 .data-table th {
-    background-color: #f2f2f2;
+    background-color: #f8f9fa;
     font-weight: 600;
-    color: #555;
-    font-size: 0.85rem;
+    color: #374151;
+    font-size: 0.875rem;
     text-transform: uppercase;
-}
-
-.data-table tbody tr {
-    transition: all 0.3s ease;
+    letter-spacing: 0.05em;
 }
 
 .data-table tbody tr:hover {
-    background-color: #f1f1f1;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background-color: #f9fafb;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .action-buttons {
@@ -95,52 +95,89 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Pagination */
 .pagination-container {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     margin-top: 2rem;
-    gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    padding: 1rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.pagination-btn {
-    padding: 0.4rem 0.8rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    font-weight: 600;
-    font-size: 0.8rem;
-    min-width: 70px;
-    max-width: 200px;
-}
-
-.pagination-btn:hover:not(:disabled) {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-}
-
-.pagination-btn:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    opacity: 0.6;
+    padding: 1.5rem 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    border-top: 1px solid #e5e7eb;
 }
 
 .pagination-info {
-    font-size: 1.1rem;
-    color: #333;
-    font-weight: 600;
-    padding: 0 1rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    padding: 0.625rem 1rem;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    color: #374151;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f8f9fa;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.pagination-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    color: #374151;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-number:hover:not(.active) {
+    background-color: #f8f9fa;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-number.active {
+    background-color: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 1.5rem;
 }
 
 /* Dashboard Filters Styles */
@@ -336,4 +373,21 @@
 .delete-btn:hover {
     background-color: #fee2e2;
     color: #dc2626;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+    }
+
+    .search-input {
+        max-width: 100%;
+    }
 }
