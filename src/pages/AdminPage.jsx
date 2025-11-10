@@ -25,6 +25,7 @@ const AdminPage = () => {
     { id: 'traits', name: 'Traits' },
     { id: 'traitements', name: 'Treatments' },
     { id: 'ecart-direct', name: 'Direct Deviation' },
+    { id: 'qualite-defaut', name: 'Quality defaut' },
     { id: 'admin', name: 'Admin Panel' }
   ];
 

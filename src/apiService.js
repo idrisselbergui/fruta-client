@@ -128,5 +128,26 @@ export const updateUserPermissions = (userId, permissions, databaseName = null) 
   return apiPost(`/api/users/permissions/${userId}`, { permissions }, databaseName);
 };
 
+// Defaut management functions
+export const getDefauts = (databaseName = null) => {
+  return apiGet('/api/defaut', null, databaseName);
+};
+
+export const getDefaut = (coddef, databaseName = null) => {
+  return apiGet(`/api/defaut/${coddef}`, null, databaseName);
+};
+
+export const createDefaut = (defautData, databaseName = null) => {
+  return apiPost('/api/defaut', defautData, databaseName);
+};
+
+export const updateDefaut = (coddef, defautData, databaseName = null) => {
+  return apiPut(`/api/defaut/${coddef}`, defautData, databaseName);
+};
+
+export const deleteDefaut = (coddef, databaseName = null) => {
+  return apiDelete(`/api/defaut/${coddef}`, databaseName);
+};
+
 // Export API_BASE_URL for debugging
 export { API_BASE_URL, getUserSession };
