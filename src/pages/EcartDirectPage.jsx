@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Select from 'react-select';
 import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
-import EcartDirectModal from '../components/EcartDirectModal';
 import useDebounce from '../hooks/useDebounce';
 import { generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF } from '../utils/pdfGenerator';
 import './EcartDirectPage.css';
@@ -14,8 +13,10 @@ const EcartDirectPage = () => {
     const [typeEcarts, setTypeEcarts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentItem, setCurrentItem] = useState(null);
+    const [showForm, setShowForm] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [formData, setFormData] = useState({ numbl: '', dtepal: '', refver: '', codvar: '', pdsfru: '', codtype: '' });
+    const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
 
@@ -69,28 +70,45 @@ const EcartDirectPage = () => {
         fetchCampagneDates();
     }, []);
 
-    const handleOpenModal = (item = null) => {
+    const handleShowForm = (item = null) => {
         setError(null);
-        setCurrentItem(item);
-        setIsModalOpen(true);
+        setEditingItem(item);
+        if (item) {
+            setFormData({
+                numbl: item.numbl || '',
+                dtepal: item.dtepal ? new Date(item.dtepal).toISOString().split('T')[0] : '',
+                refver: item.refver || '',
+                codvar: item.codvar || '',
+                pdsfru: item.pdsfru || '',
+                codtype: item.codtype || ''
+            });
+        } else {
+            setFormData({ numbl: '', dtepal: '', refver: '', codvar: '', pdsfru: '', codtype: '' });
+        }
+        setShowForm(true);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setCurrentItem(null);
+    const handleHideForm = () => {
+        setShowForm(false);
+        setEditingItem(null);
+        setFormData({ numbl: '', dtepal: '', refver: '', codvar: '', pdsfru: '', codtype: '' });
     };
 
-    const handleSave = async (itemData) => {
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveForm = async (e) => {
+        e.preventDefault();
         setError(null);
         try {
-            if (currentItem) {
-                await apiPut(`/api/ecartdirect/${currentItem.numpal}`, itemData);
+            if (editingItem) {
+                await apiPut(`/api/ecartdirect/${editingItem.numpal}`, formData);
             } else {
-                // Exclude numpal for new items as it's auto-generated
-                const { numpal, ...dataWithoutNumpal } = itemData;
-                await apiPost('/api/ecartdirect', dataWithoutNumpal);
+                await apiPost('/api/ecartdirect', formData);
             }
-            handleCloseModal();
+            handleHideForm();
             fetchData();
         } catch (err) {
             setError(err.message);
@@ -121,6 +139,24 @@ const EcartDirectPage = () => {
     // Filtered and sorted data
     const filteredAndSortedEcartDirects = useMemo(() => {
         let filtered = [...ecartDirects];
+
+        // Apply search
+        if (searchTerm) {
+            filtered = filtered.filter(item => {
+                const verger = vergers.find(v => v.refver === item.refver);
+                const variete = varietes.find(v => v.codvar === item.codvar);
+                const typeEcart = typeEcarts.find(t => t.codtype === item.codtype);
+                return (
+                    item.numpal?.toString().includes(searchTerm.toLowerCase()) ||
+                    verger?.nomver?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    variete?.nomvar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.dtepal?.includes(searchTerm) ||
+                    item.numbl?.toString().includes(searchTerm.toLowerCase()) ||
+                    item.pdsfru?.toString().includes(searchTerm.toLowerCase()) ||
+                    typeEcart?.destype?.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            });
+        }
 
         // Apply filters
         if (debouncedFilters.startDate) {
@@ -158,7 +194,7 @@ const EcartDirectPage = () => {
 
         // Sort by numpal descending
         return filtered.sort((a, b) => b.numpal - a.numpal);
-    }, [ecartDirects, debouncedFilters]);
+    }, [ecartDirects, debouncedFilters, searchTerm, vergers, varietes, typeEcarts]);
 
     // Calculate pagination using filtered data
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -227,9 +263,109 @@ const EcartDirectPage = () => {
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Gestion Ecart Direct</h1>
-                <button className="add-btn" onClick={() => handleOpenModal()}>+ Add New Ecart</button>
+                <h1>Manage Ecart Direct</h1>
+                <button className="add-btn" onClick={() => handleShowForm()}>+ Add New Ecart</button>
             </div>
+
+            {/* Error display */}
+            {error && <p className="error-message">{error}</p>}
+
+            {/* Inline Form */}
+            {showForm && (
+                <div className="form-container">
+                    <h3>{editingItem ? 'Edit Ecart Direct' : 'Add New Ecart Direct'}</h3>
+                    <form onSubmit={handleSaveForm} className="ecart-form">
+                        <div className="form-row">
+                            <div className="input-group">
+                                <label>Numéro BL</label>
+                                <input
+                                    type="number"
+                                    name="numbl"
+                                    value={formData.numbl}
+                                    onChange={handleFormChange}
+                                    required
+                                    placeholder="Enter BL number"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Date</label>
+                                <input
+                                    type="date"
+                                    name="dtepal"
+                                    value={formData.dtepal}
+                                    onChange={handleFormChange}
+                                    required
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Verger</label>
+                                <select
+                                    name="refver"
+                                    value={formData.refver}
+                                    onChange={handleFormChange}
+                                    required
+                                >
+                                    <option value="">Select Verger</option>
+                                    {vergers.map(verger => (
+                                        <option key={verger.refver} value={verger.refver}>
+                                            {verger.nomver || 'N/A'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="input-group">
+                                <label>Variété</label>
+                                <select
+                                    name="codvar"
+                                    value={formData.codvar}
+                                    onChange={handleFormChange}
+                                    required
+                                >
+                                    <option value="">Select Variété</option>
+                                    {varietes.map(variete => (
+                                        <option key={variete.codvar} value={variete.codvar}>
+                                            {variete.nomvar || 'N/A'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="input-group">
+                                <label>Poids Fruit</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="pdsfru"
+                                    value={formData.pdsfru}
+                                    onChange={handleFormChange}
+                                    placeholder="Enter weight"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Type Ecart</label>
+                                <select
+                                    name="codtype"
+                                    value={formData.codtype}
+                                    onChange={handleFormChange}
+                                    required
+                                >
+                                    <option value="">Select Type Ecart</option>
+                                    {typeEcarts.map(typeEcart => (
+                                        <option key={typeEcart.codtype} value={typeEcart.codtype}>
+                                            {typeEcart.destype || 'N/A'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-actions">
+                                <button type="button" className="clear-btn" onClick={handleHideForm}>Cancel</button>
+                                <button type="submit" className="save-btn">Save</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+           
 
             {/* Filters Section */}
             <div className="dashboard-filters" style={{
@@ -283,8 +419,6 @@ const EcartDirectPage = () => {
                 </div>
             </div>
 
-            {error && <p className="error-message">{error}</p>}
-
             {/* PDF Export Buttons */}
             <div style={{
                 marginBottom: '1.5rem',
@@ -327,8 +461,21 @@ const EcartDirectPage = () => {
                     📋 Rapport Détails
                 </button>
             </div>
-
+     {/* Search Input */}
+            <div className="search-container">
+                <input
+                    type="text"
+                    placeholder="Type a keyword..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page when searching
+                    }}
+                    className="search-input"
+                />
+            </div>
             <div className="table-container">
+            
                 <table className="data-table">
                     <thead>
                         <tr>
@@ -356,8 +503,20 @@ const EcartDirectPage = () => {
                                     <td>{item.pdsfru}</td>
                                     <td>{item.typeEcart?.destype || 'N/A'}</td>
                                     <td className="action-buttons">
-                                        <button className="edit-btn" onClick={() => handleOpenModal(item)}>Edit</button>
-                                        <button className="delete-btn" onClick={() => handleDelete(item.numpal)}>Delete</button>
+                                        <button
+                                            className="action-btn edit-btn"
+                                            onClick={() => handleShowForm(item)}
+                                            title="Edit"
+                                        >
+                                            ✏️
+                                        </button>
+                                        <button
+                                            className="action-btn delete-btn"
+                                            onClick={() => handleDelete(item.numpal)}
+                                            title="Delete"
+                                        >
+                                            🗑️
+                                        </button>
                                     </td>
                                 </tr>
                             );
@@ -386,17 +545,6 @@ const EcartDirectPage = () => {
                     Next
                 </button>
             </div>
-
-            {isModalOpen && (
-                <EcartDirectModal
-                    onClose={handleCloseModal}
-                    onSave={handleSave}
-                    currentData={currentItem}
-                    vergers={vergers}
-                    varietes={varietes}
-                    typeEcarts={typeEcarts}
-                />
-            )}
         </div>
     );
 };
