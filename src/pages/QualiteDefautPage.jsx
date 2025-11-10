@@ -192,8 +192,20 @@ const QualiteDefautPage = () => {
                                 <td>{defaut.intdef}</td>
                                 <td>{defaut.famdef}</td>
                                 <td className="action-buttons">
-                                    <button className="edit-btn" onClick={() => handleShowForm(defaut)}>Edit</button>
-                                    <button className="delete-btn" onClick={() => handleDeleteDefaut(defaut.coddef)}>Delete</button>
+                                    <button
+                                        className="action-btn edit-btn"
+                                        onClick={() => handleShowForm(defaut)}
+                                        title="Edit"
+                                    >
+                                        ✏️
+                                    </button>
+                                    <button
+                                        className="action-btn delete-btn"
+                                        onClick={() => handleDeleteDefaut(defaut.coddef)}
+                                        title="Delete"
+                                    >
+                                        🗑️
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -224,7 +236,7 @@ const QualiteDefautPage = () => {
                                     <button
                                         key={pageNum}
                                         onClick={() => handlePageChange(pageNum)}
-                                        className={`pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                                        className={currentPage === pageNum ? 'pagination-number active' : 'pagination-number'}
                                     >
                                         {pageNum}
                                     </button>
