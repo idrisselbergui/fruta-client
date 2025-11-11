@@ -70,7 +70,7 @@
 
 .input-with-icon svg {
   position: absolute;
-  left: 15px;
+  right: 15px;
   top: 50%;
   transform: translateY(-50%);
   color: #7f8c8d;
@@ -80,14 +80,14 @@
 
 .input-group input {
   width: 100%;
-  padding: 0.85rem 1rem 0.85rem 2.75rem; /* Left padding for icon */
+  padding: 0.85rem 3.5rem 0.85rem 1rem; /* Right padding for icon */
   border: 1px solid #bdc3c7;
   border-radius: 8px;
   font-size: 1rem;
   color: #2c3e50;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box; 
-  height: 50px;           
+  box-sizing: border-box;
+  height: 50px;
 }
 
 .input-group input::placeholder {
@@ -126,4 +126,3 @@ button:hover {
   color: #e74c3c;
   font-weight: 500;
 }
-
