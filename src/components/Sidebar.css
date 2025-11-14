@@ -31,17 +31,18 @@
   display: flex;
   align-items: center;
   justify-content: center; /* Center logo since no collapse button */
-  padding: 20px;
+  padding: 0 40px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.4);
   min-height: 72px;
 }
 
 .sidebar-logo {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: auto;
   border-radius: 16px;
   background: #ffffff;
-  padding: 8px;
+  padding: 16px;
+  box-sizing: border-box;
   flex-shrink: 0;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -52,12 +53,12 @@
 }
 
 .sidebar-logo-collapsed {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: auto;
   border-radius: 16px;
   background: #ffffff;
   padding: 8px;
-  margin: 0 auto;
+  box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
@@ -71,7 +72,7 @@
 }
 
 .sidebar.collapsed .sidebar-header {
-  padding: 16px;
+  padding: 0;
 }
 
 /* Navigation */
