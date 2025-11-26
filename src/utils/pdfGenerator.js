@@ -138,26 +138,76 @@ const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByD
 
 // Helper function to calculate accurate date range from table rows
 const calculateDateRangeFromTableRows = (tableRows) => {
-  console.log('Calculating date range from table rows:', tableRows);
-  let allDates = [];
+  console.log('🔍 Calculating date range from table rows...');
+  if (!tableRows || !tableRows.length) {
+    console.log('❌ No table rows provided');
+    return null;
+  }
 
-  tableRows.forEach(row => {
+  let allDates = [];
+  let foundDateFields = 0;
+
+  tableRows.forEach((row, index) => {
+    if (index < 2) { // Log first 2 rows for debugging
+      console.log(`📊 Row ${index + 1} fields:`, Object.keys(row));
+    }
+
+    // Check for regular dashboard date fields (reception/export)
     if (row.minReceptionDate) {
+      console.log('✅ Found minReceptionDate:', row.minReceptionDate);
       const minDate = new Date(row.minReceptionDate);
       if (!isNaN(minDate.getTime())) {
         allDates.push(minDate);
+        foundDateFields++;
       }
     }
     if (row.maxExportDate) {
+      console.log('✅ Found maxExportDate:', row.maxExportDate);
       const maxDate = new Date(row.maxExportDate);
       if (!isNaN(maxDate.getTime())) {
         allDates.push(maxDate);
+        foundDateFields++;
       }
     }
+
+    // Check for ecart date fields (when ecarts were recorded)
+    if (row.minEcartDate) {
+      console.log('✅ Found minEcartDate:', row.minEcartDate);
+      const minDate = new Date(row.minEcartDate);
+      if (!isNaN(minDate.getTime())) {
+        allDates.push(minDate);
+        foundDateFields++;
+      }
+    }
+    if (row.MaxEcartDate) { // Try PascalCase too
+      console.log('✅ Found MaxEcartDate (PascalCase):', row.MaxEcartDate);
+      const maxDate = new Date(row.MaxEcartDate);
+      if (!isNaN(maxDate.getTime())) {
+        allDates.push(maxDate);
+        foundDateFields++;
+      }
+    }
+    if (row.maxEcartDate) {
+      console.log('✅ Found maxEcartDate (camelCase):', row.maxEcartDate);
+      const maxDate = new Date(row.maxEcartDate);
+      if (!isNaN(maxDate.getTime())) {
+        allDates.push(maxDate);
+        foundDateFields++;
+      }
+    }
+
+    // Check for any Date fields that start with "min" or "max"
+    Object.keys(row).forEach(field => {
+      if (field.toLowerCase().includes('date') && (field.toLowerCase().startsWith('min') || field.toLowerCase().startsWith('max'))) {
+        console.log('⚠️ Found date-related field:', field, '=', row[field]);
+      }
+    });
   });
 
+  console.log(`📈 Found ${foundDateFields} date fields across ${tableRows.length} rows`);
+
   if (allDates.length === 0) {
-    console.log('No dates found in table rows, using filter fallback');
+    console.log('❌ No valid dates found in table rows, will use filter fallback');
     return null; // Will use filter dates as fallback
   }
 
@@ -167,7 +217,7 @@ const calculateDateRangeFromTableRows = (tableRows) => {
   const startDate = minDate.toISOString().split('T')[0];
   const endDate = maxDate.toISOString().split('T')[0];
 
-  console.log(`Calculated period from ${allDates.length} dates: ${startDate} to ${endDate}`);
+  console.log(`🎯 FINAL: Calculated period from ${allDates.length} dates: ${startDate} to ${endDate}`);
   return { startDate, endDate };
 };
 
@@ -429,6 +479,11 @@ const generateEcartDetailsPDF = (ecartDetails, filters) => {
     throw new Error('No ecart data available. Please ensure data is loaded.');
   }
 
+  // Calculate accurate period from ecart data
+  const calculatedPeriod = calculateDateRangeFromTableRows(ecartDetails.data);
+  const periodStart = calculatedPeriod?.startDate || filters.startDate;
+  const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -451,7 +506,7 @@ const generateEcartDetailsPDF = (ecartDetails, filters) => {
 
   doc.setFontSize(10);
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-  doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  doc.text(`Période: ${periodStart} au ${periodEnd}`, 20, 37);
 
   let yPosition = 50;
 
@@ -545,6 +600,11 @@ const generateEcartGroupDetailsPDF = (ecartGroupDetails, filters) => {
     throw new Error('No ecart group data available. Please ensure data is loaded.');
   }
 
+  // Calculate accurate period from ecart group data
+  const calculatedPeriod = calculateDateRangeFromTableRows(ecartGroupDetails.data);
+  const periodStart = calculatedPeriod?.startDate || filters.startDate;
+  const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -567,7 +627,7 @@ const generateEcartGroupDetailsPDF = (ecartGroupDetails, filters) => {
 
   doc.setFontSize(10);
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-  doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  doc.text(`Période: ${periodStart} au ${periodEnd}`, 20, 37);
 
   let yPosition = 50;
 
@@ -921,4 +981,4 @@ const generateEcartDirectDetailsPDF = (ecartDirectData, vergers, varietes, typeE
 };
 
 export default generateDetailedExportPDF;
-export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF };
+export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, calculateDateRangeFromTableRows };

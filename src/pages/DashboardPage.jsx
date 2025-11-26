@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import generateDetailedExportPDF, { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF } from '../utils/pdfGenerator';
+import generateDetailedExportPDF, { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, calculateDateRangeFromTableRows } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
@@ -500,14 +500,24 @@ const DashboardPage = () => {
 
   const handleExportEcartDetailsPDF = () => {
     console.log('Ecart details PDF button clicked');
+    console.log('Ecart details data structure:', JSON.stringify(ecartDetails.data.slice(0, 2), null, 2));
     if (!ecartDetails?.data?.length) {
       alert('Aucune donnée d\'écart disponible pour la génération du PDF.');
       return;
     }
     try {
+      // Calculate accurate period from ecart data
+      const calculatedPeriod = calculateDateRangeFromTableRows(ecartDetails.data);
+      const periodStart = calculatedPeriod?.startDate || filters.startDate;
+      const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+      const periodFilters = { ...filters, startDate: periodStart, endDate: periodEnd };
+
+      console.log('Calculated period result:', calculatedPeriod);
+      console.log('Using period for ecart PDF:', periodStart, 'to', periodEnd);
+
       generateEcartDetailsPDF(
         ecartDetails,
-        filters
+        periodFilters
       );
     } catch (error) {
       console.error('Error generating ecart details PDF:', error);
@@ -522,6 +532,14 @@ const DashboardPage = () => {
       return;
     }
     try {
+      // Calculate accurate period from ecart group data
+      const calculatedPeriod = calculateDateRangeFromTableRows(ecartGroupDetails.data);
+      const periodStart = calculatedPeriod?.startDate || filters.startDate;
+      const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+      const periodFilters = { ...filters, startDate: periodStart, endDate: periodEnd };
+
+      console.log('Using calculated period for ecart group PDF:', periodStart, 'to', periodEnd);
+
       const enhancedEcartGroupDetails = {
         ...ecartGroupDetails,
         data: ecartGroupDetails.data.map(row => {
@@ -538,7 +556,7 @@ const DashboardPage = () => {
 
       generateEcartGroupDetailsPDF(
         enhancedEcartGroupDetails,
-        filters
+        periodFilters
       );
     } catch (error) {
       console.error('Error generating ecart group details PDF:', error);
