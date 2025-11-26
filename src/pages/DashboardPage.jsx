@@ -392,29 +392,22 @@ const DashboardPage = () => {
 
   const handleGeneratePDF = () => {
     console.log('PDF button clicked');
-    console.log('Selected destination:', filters.selectedDestination);
-    console.log('Dashboard data:', dashboardData);
-    console.log('Destination chart data:', destinationChartData);
-    console.log('Sales chart data:', salesByDestinationChartData);
-
-    if (filters.selectedDestination) {
-      try {
-        generateDetailedExportPDF(
-          dashboardData,
-          destinationChartData,
-          salesByDestinationChartData,
-          filters.selectedDestination,
-          filters.selectedVerger,
-          filters
-        );
-        console.log('PDF generation completed');
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-      alert('Erreur lors de la génération du PDF: ' + error.message);
-      }
-    } else {
-      console.log('No destination selected');
+    if (!filters.selectedDestination) {
       alert('Please select a destination first');
+      return;
+    }
+    try {
+      generateDetailedExportPDF(
+        dashboardData,
+        destinationChartData,
+        salesByDestinationChartData,
+        filters.selectedDestination,
+        filters.selectedVerger,
+        filters
+      );
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Erreur lors de la génération du PDF: ' + error.message);
     }
   };
 
@@ -469,13 +462,10 @@ const DashboardPage = () => {
 
   const handleExportVarietesPDF = () => {
     console.log('Varietes PDF button clicked');
-    console.log('Dashboard data:', dashboardData);
-
     if (!dashboardData?.tableRows?.length) {
-      alert('Aucune donnée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      alert('Aucune donnée disponible pour la génération du PDF.');
       return;
     }
-
     try {
       generateVarietesPDF(
         dashboardData.tableRows,
@@ -483,7 +473,6 @@ const DashboardPage = () => {
         varieteOptions,
         filters
       );
-      console.log('Varietes PDF generation completed');
     } catch (error) {
       console.error('Error generating varietes PDF:', error);
       alert('Erreur lors de la génération du PDF des variétés: ' + error.message);
@@ -492,13 +481,10 @@ const DashboardPage = () => {
 
   const handleExportGroupVarietePDF = () => {
     console.log('Group variete PDF button clicked');
-    console.log('Grouped data:', groupedData);
-
     if (!groupedData?.tableRows?.length) {
-      alert('Aucune donnée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      alert('Aucune donnée disponible pour la génération du PDF.');
       return;
     }
-
     try {
       generateGroupVarietePDF(
         groupedData.tableRows,
@@ -506,7 +492,6 @@ const DashboardPage = () => {
         varieteOptions,
         filters
       );
-      console.log('Group variete PDF generation completed');
     } catch (error) {
       console.error('Error generating group variete PDF:', error);
       alert('Erreur lors de la génération du PDF des groupes de variétés: ' + error.message);
@@ -515,56 +500,46 @@ const DashboardPage = () => {
 
   const handleExportEcartDetailsPDF = () => {
     console.log('Ecart details PDF button clicked');
-    console.log('Ecart details:', ecartDetails);
-
     if (!ecartDetails?.data?.length) {
-      alert('Aucune donnée d\'écart disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      alert('Aucune donnée d\'écart disponible pour la génération du PDF.');
       return;
     }
-
     try {
       generateEcartDetailsPDF(
         ecartDetails,
         filters
       );
-      console.log('Ecart details PDF generation completed');
     } catch (error) {
       console.error('Error generating ecart details PDF:', error);
       alert('Erreur lors de la génération du PDF des détails d\'écart: ' + error.message);
     }
   };
 
-const handleExportEcartGroupDetailsPDF = () => {
+  const handleExportEcartGroupDetailsPDF = () => {
     console.log('Ecart group details PDF button clicked');
-    console.log('Ecart group details:', ecartGroupDetails);
-
     if (!ecartGroupDetails?.data?.length) {
-      alert('Aucune donnée d\'écart groupée disponible pour la génération du PDF. Veuillez vous assurer que les données sont chargées.');
+      alert('Aucune donnée d\'écart groupée disponible pour la génération du PDF.');
       return;
     }
-
-    // Enhance grouped ecart data with group information if needed
-    const enhancedEcartGroupDetails = {
-      ...ecartGroupDetails,
-      data: ecartGroupDetails.data.map(row => {
-        // If groupVarieteName is not already present, try to find it
-        if (!row.groupVarieteName && row.groupVarieteId && grpVarOptions) {
-          const group = grpVarOptions.find(g => g.codgrv === row.groupVarieteId || g.value === row.groupVarieteId);
-          return {
-            ...row,
-            groupVarieteName: group?.nomgrv || group?.label || ''
-          };
-        }
-        return row;
-      })
-    };
-
     try {
+      const enhancedEcartGroupDetails = {
+        ...ecartGroupDetails,
+        data: ecartGroupDetails.data.map(row => {
+          if (!row.groupVarieteName && row.groupVarieteId && grpVarOptions) {
+            const group = grpVarOptions.find(g => g.codgrv === row.groupVarieteId || g.value === row.groupVarieteId);
+            return {
+              ...row,
+              groupVarieteName: group?.nomgrv || group?.label || ''
+            };
+          }
+          return row;
+        })
+      };
+
       generateEcartGroupDetailsPDF(
         enhancedEcartGroupDetails,
         filters
       );
-      console.log('Ecart group details PDF generation completed');
     } catch (error) {
       console.error('Error generating ecart group details PDF:', error);
       alert('Erreur lors de la génération du PDF des détails d\'écart groupés: ' + error.message);

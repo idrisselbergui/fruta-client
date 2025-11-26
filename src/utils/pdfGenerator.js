@@ -136,13 +136,55 @@ const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByD
   }
 };
 
+// Helper function to calculate accurate date range from table rows
+const calculateDateRangeFromTableRows = (tableRows) => {
+  console.log('Calculating date range from table rows:', tableRows);
+  let allDates = [];
+
+  tableRows.forEach(row => {
+    if (row.minReceptionDate) {
+      const minDate = new Date(row.minReceptionDate);
+      if (!isNaN(minDate.getTime())) {
+        allDates.push(minDate);
+      }
+    }
+    if (row.maxExportDate) {
+      const maxDate = new Date(row.maxExportDate);
+      if (!isNaN(maxDate.getTime())) {
+        allDates.push(maxDate);
+      }
+    }
+  });
+
+  if (allDates.length === 0) {
+    console.log('No dates found in table rows, using filter fallback');
+    return null; // Will use filter dates as fallback
+  }
+
+  const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+
+  const startDate = minDate.toISOString().split('T')[0];
+  const endDate = maxDate.toISOString().split('T')[0];
+
+  console.log(`Calculated period from ${allDates.length} dates: ${startDate} to ${endDate}`);
+  return { startDate, endDate };
+};
+
 const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) => {
-  console.log('Starting varietes PDF generation');
+  console.log('Starting varietes PDF generation with tableRows:', tableRows);
 
   if (!tableRows?.length) {
     console.error('No table rows available for varietes PDF');
     throw new Error('No data available. Please ensure data is loaded.');
   }
+
+  // Calculate accurate period from table data
+  const calculatedPeriod = calculateDateRangeFromTableRows(tableRows);
+  const periodStart = calculatedPeriod?.startDate || filters.startDate;
+  const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+
+  console.log(`Using period for PDF: ${periodStart} to ${periodEnd}`);
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -166,7 +208,7 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
 
   doc.setFontSize(10);
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-  doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  doc.text(`Période: ${periodStart} au ${periodEnd}`, 20, 37);
 
   let yPosition = 50;
 
@@ -253,12 +295,19 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
 };
 
 const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filters) => {
-  console.log('Starting group variete PDF generation');
+  console.log('Starting group variete PDF generation with tableRows:', tableRows);
 
   if (!tableRows?.length) {
     console.error('No table rows available for group variete PDF');
     throw new Error('No data available. Please ensure data is loaded.');
   }
+
+  // Calculate accurate period from table data
+  const calculatedPeriod = calculateDateRangeFromTableRows(tableRows);
+  const periodStart = calculatedPeriod?.startDate || filters.startDate;
+  const periodEnd = calculatedPeriod?.endDate || filters.endDate;
+
+  console.log(`Using period for PDF: ${periodStart} to ${periodEnd}`);
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -282,7 +331,7 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
 
   doc.setFontSize(10);
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-  doc.text(`Période: ${filters.startDate} au ${filters.endDate}`, 20, 37);
+  doc.text(`Période: ${periodStart} au ${periodEnd}`, 20, 37);
 
   let yPosition = 50;
 
