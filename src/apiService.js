@@ -150,4 +150,17 @@ export const deleteDefaut = (coddef, databaseName = null) => {
 };
 
 // Export API_BASE_URL for debugging
+// Vente Ecart functions
+export const getUnsoldEcartDirect = (codtype, startDate = null, endDate = null, databaseName = null) => {
+  return apiGet('/api/vente-ecart/ecartdirect/unsold', { codtype, startDate, endDate }, databaseName);
+};
+
+export const getUnsoldEcartE = (codtype, startDate = null, endDate = null, databaseName = null) => {
+  return apiGet('/api/vente-ecart/ecart-e/unsold', { codtype, startDate, endDate }, databaseName);
+};
+
+export const createVenteEcart = (venteData, databaseName = null) => {
+  return apiPost('/api/vente-ecart', venteData, databaseName);
+};
+
 export { API_BASE_URL, getUserSession };

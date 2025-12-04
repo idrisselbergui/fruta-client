@@ -12,6 +12,7 @@ import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
 import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
 import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
+import VenteEcartPage from './pages/VenteEcartPage';
 
 
 
@@ -84,6 +85,11 @@ function App() {
         <Route path="/qualite-defaut" element={
           <PageProtectedRoute user={user} pageName="qualite-defaut">
             <QualiteDefautPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/vente-ecart" element={
+          <PageProtectedRoute user={user} pageName="vente-ecart">
+            <VenteEcartPage />
           </PageProtectedRoute>
         } />
 
