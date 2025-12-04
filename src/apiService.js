@@ -159,6 +159,18 @@ export const getUnsoldEcartE = (codtype, startDate = null, endDate = null, datab
   return apiGet('/api/vente-ecart/ecart-e/unsold', { codtype, startDate, endDate }, databaseName);
 };
 
+export const getVentes = (databaseName = null) => {
+  return apiGet('/api/vente-ecart', null, databaseName);
+};
+
+export const updateVente = (id, venteData, databaseName = null) => {
+  return apiPut(`/api/vente-ecart/${id}`, venteData, databaseName);
+};
+
+export const deleteVente = (id, databaseName = null) => {
+  return apiDelete(`/api/vente-ecart/${id}`, databaseName);
+};
+
 export const createVenteEcart = (venteData, databaseName = null) => {
   return apiPost('/api/vente-ecart', venteData, databaseName);
 };

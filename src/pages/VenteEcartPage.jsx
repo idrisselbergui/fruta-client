@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { apiGet } from '../apiService';
-import { getUnsoldEcartDirect, getUnsoldEcartE, createVenteEcart } from '../apiService';
+import { getUnsoldEcartDirect, getUnsoldEcartE, getVentes, createVenteEcart, deleteVente } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
@@ -26,19 +26,22 @@ const VenteEcartPage = () => {
     });                                                                 
 
     const [selectedEcarts, setSelectedEcarts] = useState([]); // [{table: 'ecart_direct'|'ecart_e', id, pdsvent}]
+    const [ventes, setVentes] = useState([]);
 
     // Fetch typeecarts and vergers/varietes for display
     useEffect(() => {
         const fetchLookups = async () => {
             try {
-                const [typeEcartData, vergerData, varieteData] = await Promise.all([
+                const [typeEcartData, vergerData, varieteData, ventesData] = await Promise.all([
                     apiGet('/api/lookup/typeecarts'),
                     apiGet('/api/lookup/vergers'),
-                    apiGet('/api/lookup/varietes')
+                    apiGet('/api/lookup/varietes'),
+                    getVentes()
                 ]);
                 setTypeEcarts(typeEcartData);
                 setVergers(vergerData);
                 setVarietes(varieteData);
+                setVentes(ventesData);
             } catch (err) {
                 setError('Failed to fetch lookup data.');
             }
@@ -129,6 +132,8 @@ const VenteEcartPage = () => {
                 selectedEcarts: selectedEcarts
             };
             await createVenteEcart(requestData);
+            const updatedVentes = await getVentes();
+            setVentes(updatedVentes);
             alert('Vente created successfully!');
             // Reset form
             setFormData({
@@ -153,6 +158,19 @@ const VenteEcartPage = () => {
         const verger = verList.find(v => v.refver === verRef);
         const variete = varList.find(v => v.codvar === varCod);
         return { verger: verger?.nomver || 'N/A', variete: variete?.nomvar || 'N/A' };
+    };
+
+    const handleDeleteVente = async (venteId) => {
+        if (confirm('Are you sure you want to delete this vente?')) {
+            try {
+                await deleteVente(venteId);
+                const updatedVentes = await getVentes();
+                setVentes(updatedVentes);
+                alert('Vente deleted successfully!');
+            } catch (err) {
+                setError(err.message);
+            }
+        }
     };
 
     if (isLoading) return <LoadingSpinner />;
@@ -358,6 +376,39 @@ const VenteEcartPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Ventes List */}
+            <div className="table-section" style={{ marginTop: '40px' }}>
+                <h3>Vente Details</h3>
+                <table className="data-table" style={{ fontSize: '0.9em' }}>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>N° Bon Vente</th>
+                            <th>Date</th>
+                            <th>Price (€/kg)</th>
+                            <th>Poids Total (kg)</th>
+                            <th>Montant Total (€)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {ventes.map(vente => (
+                            <tr key={vente.id}>
+                                <td>{vente.id}</td>
+                                <td>{vente.numbonvente || 'N/A'}</td>
+                                <td>{new Date(vente.date).toLocaleDateString()}</td>
+                                <td>{vente.price?.toFixed(2)}</td>
+                                <td>{vente.poidsTotal?.toFixed(2)}</td>
+                                <td>{vente.montantTotal?.toFixed(2)}</td>
+                                <td>
+                                    <button onClick={() => handleDeleteVente(vente.id)} className="delete-btn" style={{ color: 'red' }}>Delete</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
