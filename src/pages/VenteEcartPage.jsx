@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { apiGet } from '../apiService';
-import { getUnsoldEcartDirect, getUnsoldEcartE, getVentes, createVenteEcart, deleteVente } from '../apiService';
+import { getUnsoldEcartDirect, getUnsoldEcartE, getVentes, getVente, createVenteEcart, deleteVente, updateVente } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
@@ -27,6 +27,10 @@ const VenteEcartPage = () => {
 
     const [selectedEcarts, setSelectedEcarts] = useState([]); // [{table: 'ecart_direct'|'ecart_e', id, pdsvent}]
     const [ventes, setVentes] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingVenteId, setEditingVenteId] = useState(null);
+    const [isViewing, setIsViewing] = useState(false);
+    const [viewingVenteId, setViewingVenteId] = useState(null);
 
     // Fetch typeecarts and vergers/varietes for display
     useEffect(() => {
@@ -56,11 +60,12 @@ const VenteEcartPage = () => {
             setIsLoading(true);
             setError(null);
             const [directData, eData] = await Promise.all([
-                getUnsoldEcartDirect(selectedTypeEcart.value, startDate || null, endDate || null),
-                getUnsoldEcartE(selectedTypeEcart.value, startDate || null, endDate || null)
+                getUnsoldEcartDirect(selectedTypeEcart.value, startDate || null, endDate || null, editingVenteId || null),
+                getUnsoldEcartE(selectedTypeEcart.value, startDate || null, endDate || null, editingVenteId || null)
             ]);
             setEcartDirects(directData);
             setEcartEs(eData);
+            // Remove automatic selection in editing mode - let user select manually
         } catch (err) {
             setError('Failed to fetch ecarts.');
         } finally {
@@ -68,10 +73,10 @@ const VenteEcartPage = () => {
         }
     };
 
-    // Re-fetch when filters change
+    // Re-fetch when filters change or editing mode on
     useEffect(() => {
         fetchEcarts();
-    }, [selectedTypeEcart, startDate, endDate]);
+    }, [selectedTypeEcart, startDate, endDate, editingVenteId]);
 
     // Calculate poidsTotal and montantTotal from selected ecarts
     const calculatedPoidsTotal = useMemo(() => {
@@ -99,7 +104,16 @@ const VenteEcartPage = () => {
 
     const handleEcartSelect = (table, id, checked, defaultPoids) => {
         if (checked) {
-            setSelectedEcarts(prev => [...prev, { table, id, pdsvent: defaultPoids ? defaultPoids.toString() : '' }]);
+            // Check if this ecart is already selected
+            const alreadySelected = selectedEcarts.find(ec => ec.table === table && ec.id === id);
+            if (alreadySelected) {
+                // If already selected, keep the existing pdsvent value
+                setSelectedEcarts(prev => [...prev.filter(ec => ec.table !== table || ec.id !== id), alreadySelected]);
+            } else {
+                // If newly selected, default to the full poids, allowing for modification
+                const initialPdsvent = (defaultPoids !== undefined && defaultPoids !== null) ? defaultPoids.toFixed(2) : '';
+                setSelectedEcarts(prev => [...prev, { table, id, pdsvent: initialPdsvent }]);
+            }
         } else {
             setSelectedEcarts(prev => prev.filter(ec => ec.table !== table || ec.id !== id));
         }
@@ -131,11 +145,18 @@ const VenteEcartPage = () => {
                 montantTotal: parseFloat(formData.montantTotal),
                 selectedEcarts: selectedEcarts
             };
-            await createVenteEcart(requestData);
+            if (isEditing && editingVenteId) {
+                await updateVente(editingVenteId, requestData);
+                alert('Vente updated successfully!');
+            } else {
+                await createVenteEcart(requestData);
+                alert('Vente created successfully!');
+            }
             const updatedVentes = await getVentes();
             setVentes(updatedVentes);
-            alert('Vente created successfully!');
-            // Reset form
+            // Exit edit mode and reset form
+            setIsEditing(false);
+            setEditingVenteId(null);
             setFormData({
                 numbonvente: '',
                 date: new Date().toISOString().split('T')[0],
@@ -170,6 +191,49 @@ const VenteEcartPage = () => {
             } catch (err) {
                 setError(err.message);
             }
+        }
+    };
+
+    const handleViewVente = async (venteId) => {
+        try {
+            const data = await getVente(venteId);
+            console.log('View Vente Data:', data); // Debug what the API actually returns
+
+            const { vente, codtype, ecarts } = data; // Check if ecarts data is available
+            const typeOption = typeEcarts.find(t => t.codtype === codtype);
+
+            setFormData({
+                numbonvente: vente.numbonvente || '',
+                date: new Date(vente.date).toISOString().split('T')[0],
+                price: vente.price,
+                poidsTotal: vente.poidsTotal || '0',
+                montantTotal: vente.montantTotal || '0'
+            });
+            setIsViewing(true);
+            setViewingVenteId(venteId);
+            setSelectedTypeEcart(typeOption ? { value: typeOption.codtype, label: typeOption.destype } : null);
+
+            // Store any ecart data that comes from the API
+            // Try multiple possible property names
+            if (ecarts && Array.isArray(ecarts)) {
+                console.log('Ecarts from Vente API (ecarts):', ecarts);
+                setSelectedEcarts(ecarts);
+            } else if (data.selectedEcarts && Array.isArray(data.selectedEcarts)) {
+                console.log('Ecarts from Vente API (selectedEcarts):', data.selectedEcarts);
+                setSelectedEcarts(data.selectedEcarts);
+            } else if (vente.selectedEcarts && Array.isArray(vente.selectedEcarts)) {
+                console.log('Ecarts from Vente API (vente.selectedEcarts):', vente.selectedEcarts);
+                setSelectedEcarts(vente.selectedEcarts);
+            } else if (data.ecartDetails && Array.isArray(data.ecartDetails)) {
+                console.log('Ecarts from Vente API (ecartDetails):', data.ecartDetails);
+                setSelectedEcarts(data.ecartDetails);
+            } else {
+                console.log('No ecarts found in API response');
+                setSelectedEcarts([]);
+            }
+
+        } catch (err) {
+            setError(err.message);
         }
     };
 
@@ -240,7 +304,28 @@ const VenteEcartPage = () => {
                         </div>
                     </div>
                     <div className="form-actions">
-                        <button type="submit" className="save-btn">Save Vente</button>
+                        {/* Show Save/Update button only when not viewing */}
+                        {!isViewing && (
+                            <button type="submit" style={{ backgroundColor: isEditing ? '#ffc107' : '#28a745', color: isEditing ? 'black' : 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{isEditing ? 'Update Vente' : 'Save Vente'}</button>
+                        )}
+                        {/* Always show Cancel button */}
+                        <button type="button" style={{ backgroundColor: '#6c757d', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => {
+                            setIsEditing(false);
+                            setEditingVenteId(null);
+                            setIsViewing(false);
+                            setViewingVenteId(null);
+                            setFormData({
+                                numbonvente: '',
+                                date: new Date().toISOString().split('T')[0],
+                                price: '',
+                                poidsTotal: '',
+                                montantTotal: ''
+                            });
+                            setSelectedEcarts([]);
+                            setSelectedTypeEcart(null);
+                            setEcartDirects([]);
+                            setEcartEs([]);
+                        }}>Cancel</button>
                     </div>
                 </form>
             </div>
@@ -254,6 +339,7 @@ const VenteEcartPage = () => {
                         value={selectedTypeEcart}
                         onChange={setSelectedTypeEcart}
                         isClearable
+                        isDisabled={isEditing || isViewing}
                         placeholder="Select Type Ecart to load items"
                     />
                 </div>
@@ -275,13 +361,78 @@ const VenteEcartPage = () => {
                 </div>
             </div>
 
-            {selectedTypeEcart && (
+            {/* Simple View Mode Summary */}
+            {isViewing && (
+                <div style={{ marginTop: '20px' }}>
+                    {/* Vente Summary */}
+                    <div className="table-section">
+                        <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '4px', border: '1px solid #ddd' }}>
+                            <h3 style={{ color: '#007bff', marginTop: '0' }}>Viewing Vente #{viewingVenteId}</h3>
+                            <p><strong>This vente contains:</strong></p>
+                            <ul>
+                                <li><strong>Total Weight:</strong> {formData.poidsTotal || '0'} kg</li>
+                                <li><strong>Total Amount:</strong> €{formData.montantTotal || '0'}</li>
+                                <li><strong>Price per kg:</strong> €{formData.price || '0'}</li>
+                                <li><strong>Type:</strong> {selectedTypeEcart?.label || 'Unknown'}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Ecarts Details Table if available */}
+                    {selectedEcarts.length > 0 && (
+                        <div className="table-section" style={{ marginTop: '20px' }}>
+                            <h3>Ecart Details Sold in This Vente</h3>
+                            <table className="data-table" style={{ fontSize: '0.9em' }}>
+                                <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Num Pal</th>
+                                        <th>Verger</th>
+                                        <th>Variété</th>
+                                        <th>Poids Vendu (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedEcarts.map(item => {
+                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
+                                        return (
+                                            <tr key={`${item.table}-${item.id}`}>
+                                                <td style={{ fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
+                                                    {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
+                                                </td>
+                                                <td>{item.id}</td>
+                                                <td>{verger}</td>
+                                                <td>{variete}</td>
+                                                <td>{item.pdsvent} kg</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Message if no ecart details */}
+                    {selectedEcarts.length === 0 && (
+                        <div className="table-section" style={{ marginTop: '20px' }}>
+                            <div style={{ padding: '20px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
+                                <p style={{ color: '#856404', margin: '0' }}>
+                                    <strong>Note:</strong> The API currently doesn't provide individual ecart details for this vente.
+                                    If the backend is updated to include ecart information in the getVente response,
+                                    the detailed palette list will be displayed here automatically.</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {selectedTypeEcart && !isViewing && (
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                     {/* Ecart Direct List */}
-                    <div className="table-section" style={{ flex: 1, minWidth: '300px' }}>
+                    <div className="table-section" style={{ flex: 1, minWidth: '300px', maxHeight: '400px', overflowY: 'auto' }}>
                         <h3>Ecart Direct</h3>
                         <table className="data-table" style={{ fontSize: '0.9em' }}>
-                            <thead>
+                            <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
                                 <tr>
                                     <th>Select</th>
                                     <th>Num Pal</th>
@@ -307,7 +458,7 @@ const VenteEcartPage = () => {
                                             <td>{item.numpal}</td>
                                             <td>{verger}</td>
                                             <td>{variete}</td>
-                                            <td>{item.pdsfru?.toFixed(2)} {item.pdsfru ? 'kg' : ''}</td>
+                                            <td>{selected && item.Pdsvent ? item.Pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
                                             <td>
                                                 {selected && (
                                                     <input
@@ -327,10 +478,10 @@ const VenteEcartPage = () => {
                     </div>
 
                     {/* Ecart E List */}
-                    <div className="table-section" style={{ flex: 1, minWidth: '300px' }}>
+                    <div className="table-section" style={{ flex: 1, minWidth: '300px', maxHeight: '400px', overflowY: 'auto' }}>
                         <h3>Ecart Station</h3>
                         <table className="data-table" style={{ fontSize: '0.9em' }}>
-                            <thead>
+                            <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
                                 <tr>
                                     <th>Select</th>
                                     <th>Num Pal</th>
@@ -356,15 +507,15 @@ const VenteEcartPage = () => {
                                             <td>{item.numpal}</td>
                                             <td>{verger}</td>
                                             <td>{variete}</td>
-                                            <td>{item.pdsfru?.toFixed(2)} {item.pdsfru ? 'kg' : ''}</td>
+                                            <td>{selected && item.pdsvent ? item.pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.pdsvent ? 'kg' : ''}</td>
                                             <td>
                                                 {selected && (
                                                     <input
                                                         type="number"
                                                         step="0.01"
                                                         value={selected.pdsvent}
-                                                        onChange={(e) => handlePdsventChange('ecart_e', item.numpal, e.target.value)}
                                                         placeholder="Poids Vente"
+                                                        onChange={(e) => handlePdsventChange('ecart_e', item.numpal, e.target.value)}
                                                     />
                                                 )}
                                             </td>
@@ -401,8 +552,11 @@ const VenteEcartPage = () => {
                                 <td>{vente.price?.toFixed(2)}</td>
                                 <td>{vente.poidsTotal?.toFixed(2)}</td>
                                 <td>{vente.montantTotal?.toFixed(2)}</td>
-                                <td>
-                                    <button onClick={() => handleDeleteVente(vente.id)} className="delete-btn" style={{ color: 'red' }}>Delete</button>
+                                <td style={{ textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                                        <button onClick={() => handleDeleteVente(vente.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+                                        <button onClick={() => handleViewVente(vente.id)} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
