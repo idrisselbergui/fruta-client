@@ -377,39 +377,42 @@ const VenteEcartPage = () => {
             <div className="form-container">
                 <h3>Détails de Vente</h3>
                 <form onSubmit={handleSave} className="ecart-form">
-                    <div className="form-row">
-                        <div className="input-group">
-                            <label>N° Bon de Vente</label>
+                    <div className="form-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>N° Bon de Vente</label>
                             <input
                                 type="number"
                                 name="numbonvente"
                                 value={formData.numbonvente}
                                 onChange={handleFormChange}
                                 placeholder=""
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Numéro de Lot</label>
+                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Numéro de Lot</label>
                             <input
                                 type="number"
                                 name="numlot"
                                 value={formData.numlot || ""}
                                 onChange={handleFormChange}
-                                placeholder="Numéro de Lot (Facultatif)"
+                                placeholder="Facultatif"
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Date</label>
+                        <div className="input-group" style={{ flex: '1', minWidth: '100px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Date</label>
                             <input
                                 type="date"
                                 name="date"
                                 value={formData.date}
                                 onChange={handleFormChange}
                                 required
+                                style={{ padding: '4px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Prix (€/kg)</label>
+                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Prix (€/kg)</label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -417,25 +420,28 @@ const VenteEcartPage = () => {
                                 value={formData.price}
                                 onChange={handleFormChange}
                                 required
-                                placeholder="Entrez le prix"
+                                placeholder="Prix"
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
                             />
-                        </div>                                                                                                                                                                                                                                                                          
-                        <div className="input-group">
-                            <label>Poids Total (kg)</label>
+                        </div>
+                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Poids Total (kg)</label>
                             <input
                                 type="text"
                                 name="poidsTotal"
                                 value={formData.poidsTotal}
                                 readOnly
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box', backgroundColor: '#f9f9f9' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Montant Total (€)</label>
+                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
+                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Montant Total (€)</label>
                             <input
                                 type="text"
                                 name="montantTotal"
                                 value={formData.montantTotal}
                                 readOnly
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box', backgroundColor: '#f9f9f9' }}
                             />
                         </div>
                     </div>
@@ -480,88 +486,88 @@ const VenteEcartPage = () => {
                         placeholder="Sélectionnez le Type d'Écart pour charger les articles"
                     />
                 </div>
-                <div className="filter-item">
-                    <label>Date Début</label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                    />
-                </div>
-                <div className="filter-item">
-                    <label>Date Fin</label>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                    />
-                </div>
             </div>
 
-            {/* Simple View Mode Summary */}
+            {/* Visualisation Vente */}
             {isViewing && (
                 <div style={{ marginTop: '20px' }}>
-                    {/* Vente Summary */}
-                    <div className="table-section">
-                        <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '4px', border: '1px solid #ddd' }}>
-                            <h3 style={{ color: '#007bff', marginTop: '0' }}>Visualisation Vente #{viewingVenteId}</h3>
-                            <p><strong>Cette vente contient :</strong></p>
-                            <ul>
-                                <li><strong>Poids Total :</strong> {formData.poidsTotal || '0'} kg</li>
-                                <li><strong>Montant Total :</strong> €{formData.montantTotal || '0'}</li>
-                                <li><strong>Prix par kg :</strong> €{formData.price || '0'}</li>
-                                <li><strong>Numéro de Lot :</strong> {formData.numlot || 'N/A'}</li>
-                                <li><strong>Type :</strong> {selectedTypeEcart?.label || 'Inconnu'}</li>
-                            </ul>
-                            <div style={{ textAlign: 'right', marginTop: '10px' }}>
-                                <button onClick={() => generateBonDeLivraison(viewingVenteId)} style={{ fontSize: '0.8em', backgroundColor: '#28a745', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Bon de Livraison</button>
+                    <div className="table-section" style={{ padding: '0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+                                 
+                               
+                         
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: '400px' }}>
+                            {/* Summary Section */}
+                            <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '0', border: '1px solid #ddd' }}>
+                                <button onClick={() => generateBonDeLivraison(viewingVenteId)} style={{ fontSize: '0.8em', backgroundColor: '#5cb85c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}>Générer Bon de Livraison</button>
+                                <h3 style={{ color: '#007bff', marginTop: '0', marginBottom: '10px' }}>  Vente   #{viewingVenteId} <span style={{ fontSize: '0.9em', color: 'black', textAlign: 'center' }}>{selectedTypeEcart?.label || 'Inconnu'} </span></h3>
+                                 
+                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
+                                    N° Bon: {formData.numbonvente}
+                                </div>
+                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
+                                    Numéro de Lot:{formData.numlot || 'N/A'}
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '15px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Poids Total</div>
+                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#007bff' }}>{formData.poidsTotal || '0'} kg</div>
+                                    </div>
+                                      <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Prix par kg</div>
+                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#ffc107' }}>MAD {formData.price || '0'}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Montant Total</div>
+                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#28a745' }}>MAD {formData.montantTotal || '0'}</div>
+                                    </div>
+                                  
+                                 
+                                </div>
+                            </div>
+                            {/* Details Section */}
+                            <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '0 0 10px 10px' }}>
+                                <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>Détails des Écarts Vendus</h3>
+                                {selectedEcarts.length > 0 ? (
+                                    <div style={{ maxHeight: '350px', overflowY: 'auto', border: '1px solid #e9ecef', borderRadius: '10px' }}>
+                                        <table className="data-table" style={{ fontSize: '0.85em', width: '100%', margin: '0', borderRadius: '10px', overflow: 'hidden' }}>
+                                            <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1, borderRadius: '10px 10px 0 0' }}>
+                                                <tr>
+                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', borderRadius: '10px 0 0 0' }}>Type</th>
+                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', textAlign: 'right' }}>N° Palette</th>
+                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6' }}>Verger</th>
+                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6' }}>Variété</th>
+                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', textAlign: 'right', borderRadius: '0 10px 0 0' }}>Poids Vendu (kg)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {selectedEcarts.map(item => {
+                                                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
+                                                    return (
+                                                        <tr key={`${item.table}-${item.id}`} style={{ borderBottom: '1px solid #dee2e6', cursor: 'pointer', borderRadius: '0' }}>
+                                                            <td style={{ padding: '8px', fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
+                                                                {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
+                                                            </td>
+                                                            <td style={{ padding: '8px', textAlign: 'right' }}>{item.id}</td>
+                                                            <td style={{ padding: '8px' }}>{verger}</td>
+                                                            <td style={{ padding: '8px' }}>{variete}</td>
+                                                            <td style={{ padding: '8px', fontWeight: 'bold', textAlign: 'right' }}>{item.pdsvent} kg</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '10px' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📦</div>
+                                        <p style={{ color: '#856404', margin: '0', fontSize: '0.9em' }}>
+                                            <strong>Note :</strong> L'API ne fournit actuellement pas les détails individuels des écarts pour cette vente. Si le backend est mis à jour pour inclure les informations sur les écarts dans la réponse de getVente, la liste détaillée des palettes sera affichée ici automatiquement.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    {/* Ecarts Details Table if available */}
-                    {selectedEcarts.length > 0 && (
-                        <div className="table-section" style={{ marginTop: '20px' }}>
-                            <h3>Détails des Écarts Vendus dans Cette Vente</h3>
-                            <table className="data-table" style={{ fontSize: '0.9em' }}>
-                                <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>N° Palette</th>
-                                        <th>Verger</th>
-                                        <th>Variété</th>
-                                        <th>Poids Vendu (kg)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {selectedEcarts.map(item => {
-                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                        return (
-                                            <tr key={`${item.table}-${item.id}`}>
-                                                <td style={{ fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
-                                                    {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
-                                                </td>
-                                                <td>{item.id}</td>
-                                                <td>{verger}</td>
-                                                <td>{variete}</td>
-                                                <td>{item.pdsvent} kg</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {/* Message if no ecart details */}
-                    {selectedEcarts.length === 0 && (
-                        <div className="table-section" style={{ marginTop: '20px' }}>
-                            <div style={{ padding: '20px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
-                                <p style={{ color: '#856404', margin: '0' }}>
-                                    <strong>Note :</strong> L'API ne fournit actuellement pas les détails individuels des écarts pour cette vente. Si le backend est mis à jour pour inclure les informations sur les écarts dans la réponse de getVente, la liste détaillée des palettes sera affichée ici automatiquement.</p>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
