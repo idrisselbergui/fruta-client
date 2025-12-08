@@ -272,41 +272,38 @@ const VenteEcartPage = () => {
 
             // Header
             doc.setFontSize(20);
-            doc.text('BON DE LIVRAISON', 105, 20, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('FRUTAAAA - Société de Production Agricole', 20, 40);
-            doc.text(`Date d'émission: ${new Date().toLocaleDateString('fr-FR')}`, 20, 50);
+            doc.text('BON DE VENTE', 105, 20, { align: 'center' });
+            doc.setFontSize(16);
+            doc.text(`${typeOption ? typeOption.destype : 'Inconnu'}`, 20, 40);
+            doc.setFontSize(10);
+            doc.text(`${new Date().toLocaleDateString('fr-FR')}`, 170, 40);
 
             // Vente details
-            doc.setFontSize(12);
-            doc.text('Détails de la Vente:', 20, 70);
-            let y = 80;
-            doc.text(`N° Bon de Vente: ${vente.numbonvente || 'N/A'}`, 20, y);
+            doc.setFontSize(10);
+
+            let y = 60;
+            doc.text(`N° Bon: ${vente.numbonvente || 'N/A'}`, 20, y);
+            doc.text(`N° Lot: ${vente.numlot || 'N/A'}`, 75, y);
+            doc.text(`Date de Vente: ${new Date(vente.date).toLocaleDateString('fr-FR')}`, 130, y);
             y += 10;
-            doc.text(`Numéro de Lot: ${vente.numlot || 'N/A'}`, 20, y);
-            y += 10;
-            doc.text(`Date de Vente: ${new Date(vente.date).toLocaleDateString('fr-FR')}`, 20, y);
-            y += 10;
-            doc.text(`Prix par kg: ${vente.price} €`, 20, y);
-            y += 10;
-            doc.text(`Poids Total: ${vente.poidsTotal} kg`, 20, y);
-            y += 10;
-            doc.text(`Montant Total: ${vente.montantTotal} €`, 20, y);
-            y += 10;
-            doc.text(`Type d'Écart: ${typeOption ? typeOption.destype : 'Inconnu'}`, 20, y);
+            doc.text(`Prix : ${parseFloat(vente.price).toLocaleString('fr-MA')} DH`, 20, y);
+            doc.text(`Poids Total: ${parseFloat(vente.poidsTotal).toFixed(2).toLocaleString('fr-MA')} kg`, 75, y);
+            doc.text(`Montant Total: ${parseFloat(vente.montantTotal).toFixed(2).toLocaleString('fr-MA')} DH`, 130, y);
             y += 20;
 
             // Ecarts table
             const tableData = [];
-            const headerRow = ['N° Palette', 'Type', 'Verger', 'Variété', 'Poids Vendu (kg)'];
+            const headerRow = ['N° Palette', 'N° BL', 'Type', 'Verger', 'Variété', 'Poids Vendu (kg)'];
             tableData.push(headerRow);
 
             if (ecarts && Array.isArray(ecarts) && ecarts.length > 0) {
                 ecarts.forEach(ecart => {
                     const { verger, variete } = getDisplayName(ecart.refver, vergers, ecart.codvar, varietes);
                     const typeText = ecart.table === 'ecart_direct' ? 'Direct' : 'Station';
+                    const numblValue = ecart.table === 'ecart_direct' ? ecart.numbl || 'N/A' : '-';
                     tableData.push([
                         ecart.id,
+                        numblValue,
                         typeText,
                         verger,
                         variete,
@@ -317,8 +314,10 @@ const VenteEcartPage = () => {
                 selectedEcarts.forEach(ecart => {
                     const { verger, variete } = getDisplayName(ecart.refver, vergers, ecart.codvar, varietes);
                     const typeText = ecart.table === 'ecart_direct' ? 'Direct' : 'Station';
+                    const numblValue = ecart.table === 'ecart_direct' ? ecart.numbl || 'N/A' : '-';
                     tableData.push([
                         ecart.id,
+                        numblValue,
                         typeText,
                         verger,
                         variete,
@@ -326,7 +325,7 @@ const VenteEcartPage = () => {
                     ]);
                 });
             } else {
-                tableData.push(['Aucune donnée d\'écart disponible', '', '', '', '']);
+                tableData.push(['Aucune donnée d\'écart disponible', '', '', '', '', '']);
             }
 
             // Generate the table
@@ -337,7 +336,7 @@ const VenteEcartPage = () => {
                 theme: 'grid',
                 styles: {
                     fontSize: 9,
-                    cellPadding: 4
+                    cellPadding: 2
                 },
                 headStyles: {
                     fillColor: [66, 139, 202],
@@ -346,7 +345,7 @@ const VenteEcartPage = () => {
                 },
                 columnStyles: {
                     0: { halign: 'center' },
-                    4: { halign: 'right' }
+                    5: { halign: 'right' }
                 },
                 margin: { left: 20, right: 20 },
                 alternateRowStyles: { fillColor: [245, 245, 245] }
