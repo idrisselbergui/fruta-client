@@ -563,6 +563,7 @@ const VenteEcartPage = () => {
                                                 <tr>
                                                     <th>Type</th>
                                                     <th style={{ textAlign: 'right' }}>N° Palette</th>
+                                                    <th style={{ textAlign: 'right' }}>N° BL</th>
                                                     <th>Verger</th>
                                                     <th>Variété</th>
                                                     <th style={{ textAlign: 'right' }}>Poids Vendu (kg)</th>
@@ -577,6 +578,7 @@ const VenteEcartPage = () => {
                                                                 {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
                                                             </td>
                                                             <td style={{ textAlign: 'right' }}>{item.id}</td>
+                                                            <td style={{ textAlign: 'right' }}>{item.table === 'ecart_direct' ? item.numbl || 'N/A' : '-'}</td>
                                                             <td>{verger}</td>
                                                             <td>{variete}</td>
                                                             <td style={{ fontWeight: 'bold', textAlign: 'right' }}>{item.pdsvent} kg</td>
@@ -609,8 +611,9 @@ const VenteEcartPage = () => {
                             <table className="data-table" style={{ fontSize: '0.9em' }}>
                                 <thead>
                                     <tr>
-                                        <th>Sélectionner</th>
+                                        <th> </th>
                                         <th>N° Palette</th>
+                                        <th>N° BL</th>
                                         <th>Verger</th>
                                         <th>Variété</th>
                                         <th>Poids (kg)</th>
@@ -631,6 +634,7 @@ const VenteEcartPage = () => {
                                                     />
                                                 </td>
                                                 <td>{item.numpal}</td>
+                                                <td>{item.numbl || 'N/A'}</td>
                                                 <td>{verger}</td>
                                                 <td>{variete}</td>
                                                 <td>{selected && item.Pdsvent ? item.Pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
@@ -660,7 +664,7 @@ const VenteEcartPage = () => {
                             <table className="data-table" style={{ fontSize: '0.9em' }}>
                                 <thead>
                                     <tr>
-                                        <th>Sélectionner</th>
+                                        <th> </th>
                                         <th>N° Palette</th>
                                         <th>Verger</th>
                                         <th>Variété</th>
