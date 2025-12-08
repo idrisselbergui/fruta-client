@@ -30,6 +30,8 @@ const VenteEcartPage = () => {
 
     const [selectedEcarts, setSelectedEcarts] = useState([]); // [{table: 'ecart_direct'|'ecart_e', id, pdsvent}]
     const [ventes, setVentes] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [isEditing, setIsEditing] = useState(false);
     const [editingVenteId, setEditingVenteId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
@@ -48,7 +50,8 @@ const VenteEcartPage = () => {
                 setTypeEcarts(typeEcartData);
                 setVergers(vergerData);
                 setVarietes(varieteData);
-                setVentes(ventesData);
+                // Sort ventes by id in descending order (latest first)
+                setVentes(ventesData.sort((a, b) => b.id - a.id));
             } catch (err) {
                 setError('Failed to fetch lookup data.');
             }
@@ -157,7 +160,8 @@ const VenteEcartPage = () => {
                 alert('Vente créée avec succès!');
             }
             const updatedVentes = await getVentes();
-            setVentes(updatedVentes);
+            setVentes(updatedVentes.sort((a, b) => b.id - a.id)); // Re-sort after update
+            setCurrentPage(1); // Reset to first page after data change
             // Exit edit mode and reset form
             setIsEditing(false);
             setEditingVenteId(null);
@@ -191,7 +195,8 @@ const VenteEcartPage = () => {
             try {
                 await deleteVente(venteId);
                 const updatedVentes = await getVentes();
-                setVentes(updatedVentes);
+                setVentes(updatedVentes.sort((a, b) => b.id - a.id)); // Re-sort after delete
+                setCurrentPage(1); // Reset to first page after data change
                 alert('Vente supprimée avec succès!');
             } catch (err) {
                 setError(err.message);
@@ -363,6 +368,30 @@ const VenteEcartPage = () => {
         }
     };
 
+    // Pagination logic
+    const totalItems = ventes.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentVentes = ventes.slice(startIndex, endIndex);
+
+    // Handle pagination
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
     if (isLoading) return <LoadingSpinner />;
 
     return (
@@ -528,29 +557,29 @@ const VenteEcartPage = () => {
                             <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '0 0 10px 10px' }}>
                                 <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>Détails des Écarts Vendus</h3>
                                 {selectedEcarts.length > 0 ? (
-                                    <div style={{ maxHeight: '350px', overflowY: 'auto', border: '1px solid #e9ecef', borderRadius: '10px' }}>
-                                        <table className="data-table" style={{ fontSize: '0.85em', width: '100%', margin: '0', borderRadius: '10px', overflow: 'hidden' }}>
-                                            <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1, borderRadius: '10px 10px 0 0' }}>
+                                    <div className="table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                                        <table className="data-table" style={{ fontSize: '0.85em' }}>
+                                            <thead>
                                                 <tr>
-                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', borderRadius: '10px 0 0 0' }}>Type</th>
-                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', textAlign: 'right' }}>N° Palette</th>
-                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6' }}>Verger</th>
-                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6' }}>Variété</th>
-                                                    <th style={{ padding: '10px', borderBottom: '2px solid #dee2e6', textAlign: 'right', borderRadius: '0 10px 0 0' }}>Poids Vendu (kg)</th>
+                                                    <th>Type</th>
+                                                    <th style={{ textAlign: 'right' }}>N° Palette</th>
+                                                    <th>Verger</th>
+                                                    <th>Variété</th>
+                                                    <th style={{ textAlign: 'right' }}>Poids Vendu (kg)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {selectedEcarts.map(item => {
                                                     const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
                                                     return (
-                                                        <tr key={`${item.table}-${item.id}`} style={{ borderBottom: '1px solid #dee2e6', cursor: 'pointer', borderRadius: '0' }}>
-                                                            <td style={{ padding: '8px', fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
+                                                        <tr key={`${item.table}-${item.id}`}>
+                                                            <td style={{ fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
                                                                 {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
                                                             </td>
-                                                            <td style={{ padding: '8px', textAlign: 'right' }}>{item.id}</td>
-                                                            <td style={{ padding: '8px' }}>{verger}</td>
-                                                            <td style={{ padding: '8px' }}>{variete}</td>
-                                                            <td style={{ padding: '8px', fontWeight: 'bold', textAlign: 'right' }}>{item.pdsvent} kg</td>
+                                                            <td style={{ textAlign: 'right' }}>{item.id}</td>
+                                                            <td>{verger}</td>
+                                                            <td>{variete}</td>
+                                                            <td style={{ fontWeight: 'bold', textAlign: 'right' }}>{item.pdsvent} kg</td>
                                                         </tr>
                                                     );
                                                 })}
@@ -574,141 +603,189 @@ const VenteEcartPage = () => {
             {selectedTypeEcart && !isViewing && (
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                     {/* Ecart Direct List */}
-                    <div className="table-section" style={{ flex: 1, minWidth: '300px', maxHeight: '400px', overflowY: 'auto' }}>
+                    <div style={{ flex: 1, minWidth: '300px' }}>
                         <h3>Écart Direct</h3>
-                        <table className="data-table" style={{ fontSize: '0.9em' }}>
-                            <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
-                                <tr>
-                                    <th>Sélectionner</th>
-                                    <th>N° Palette</th>
-                                    <th>Verger</th>
-                                    <th>Variété</th>
-                                    <th>Poids (kg)</th>
-                                    <th>Poids Vente (kg)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ecartDirects.map(item => {
-                                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                    const selected = selectedEcarts.find(se => se.table === 'ecart_direct' && se.id === item.numpal);
-                                    return (
-                                        <tr key={item.numpal}>
-                                            <td>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!selected}
-                                                    onChange={(e) => handleEcartSelect('ecart_direct', item.numpal, e.target.checked, item.pdsfru)}
-                                                />
-                                            </td>
-                                            <td>{item.numpal}</td>
-                                            <td>{verger}</td>
-                                            <td>{variete}</td>
-                                            <td>{selected && item.Pdsvent ? item.Pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
-                                            <td>
-                                                {selected && (
+                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            <table className="data-table" style={{ fontSize: '0.9em' }}>
+                                <thead>
+                                    <tr>
+                                        <th>Sélectionner</th>
+                                        <th>N° Palette</th>
+                                        <th>Verger</th>
+                                        <th>Variété</th>
+                                        <th>Poids (kg)</th>
+                                        <th>Poids Vente (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ecartDirects.map(item => {
+                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
+                                        const selected = selectedEcarts.find(se => se.table === 'ecart_direct' && se.id === item.numpal);
+                                        return (
+                                            <tr key={item.numpal}>
+                                                <td>
                                                     <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={selected.pdsvent}
-                                                        onChange={(e) => handlePdsventChange('ecart_direct', item.numpal, e.target.value)}
-                                                        placeholder="Poids Vente"
+                                                        type="checkbox"
+                                                        checked={!!selected}
+                                                        onChange={(e) => handleEcartSelect('ecart_direct', item.numpal, e.target.checked, item.pdsfru)}
                                                     />
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                </td>
+                                                <td>{item.numpal}</td>
+                                                <td>{verger}</td>
+                                                <td>{variete}</td>
+                                                <td>{selected && item.Pdsvent ? item.Pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
+                                                <td>
+                                                    {selected && (
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={selected.pdsvent}
+                                                            onChange={(e) => handlePdsventChange('ecart_direct', item.numpal, e.target.value)}
+                                                            placeholder="Poids Vente"
+                                                        />
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {/* Ecart E List */}
-                    <div className="table-section" style={{ flex: 1, minWidth: '300px', maxHeight: '400px', overflowY: 'auto' }}>
+                    <div style={{ flex: 1, minWidth: '300px' }}>
                         <h3>Écart Station</h3>
-                        <table className="data-table" style={{ fontSize: '0.9em' }}>
-                            <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
-                                <tr>
-                                    <th>Sélectionner</th>
-                                    <th>N° Palette</th>
-                                    <th>Verger</th>
-                                    <th>Variété</th>
-                                    <th>Poids (kg)</th>
-                                    <th>Poids Vente (kg)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ecartEs.map(item => {
-                                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                    const selected = selectedEcarts.find(se => se.table === 'ecart_e' && se.id === item.numpal);
-                                    return (
-                                        <tr key={item.numpal}>
-                                            <td>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!selected}
-                                                    onChange={(e) => handleEcartSelect('ecart_e', item.numpal, e.target.checked, item.pdsfru)}
-                                                />
-                                            </td>
-                                            <td>{item.numpal}</td>
-                                            <td>{verger}</td>
-                                            <td>{variete}</td>
-                                            <td>{selected && item.pdsvent ? item.pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
-                                            <td>
-                                                {selected && (
+                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            <table className="data-table" style={{ fontSize: '0.9em' }}>
+                                <thead>
+                                    <tr>
+                                        <th>Sélectionner</th>
+                                        <th>N° Palette</th>
+                                        <th>Verger</th>
+                                        <th>Variété</th>
+                                        <th>Poids (kg)</th>
+                                        <th>Poids Vente (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ecartEs.map(item => {
+                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
+                                        const selected = selectedEcarts.find(se => se.table === 'ecart_e' && se.id === item.numpal);
+                                        return (
+                                            <tr key={item.numpal}>
+                                                <td>
                                                     <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={selected.pdsvent}
-                                                        placeholder="Poids Vente"
-                                                        onChange={(e) => handlePdsventChange('ecart_e', item.numpal, e.target.value)}
+                                                        type="checkbox"
+                                                        checked={!!selected}
+                                                        onChange={(e) => handleEcartSelect('ecart_e', item.numpal, e.target.checked, item.pdsfru)}
                                                     />
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                </td>
+                                                <td>{item.numpal}</td>
+                                                <td>{verger}</td>
+                                                <td>{variete}</td>
+                                                <td>{selected && item.pdsvent ? item.pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
+                                                <td>
+                                                    {selected && (
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={selected.pdsvent}
+                                                            placeholder="Poids Vente"
+                                                            onChange={(e) => handlePdsventChange('ecart_e', item.numpal, e.target.value)}
+                                                        />
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Ventes List */}
-            <div className="table-section" style={{ marginTop: '40px' }}>
+            <div style={{ marginTop: '40px' }}>
                 <h3>Détails des Ventes</h3>
-                <table className="data-table" style={{ fontSize: '0.9em' }}>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>N° Bon de Vente</th>
-                            <th>Numéro de Lot</th>
-                            <th>Date</th>
-                            <th>Prix (€/kg)</th>
-                            <th>Poids Total (kg)</th>
-                            <th>Montant Total (€)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {ventes.map(vente => (
-                            <tr key={vente.id}>
-                                <td>{vente.id}</td>
-                                <td>{vente.numbonvente || 'N/A'}</td>
-                                <td>{vente.numlot || 'N/A'}</td>
-                                <td>{new Date(vente.date).toLocaleDateString()}</td>
-                                <td>{vente.price?.toFixed(2)}</td>
-                                <td>{vente.poidsTotal?.toFixed(2)}</td>
-                                <td>{vente.montantTotal?.toFixed(2)}</td>
-                                <td style={{ textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                        <button onClick={() => handleDeleteVente(vente.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Supprimer</button>
-                                        <button onClick={() => handleViewVente(vente.id)} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Voir</button>
-                                    </div>
-                                </td>
+                <div className="table-container">
+                    <table className="data-table" style={{ fontSize: '0.9em' }}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>N° Bon de Vente</th>
+                                <th>Numéro de Lot</th>
+                                <th>Date</th>
+                                <th>Prix (€/kg)</th>
+                                <th>Poids Total (kg)</th>
+                                <th>Montant Total (€)</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {currentVentes.map(vente => (
+                                <tr key={vente.id}>
+                                    <td>{vente.id}</td>
+                                    <td>{vente.numbonvente || 'N/A'}</td>
+                                    <td>{vente.numlot || 'N/A'}</td>
+                                    <td>{new Date(vente.date).toLocaleDateString()}</td>
+                                    <td>{vente.price?.toFixed(2)}</td>
+                                    <td>{vente.poidsTotal?.toFixed(2)}</td>
+                                    <td>{vente.montantTotal?.toFixed(2)}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDeleteVente(vente.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Supprimer</button>
+                                            <button onClick={() => handleViewVente(vente.id)} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Voir</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                {totalItems > 0 && (
+                    <div className="pagination-container">
+                        <div className="pagination-info">
+                            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                        </div>
+                        <div className="pagination-controls">
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 1}
+                                className="pagination-btn"
+                            >
+                                Previous
+                            </button>
+
+                            <div className="pagination-numbers">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                    if (pageNum > totalPages) return null;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={currentPage === pageNum ? 'pagination-number active' : 'pagination-number'}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages}
+                                className="pagination-btn"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,3 +1,6 @@
+/* Import Data Table Styles */
+@import '../components/DataTable.css';
+
 /* General page styling */
 .page-container {
     max-width: 1200px;
@@ -27,53 +30,7 @@
     color: #333;
 }
 
-.table-section {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    border: 1px solid #e9ecef;
-    margin-bottom: 2rem;
-}
 
-.table-section h3 {
-    margin: 0;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 1.25rem;
-    color: #374151;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: system-ui, -apple-system, sans-serif;
-}
-
-.data-table th,
-.data-table td {
-    padding: 0.5rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid #f1f3f4;
-}
-
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.data-table tbody tr:hover {
-    background-color: #f9fafb;
-}
-
-.data-table tbody tr:last-child td {
-    border-bottom: none;
-}
 
 .error-message {
     color: #721c24;
