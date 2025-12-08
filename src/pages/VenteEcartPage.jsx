@@ -514,11 +514,17 @@ const VenteEcartPage = () => {
                             isClearable
                             isDisabled={isEditing || isViewing}
                             placeholder="Sélectionnez le Type d'Écart pour charger les articles"
+                            menuPortalTarget={document.body}
                             styles={{
                                 container: (provided) => ({
                                     ...provided,
                                     flex: 1,
                                     minWidth: '250px'
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menu: (provided) => ({
+                                    ...provided,
+                                    zIndex: 9999,
                                 }),
                             }}
                         />
