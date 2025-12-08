@@ -36,6 +36,8 @@ const VenteEcartPage = () => {
     const [editingVenteId, setEditingVenteId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
     const [viewingVenteId, setViewingVenteId] = useState(null);
+    const [searchEcartDirect, setSearchEcartDirect] = useState('');
+    const [searchVentes, setSearchVentes] = useState('');
 
     // Fetch typeecarts and vergers/varietes for display
     useEffect(() => {
@@ -83,6 +85,36 @@ const VenteEcartPage = () => {
     useEffect(() => {
         fetchEcarts();
     }, [selectedTypeEcart, startDate, endDate, editingVenteId]);
+
+    // Filter ecartDirects and ventes based on search
+    const filteredEcartDirects = useMemo(() => {
+        if (!searchEcartDirect.trim()) return ecartDirects;
+        const searchTerm = searchEcartDirect.toLowerCase();
+        return ecartDirects.filter(item => {
+            const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
+            return (
+                item.numpal?.toString().toLowerCase().includes(searchTerm) ||
+                (item.numbl || '').toLowerCase().includes(searchTerm) ||
+                verger.toLowerCase().includes(searchTerm) ||
+                variete.toLowerCase().includes(searchTerm) ||
+                item.pdsfru?.toString().toLowerCase().includes(searchTerm)
+            );
+        });
+    }, [ecartDirects, searchEcartDirect, vergers, varietes]);
+
+    const filteredVentes = useMemo(() => {
+        if (!searchVentes.trim()) return ventes;
+        const searchTerm = searchVentes.toLowerCase();
+        return ventes.filter(vente => (
+            vente.id?.toString().toLowerCase().includes(searchTerm) ||
+            (vente.numbonvente || '').toString().toLowerCase().includes(searchTerm) ||
+            (vente.numlot || '').toString().toLowerCase().includes(searchTerm) ||
+            new Date(vente.date).toLocaleDateString().toLowerCase().includes(searchTerm) ||
+            vente.price?.toString().toLowerCase().includes(searchTerm) ||
+            vente.poidsTotal?.toString().toLowerCase().includes(searchTerm) ||
+            vente.montantTotal?.toString().toLowerCase().includes(searchTerm)
+        ));
+    }, [ventes, searchVentes]);
 
     // Calculate poidsTotal and montantTotal from selected ecarts
     const calculatedPoidsTotal = useMemo(() => {
@@ -368,11 +400,11 @@ const VenteEcartPage = () => {
     };
 
     // Pagination logic
-    const totalItems = ventes.length;
+    const totalItems = filteredVentes.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentVentes = ventes.slice(startIndex, endIndex);
+    const currentVentes = filteredVentes.slice(startIndex, endIndex);
 
     // Handle pagination
     const handlePageChange = (page) => {
@@ -609,7 +641,7 @@ const VenteEcartPage = () => {
                         <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                             <table className="data-table" style={{ fontSize: '0.6em' }}>
                                 <thead>
-                                    <tr>
+                                    <tr style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1 }}>
                                         <th style={{ fontSize: 'smaller' }}> </th>
                                         <th style={{ fontSize: 'smaller' }}>N°Palette</th>
                                         <th style={{ fontSize: 'smaller' }}>N° BL</th>
@@ -620,7 +652,7 @@ const VenteEcartPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {ecartDirects.map(item => {
+                                    {filteredEcartDirects.map(item => {
                                         const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
                                         const selected = selectedEcarts.find(se => se.table === 'ecart_direct' && se.id === item.numpal);
                                         return (
@@ -662,7 +694,7 @@ const VenteEcartPage = () => {
                         <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                             <table className="data-table" style={{ fontSize: '0.6em' }}>
                                 <thead>
-                                    <tr>
+                                    <tr style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1 }}>
                                         <th style={{ fontSize: 'smaller' }}> </th>
                                         <th style={{ fontSize: 'smaller' }}>N°Palette</th>
                                         <th style={{ fontSize: 'smaller' }}>Verger</th>
@@ -711,7 +743,25 @@ const VenteEcartPage = () => {
 
             {/* Ventes List */}
             <div style={{ marginTop: '40px' }}>
-                <h3>Détails des Ventes</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h3 style={{ margin: 0 }}>Détails des Ventes</h3>
+                    <input
+                        type="text"
+                        placeholder="Rechercher par ID, N° Bon, Lot, Date, Prix..."
+                        value={searchVentes}
+                        onChange={(e) => setSearchVentes(e.target.value)}
+                        style={{
+                            padding: '8px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            width: '50%',
+                            fontSize: '0.8em',
+                            boxSizing: 'border-box',
+                            backgroundColor: '#ffffff',
+                            outline: 'none'
+                        }}
+                    />
+                </div>
                 <div className="table-container">
                     <table className="data-table" style={{ fontSize: '0.9em' }}>
                         <thead>
