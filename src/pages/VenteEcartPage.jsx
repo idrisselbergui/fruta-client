@@ -505,6 +505,24 @@ const VenteEcartPage = () => {
                             />
                         </div>
                     </div>
+                    <div className="form-filter" style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+                        <label style={{ fontSize: '0.9em', fontWeight: '600', color: '#34495e', marginRight: '15px', minWidth: '120px' }}>Type d'Écart</label>
+                        <Select
+                            options={typeEcartOptions}
+                            value={selectedTypeEcart}
+                            onChange={setSelectedTypeEcart}
+                            isClearable
+                            isDisabled={isEditing || isViewing}
+                            placeholder="Sélectionnez le Type d'Écart pour charger les articles"
+                            styles={{
+                                container: (provided) => ({
+                                    ...provided,
+                                    flex: 1,
+                                    minWidth: '250px'
+                                }),
+                            }}
+                        />
+                    </div>
                     <div className="form-actions">
                         {/* Show Save/Update button only when not viewing */}
                         {!isViewing && (
@@ -531,21 +549,6 @@ const VenteEcartPage = () => {
                         }}>Annuler</button>
                     </div>
                 </form>
-            </div>
-
-            {/* Filter */}
-            <div className="filter-section">
-                <div className="filter-item">
-                    <label>Type d'Écart</label>
-                    <Select
-                        options={typeEcartOptions}
-                        value={selectedTypeEcart}
-                        onChange={setSelectedTypeEcart}
-                        isClearable
-                        isDisabled={isEditing || isViewing}
-                        placeholder="Sélectionnez le Type d'Écart pour charger les articles"
-                    />
-                </div>
             </div>
 
             {/* Visualisation Vente */}
