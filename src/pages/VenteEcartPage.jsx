@@ -608,16 +608,16 @@ const VenteEcartPage = () => {
                     <div style={{ flex: 1, minWidth: '300px' }}>
                         <h3>Écart Direct</h3>
                         <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            <table className="data-table" style={{ fontSize: '0.9em' }}>
+                            <table className="data-table" style={{ fontSize: '0.6em' }}>
                                 <thead>
                                     <tr>
-                                        <th> </th>
-                                        <th>N° Palette</th>
-                                        <th>N° BL</th>
-                                        <th>Verger</th>
-                                        <th>Variété</th>
-                                        <th>Poids (kg)</th>
-                                        <th>Poids Vente (kg)</th>
+                                        <th style={{ fontSize: 'smaller' }}> </th>
+                                        <th style={{ fontSize: 'smaller' }}>N°Palette</th>
+                                        <th style={{ fontSize: 'smaller' }}>N° BL</th>
+                                        <th style={{ fontSize: 'smaller' }}>Verger</th>
+                                        <th style={{ fontSize: 'smaller' }}>Variété</th>
+                                        <th style={{ fontSize: 'smaller' }}>Poids (kg)</th>
+                                        <th style={{ fontSize: 'smaller' }}>Poids Vente (kg)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -661,15 +661,15 @@ const VenteEcartPage = () => {
                     <div style={{ flex: 1, minWidth: '300px' }}>
                         <h3>Écart Station</h3>
                         <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            <table className="data-table" style={{ fontSize: '0.9em' }}>
+                            <table className="data-table" style={{ fontSize: '0.6em' }}>
                                 <thead>
                                     <tr>
-                                        <th> </th>
-                                        <th>N° Palette</th>
-                                        <th>Verger</th>
-                                        <th>Variété</th>
-                                        <th>Poids (kg)</th>
-                                        <th>Poids Vente (kg)</th>
+                                        <th style={{ fontSize: 'smaller' }}> </th>
+                                        <th style={{ fontSize: 'smaller' }}>N°Palette</th>
+                                        <th style={{ fontSize: 'smaller' }}>Verger</th>
+                                        <th style={{ fontSize: 'smaller' }}>Variété</th>
+                                        <th style={{ fontSize: 'smaller' }}>Poids (kg)</th>
+                                        <th style={{ fontSize: 'smaller' }}>Poids Vente (kg)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
