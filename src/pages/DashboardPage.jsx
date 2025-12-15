@@ -173,7 +173,7 @@ const DashboardPage = () => {
 
   // Fetch periodic trend data when filters, chart type, or time period changes
   useEffect(() => {
-    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || !filters.selectedVerger) {
+    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate) {
         return;
     }
 
@@ -185,9 +185,14 @@ const DashboardPage = () => {
           startDate,
           endDate,
           chartType: selectedChartType,
-          timePeriod: selectedTimePeriod,
-          vergerId: selectedVerger.value
+          timePeriod: selectedTimePeriod
         };
+
+        // Apply verger filter if selected
+        if (selectedVerger && selectedVerger.value !== null && selectedVerger.value !== undefined) {
+          params.vergerId = selectedVerger.value;
+          console.log('Applying verger filter:', selectedVerger.value);
+        }
 
         // Apply variety group and variety filters if selected
         if (selectedGrpVar && selectedGrpVar.value !== null && selectedGrpVar.value !== undefined) {
@@ -214,7 +219,7 @@ const DashboardPage = () => {
 
   // Fetch combined trend data when combined chart type is selected
   useEffect(() => {
-    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || !filters.selectedVerger || selectedChartType !== 'combined') {
+    if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || selectedChartType !== 'combined') {
         return;
     }
 
@@ -226,9 +231,13 @@ const DashboardPage = () => {
         const params = {
           startDate,
           endDate,
-          timePeriod: selectedTimePeriod,
-          vergerId: selectedVerger.value
+          timePeriod: selectedTimePeriod
         };
+
+        // Apply verger filter if selected
+        if (selectedVerger && selectedVerger.value !== null && selectedVerger.value !== undefined) {
+          params.vergerId = selectedVerger.value;
+        }
 
         // Apply variety filters if selected
         if (selectedGrpVar && selectedGrpVar.value !== null && selectedGrpVar.value !== undefined) {
@@ -414,8 +423,9 @@ const DashboardPage = () => {
   const handleExportChart = async () => {
     try {
       if (!filters.selectedVerger) {
-        alert('Please select an orchard first');
-        return;
+        // Allow exporting without verger selection - will show aggregated data
+        // alert('Please select an orchard first');
+        // return;
       }
 
       // Table is always visible now
@@ -426,7 +436,7 @@ const DashboardPage = () => {
       document.querySelector('.btn-primary').disabled = true;
 
       const chartTypeLabel = selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1);
-      const orchardName = filters.selectedVerger.label;
+      const orchardName = filters.selectedVerger ? filters.selectedVerger.label : 'Tous les Vergers';
 
       console.log('Starting PDF generation...');
       console.log('Chart element:', document.getElementById('trend-chart-container'));
@@ -875,27 +885,25 @@ const DashboardPage = () => {
             <div className="full-width-chart">
                 <div id="trend-chart-container" className="chart-container">
                     <h3>Tendances de Performance du Verger</h3>
-                    {!filters.selectedVerger ? (
-                        <p>Veuillez sélectionner un verger pour voir les tendances.</p>
-                    ) : selectedChartType === 'combined' ? (
+                    {selectedChartType === 'combined' ? (
                         combinedTrendData.length > 0 ? (
                             <CombinedTrendChart
                                 data={combinedTrendData}
                                 timePeriod={selectedTimePeriod}
-                                title={`Tendances Combinées du Verger - ${filters.selectedVerger.label}`}
+                                title={`Tendances Combinées ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
                             />
                         ) : (
-                            <p>Aucune donnée de tendance combinée disponible pour le verger sélectionné.</p>
+                            <p>Aucune donnée de tendance combinée disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
                         )
                     ) : periodicTrendData.length > 0 ? (
                         <TrendChart
                             data={periodicTrendData}
                             chartType={selectedChartType}
                             timePeriod={selectedTimePeriod}
-                            title={`Tendances de Performance du Verger - ${filters.selectedVerger.label}`}
+                            title={`Tendances de Performance ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
                         />
                     ) : (
-                        <p>Aucune donnée de tendance disponible pour le verger sélectionné.</p>
+                        <p>Aucune donnée de tendance disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
                     )}
                 </div>
             </div>
