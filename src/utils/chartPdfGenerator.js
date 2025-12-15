@@ -14,6 +14,7 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     orchardName = '',
     chartType = 'Combined',
     timePeriod = 'Monthly',
+    varieteName = 'Toutes les Variétés',
     includeTable = true
   } = options;
 
@@ -42,6 +43,8 @@ export const generateChartPDF = async (chartElement, tableElement, options = {})
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Verger: ${orchardName}`, 20, currentY);
+    currentY += 7;
+    pdf.text(`Variété: ${varieteName}`, 20, currentY);
     currentY += 7;
     pdf.text(`Type de Graphique: ${chartType}`, 20, currentY);
     currentY += 7;

@@ -441,6 +441,7 @@ const DashboardPage = () => {
           orchardName: orchardName,
           chartType: chartTypeLabel,
           timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
+          varieteName: filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés',
           includeTable: true // Always include table in PDF
         }
       );
