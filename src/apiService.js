@@ -180,3 +180,58 @@ export const createVenteEcart = (venteData, databaseName = null) => {
 };
 
 export { API_BASE_URL, getUserSession };
+
+// Marque management functions
+export const getMarques = (databaseName = null) => {
+  return apiGet('/api/marque', null, databaseName);
+};
+
+export const getMarque = (codmar, databaseName = null) => {
+  return apiGet(`/api/marque/${codmar}`, null, databaseName);
+};
+
+export const createMarque = (marqueData, databaseName = null) => {
+  return apiPost('/api/marque', marqueData, databaseName);
+};
+
+export const updateMarque = (codmar, marqueData, databaseName = null) => {
+  return apiPut(`/api/marque/${codmar}`, marqueData, databaseName);
+};
+
+export const deleteMarque = (codmar, databaseName = null) => {
+  return apiDelete(`/api/marque/${codmar}`, databaseName);
+};
+
+// Marque Assignment management functions
+export const getMarqueAssignments = (databaseName = null) => {
+  return apiGet('/api/MarqueAssignment', null, databaseName);
+};
+
+export const getMarqueAssignment = (id, databaseName = null) => {
+  return apiGet(`/api/MarqueAssignment/${id}`, null, databaseName);
+};
+
+export const getAssignmentsByMarque = (codmar, databaseName = null) => {
+  return apiGet(`/api/MarqueAssignment/marque/${codmar}`, null, databaseName);
+};
+
+export const createMarqueAssignment = (assignmentData, databaseName = null) => {
+  return apiPost('/api/MarqueAssignment', assignmentData, databaseName);
+};
+
+export const updateMarqueAssignment = (id, assignmentData, databaseName = null) => {
+  return apiPut(`/api/MarqueAssignment/${id}`, assignmentData, databaseName);
+};
+
+export const deleteMarqueAssignment = (id, databaseName = null) => {
+  return apiDelete(`/api/MarqueAssignment/${id}`, databaseName);
+};
+
+// Lookup functions for dropdowns
+export const getVergers = (databaseName = null) => {
+  return apiGet('/api/lookup/vergers', null, databaseName);
+};
+
+export const getVarietes = (databaseName = null) => {
+  return apiGet('/api/lookup/varietes', null, databaseName);
+};

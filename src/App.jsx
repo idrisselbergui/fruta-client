@@ -13,6 +13,7 @@ import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PA
 import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
 import VenteEcartPage from './pages/VenteEcartPage';
+import MarqueManagementPage from './pages/MarqueManagementPage';
 
 
 
@@ -90,6 +91,11 @@ function App() {
         <Route path="/vente-ecart" element={
           <PageProtectedRoute user={user} pageName="vente-ecart">
             <VenteEcartPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/marque-management" element={
+          <PageProtectedRoute user={user} pageName="admin">
+            <MarqueManagementPage />
           </PageProtectedRoute>
         } />
 
