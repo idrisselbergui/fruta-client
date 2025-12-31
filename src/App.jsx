@@ -94,7 +94,7 @@ function App() {
           </PageProtectedRoute>
         } />
         <Route path="/marque-management" element={
-          <PageProtectedRoute user={user} pageName="admin">
+          <PageProtectedRoute user={user} pageName="marque-management">
             <MarqueManagementPage />
           </PageProtectedRoute>
         } />

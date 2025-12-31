@@ -27,6 +27,7 @@ const AdminPage = () => {
     { id: 'ecart-direct', name: 'Direct Deviation' },
     { id: 'qualite-defaut', name: 'Quality Defects' },
     { id: 'vente-ecart', name: 'Vente Ecart' },
+    { id: 'marque-management', name: 'Marque Management' },
     { id: 'admin', name: 'Admin Panel' }
   ];
 
