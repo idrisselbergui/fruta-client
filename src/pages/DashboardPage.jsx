@@ -11,7 +11,7 @@ import generateDetailedExportPDF, { generateVarietesPDF, generateGroupVarietePDF
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
-const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';
+const formatDate = (date) => date ? new Date(date).toLocaleDateString('sv-SE') : '';
 
 const formatNumberWithSpaces = (num, decimals = 2) => {
   const fixed = Math.abs(num).toFixed(decimals);
@@ -443,18 +443,34 @@ const DashboardPage = () => {
       console.log('Table element:', document.getElementById('detail-data-table'));
 
       // Generate PDF with chart and table
-      await generateChartPDF(
-        document.getElementById('trend-chart-container'),
-        document.getElementById('detail-data-table'),
-        {
-          title: 'Rapport de Performance du Verger',
-          orchardName: orchardName,
-          chartType: chartTypeLabel,
-          timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
-          varieteName: filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés',
-          includeTable: true // Always include table in PDF
-        }
-      );
+          // Extract variety names from data if no specific variety is selected
+          let varieteDisplayName = filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés';
+          if (!filters.selectedVariete && dashboardData?.tableRows && dashboardData.tableRows.length > 0) {
+            // Get unique variety names from table rows that have data
+            const dataVarieties = [...new Set(
+              dashboardData.tableRows
+                .filter(row => !filters.selectedVerger || row.vergerName === filters.selectedVerger.label.split(' - ')[1]) // Match verger
+                .filter(row => !filters.selectedGrpVar || row.groupVarieteName === filters.selectedGrpVar.label) // Match group if selected
+                .filter(row => parseFloat(row.totalPdsfru) > 0 || parseFloat(row.totalPdscom) > 0 || parseFloat(row.totalEcart) > 0) // Has data
+                .map(row => row.varieteName)
+            )];
+            if (dataVarieties.length > 0) {
+              varieteDisplayName = dataVarieties.join('-');
+            }
+          }
+
+          await generateChartPDF(
+            document.getElementById('trend-chart-container'),
+            document.getElementById('detail-data-table'),
+            {
+              title: 'Rapport de Performance du Verger',
+              orchardName: orchardName,
+              chartType: chartTypeLabel,
+              timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
+              varieteName: varieteDisplayName,
+              includeTable: true // Always include table in PDF
+            }
+          );
 
       // Restore button state
       document.querySelector('.btn-primary').textContent = originalButtonText;
@@ -612,15 +628,31 @@ const DashboardPage = () => {
           // Generate PDF with this verger's specific data
           const chartTypeLabel = selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1);
 
+          // Extract variety names from data that have values if no specific variety is selected
+          let varieteDisplayName = filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés';
+          if (!filters.selectedVariete && dashboardData?.tableRows && dashboardData.tableRows.length > 0) {
+            // Get unique variety names from table rows that have data for this specific verger
+            const vergerVarieties = [...new Set(
+              dashboardData.tableRows
+                .filter(row => row.vergerName === verger.label.split(' - ')[1]) // Always filter by this specific verger
+                .filter(row => !filters.selectedGrpVar || row.groupVarieteName === filters.selectedGrpVar.label) // Match group if selected
+                .filter(row => parseFloat(row.totalPdsfru) > 0 || parseFloat(row.totalPdscom) > 0 || parseFloat(row.totalEcart) > 0) // Has data
+                .map(row => row.varieteName)
+            )];
+            if (vergerVarieties.length > 0) {
+              varieteDisplayName = vergerVarieties.join('-');
+            }
+          }
+
           await generateChartPDF(
             document.getElementById('trend-chart-container'),
             document.getElementById('detail-data-table'),
             {
-              title: 'Rapport de Performance du Verger',
+              title: `Rapport de Performance - ${verger.label}`,
               orchardName: verger.label,
               chartType: chartTypeLabel,
               timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
-              varieteName: filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés',
+              varieteName: varieteDisplayName,
               includeTable: true,
               vergerId: verger.value
             }
