@@ -471,6 +471,193 @@ const DashboardPage = () => {
     }
   };
 
+  const handleExportAllVergersPDF = async () => {
+    try {
+      if (filters.selectedVerger) {
+        alert('Veuillez désélectionner le verger pour utiliser cette fonction.');
+        return;
+      }
+
+      if (!vergerOptions?.length) {
+        alert('Aucun verger disponible.');
+        return;
+      }
+
+      // Show loading state on all vergers button
+      const allVergersButton = document.querySelector('.btn-all-vergers');
+      const originalButtonText = allVergersButton.textContent;
+      allVergersButton.textContent = '⏳ Generating PDFs...';
+      allVergersButton.disabled = true;
+
+      console.log(`Starting batch PDF generation for ${vergerOptions.length} verg ers...`);
+
+      // Store original data to restore later
+      const originalPeriodicTrendData = [...periodicTrendData];
+      const originalCombinedTrendData = [...combinedTrendData];
+
+      let successCount = 0;
+
+      // Loop through each verger and generate PDF
+      for (let i = 0; i < vergerOptions.length; i++) {
+        const verger = vergerOptions[i];
+        console.log(`Generating PDF for verger ${i + 1}/${vergerOptions.length}: ${verger.label}`);
+
+        // Update button text to show progress
+        allVergersButton.textContent = `⏳ ${i + 1}/${vergerOptions.length}...`;
+
+        try {
+          // Fetch trend data specifically for this verger
+          const params = {
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            chartType: selectedChartType,
+            timePeriod: selectedTimePeriod,
+            vergerId: verger.value
+          };
+
+          // Apply variety filters if selected
+          if (filters.selectedGrpVar) {
+            params.grpVarId = filters.selectedGrpVar.value;
+          }
+          if (filters.selectedVariete) {
+            params.varieteId = filters.selectedVariete.value;
+          }
+
+          console.log(`Fetching data for verger ${verger.label}:`, params);
+
+          let trendData;
+          if (selectedChartType === 'combined') {
+            // Fetch all three data types in parallel for combined chart
+            const [receptionData, exportData, ecartData] = await Promise.all([
+              apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'reception' }),
+              apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'export' }),
+              apiGet('/api/dashboard/periodic-trends', { ...params, chartType: 'ecart' })
+            ]);
+
+            // Combine the data by date/label
+            const combinedDataMap = new Map();
+
+            // Process reception data
+            (receptionData.trends || []).forEach(item => {
+              const key = item.label;
+              if (!combinedDataMap.has(key)) {
+                combinedDataMap.set(key, {
+                  label: item.label,
+                  date: item.date,
+                  reception: 0,
+                  export: 0,
+                  ecart: 0
+                });
+              }
+              combinedDataMap.get(key).reception = parseFloat(item.value) || 0;
+            });
+
+            // Process export data
+            (exportData.trends || []).forEach(item => {
+              const key = item.label;
+              if (!combinedDataMap.has(key)) {
+                combinedDataMap.set(key, {
+                  label: item.label,
+                  date: item.date,
+                  reception: 0,
+                  export: 0,
+                  ecart: 0
+                });
+              }
+              combinedDataMap.get(key).export = parseFloat(item.value) || 0;
+            });
+
+            // Process ecart data
+            (ecartData.trends || []).forEach(item => {
+              const key = item.label;
+              if (!combinedDataMap.has(key)) {
+                combinedDataMap.set(key, {
+                  label: item.label,
+                  date: item.date,
+                  reception: 0,
+                  export: 0,
+                  ecart: 0
+                });
+              }
+              combinedDataMap.get(key).ecart = parseFloat(item.value) || 0;
+            });
+
+            trendData = Array.from(combinedDataMap.values());
+          } else {
+            // Fetch data for single chart type
+            const response = await apiGet('/api/dashboard/periodic-trends', params);
+            trendData = response.trends || [];
+          }
+
+          // Skip vergers with no data
+          if (!trendData || trendData.length === 0) {
+            console.log(`Skipping verger ${verger.label} - no data available`);
+            continue;
+          }
+
+          // Temporarily update the chart data state for chart rendering
+          if (selectedChartType === 'combined') {
+            setCombinedTrendData(trendData);
+          } else {
+            setPeriodicTrendData(trendData);
+          }
+
+          // Wait longer for React to update the chart with new data (increased for reliability)
+          console.log(`Waiting for chart to render with ${trendData.length} data points...`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          // Additional wait to ensure chart is fully rendered
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Generate PDF with this verger's specific data
+          const chartTypeLabel = selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1);
+
+          await generateChartPDF(
+            document.getElementById('trend-chart-container'),
+            document.getElementById('detail-data-table'),
+            {
+              title: 'Rapport de Performance du Verger',
+              orchardName: verger.label,
+              chartType: chartTypeLabel,
+              timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
+              varieteName: filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés',
+              includeTable: true,
+              vergerId: verger.value
+            }
+          );
+
+          successCount++;
+
+        } catch (vergerError) {
+          console.error(`Error generating PDF for verger ${verger.label}:`, vergerError);
+          // Continue with next verger instead of stopping the whole process
+        }
+      }
+
+      // Restore original data
+      setPeriodicTrendData(originalPeriodicTrendData);
+      setCombinedTrendData(originalCombinedTrendData);
+
+      // Restore button state
+      allVergersButton.textContent = originalButtonText;
+      allVergersButton.disabled = false;
+
+      console.log('Batch PDF generation completed');
+      alert(`Génération terminée! ${successCount}/${vergerOptions.length} PDFs créés avec succès.`);
+
+    } catch (error) {
+      console.error('Error in batch PDF generation:', error);
+      alert('Erreur lors de la génération des PDFs: ' + error.message);
+
+      // Restore button state on error
+      const allVergersButton = document.querySelector('.btn-all-vergers');
+      if (allVergersButton) {
+        allVergersButton.textContent = '📄 Generate All Vergers PDFs';
+        allVergersButton.disabled = false;
+      }
+    }
+  };
+
   const handleExportVarietesPDF = () => {
     console.log('Varietes PDF button clicked');
     if (!dashboardData?.tableRows?.length) {
@@ -880,6 +1067,25 @@ const DashboardPage = () => {
                 >
                   📄 Export Chart & Data
                 </button>
+                {!filters.selectedVerger && (
+                  <button
+                    onClick={() => handleExportAllVergersPDF()}
+                    className="btn btn-all-vergers"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}
+                    title="Generate PDFs for all verg ers"
+                  >
+                    📄 Generate All Vergers PDFs
+                  </button>
+                )}
               </div>
             </div>
             <div className="full-width-chart">

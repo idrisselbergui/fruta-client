@@ -214,8 +214,8 @@ const calculateDateRangeFromTableRows = (tableRows) => {
   const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
   const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
 
-  const startDate = minDate.toISOString().split('T')[0];
-  const endDate = maxDate.toISOString().split('T')[0];
+  const startDate = minDate.toLocaleDateString('sv-SE');
+  const endDate = maxDate.toLocaleDateString('sv-SE');
 
   console.log(`🎯 FINAL: Calculated period from ${allDates.length} dates: ${startDate} to ${endDate}`);
   return { startDate, endDate };
