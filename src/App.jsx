@@ -14,6 +14,8 @@ import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
 import VenteEcartPage from './pages/VenteEcartPage';
 import MarqueManagementPage from './pages/MarqueManagementPage';
+import SampleDashboardPage from './pages/SampleDashboardPage';
+import SampleTestManagementPage from './pages/SampleTestManagementPage';
 
 
 
@@ -96,6 +98,16 @@ function App() {
         <Route path="/marque-management" element={
           <PageProtectedRoute user={user} pageName="marque-management">
             <MarqueManagementPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/sample-dashboard" element={
+          <PageProtectedRoute user={user} pageName="sample-dashboard">
+            <SampleDashboardPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/sample-management" element={
+          <PageProtectedRoute user={user} pageName="sample-dashboard">
+            <SampleTestManagementPage />
           </PageProtectedRoute>
         } />
 

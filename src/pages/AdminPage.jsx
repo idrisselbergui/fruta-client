@@ -28,6 +28,7 @@ const AdminPage = () => {
     { id: 'qualite-defaut', name: 'Quality Defects' },
     { id: 'vente-ecart', name: 'Vente Ecart' },
     { id: 'marque-management', name: 'Marque Management' },
+    { id: 'sample-dashboard', name: 'Sample Dashboard' },
     { id: 'admin', name: 'Admin Panel' }
   ];
 

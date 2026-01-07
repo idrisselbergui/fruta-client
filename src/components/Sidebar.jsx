@@ -21,6 +21,8 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
     if (label === 'Quality Defects' && !hasPagePermission(user, "qualite-defaut")) hasPermission = false;
     if (label === 'Vente Ecart' && !hasPagePermission(user, "vente-ecart")) hasPermission = false;
     if (label === 'Marque Management' && !hasPagePermission(user, "marque-management")) hasPermission = false;
+    if (label === 'Sample Dashboard' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Sample Management' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Admin' && !hasPagePermission(user, "admin")) hasPermission = false;
 
     if (!hasPermission) return null;
@@ -148,6 +150,26 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"></path>
               <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+          )}
+          {renderNavItem(
+            '/sample-dashboard',
+            'Sample Dashboard',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+              <path d="M13 19v-6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+              <path d="M17 19v-6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
+              <path d="M3 7h18"></path>
+            </svg>
+          )}
+          {renderNavItem(
+            '/sample-management',
+            'Sample Management',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
             </svg>
           )}
 

@@ -235,3 +235,23 @@ export const getVergers = (databaseName = null) => {
 export const getVarietes = (databaseName = null) => {
   return apiGet('/api/lookup/varietes', null, databaseName);
 };
+
+export const getDestinations = (databaseName = null) => {
+  return apiGet('/api/lookup/destinations', null, databaseName);
+};
+
+export const getActiveSamples = (databaseName = null) => {
+  return apiGet('/api/Sample/active', null, databaseName);
+};
+
+export const createDailyCheck = (sampleId, checkData, databaseName = null) => {
+  return apiPost(`/api/Sample/${sampleId}/check`, checkData, databaseName);
+};
+
+export const getReceptions = (databaseName = null) => {
+  return apiGet('/api/Sample/receptions', null, databaseName);
+};
+
+export const createSampleTest = (sampleData, databaseName = null) => {
+  return apiPost('/api/Sample', sampleData, databaseName);
+};
