@@ -244,6 +244,10 @@ export const getActiveSamples = (databaseName = null) => {
   return apiGet('/api/Sample/active', null, databaseName);
 };
 
+export const getAllSamples = (databaseName = null) => {
+  return apiGet('/api/Sample/all', null, databaseName);
+};
+
 export const createDailyCheck = (sampleId, checkData, databaseName = null) => {
   return apiPost(`/api/Sample/${sampleId}/check`, checkData, databaseName);
 };
@@ -254,4 +258,8 @@ export const getReceptions = (databaseName = null) => {
 
 export const createSampleTest = (sampleData, databaseName = null) => {
   return apiPost('/api/Sample', sampleData, databaseName);
+};
+
+export const updateSampleStatus = (sampleId, statusData, databaseName = null) => {
+  return apiPut(`/api/Sample/${sampleId}/status`, statusData, databaseName);
 };

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { getReceptions, createSampleTest, getActiveSamples, getDestinations, getVarietes } from '../apiService';
+import { getReceptions, createSampleTest, getActiveSamples, getAllSamples, getDestinations, getVarietes, updateSampleStatus } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './SampleTestManagementPage.css';
 
 const SampleTestManagementPage = () => {
   const [receptions, setReceptions] = useState([]);
   const [activeSamples, setActiveSamples] = useState([]);
+  const [allSamples, setAllSamples] = useState([]);
   const [destinations, setDestinations] = useState([]);
   const [varieties, setVarieties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState('active'); // 'active' or 'all'
   const [formData, setFormData] = useState({
     numrec: '',
     selectedDestination: null,
@@ -26,14 +28,16 @@ const SampleTestManagementPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [receptionsData, samplesData, destinationsData, varietiesData] = await Promise.all([
+      const [receptionsData, activeSamplesData, allSamplesData, destinationsData, varietiesData] = await Promise.all([
         getReceptions(),
         getActiveSamples(),
+        getAllSamples(),
         getDestinations(),
         getVarietes()
       ]);
       setReceptions(receptionsData || []);
-      setActiveSamples(samplesData || []);
+      setActiveSamples(activeSamplesData || []);
+      setAllSamples(allSamplesData || []);
       setDestinations(destinationsData || []);
       setVarieties(varietiesData || []);
       setError(null);
@@ -167,7 +171,7 @@ const SampleTestManagementPage = () => {
   };
 
   // Sort samples by reception number (descending - highest first)
-  const sortedSamples = [...activeSamples].sort((a, b) =>
+  const sortedSamples = [...(viewMode === 'active' ? activeSamples : allSamples)].sort((a, b) =>
     b.numrec - a.numrec
   );
 
@@ -178,6 +182,9 @@ const SampleTestManagementPage = () => {
   const totalPages = Math.ceil(sortedSamples.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedSamples = sortedSamples.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Current samples based on view mode
+  const currentSamples = viewMode === 'active' ? activeSamples : allSamples;
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -192,6 +199,26 @@ const SampleTestManagementPage = () => {
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleStatusToggle = async (sampleId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 0 ? 1 : 0; // Toggle between 0 (Active) and 1 (Closed)
+
+      const statusData = {
+        status: newStatus
+      };
+
+      console.log('Updating sample status:', sampleId, statusData);
+      await updateSampleStatus(sampleId, statusData);
+
+      // Refresh the samples list to reflect the change
+      await fetchData();
+
+    } catch (err) {
+      console.error('Failed to update sample status:', err);
+      setError('Failed to update sample status: ' + err.message);
     }
   };
 
@@ -316,14 +343,32 @@ const SampleTestManagementPage = () => {
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="view-toggle-section">
+        <div className="view-toggle">
+          <button
+            className={`view-btn ${viewMode === 'active' ? 'active' : ''}`}
+            onClick={() => setViewMode('active')}
+          >
+            Active Shelf Life
+          </button>
+          <button
+            className={`view-btn ${viewMode === 'all' ? 'active' : ''}`}
+            onClick={() => setViewMode('all')}
+          >
+            All Shelf Life
+          </button>
+        </div>
+      </div>
+
       {/* Samples Section */}
       <div className="samples-section">
-        <h2>Active Shelf Life</h2>
+        <h2>{viewMode === 'active' ? 'Active Shelf Life' : 'All Shelf Life'}</h2>
 
-        {sortedSamples.length === 0 ? (
+        {currentSamples.length === 0 ? (
           <div className="empty-state">
-            <p>No active sShelf Life found.</p>
-            <p>Create a Shelf Life to start monitoring.</p>
+            <p>No {viewMode === 'active' ? 'active' : ''} Shelf Life found.</p>
+            <p>{viewMode === 'active' ? 'Create a Shelf Life to start monitoring.' : 'No shelf life records found.'}</p>
           </div>
         ) : (
           <>
@@ -335,6 +380,16 @@ const SampleTestManagementPage = () => {
                     <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
                       {sample.status === 0 ? 'Active' : 'Closed'}
                     </span>
+                    <div className="status-toggle">
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={sample.status === 0}
+                          onChange={() => handleStatusToggle(sample.id, sample.status)}
+                        />
+                        <span className="toggle-slider"></span>
+                      </label>
+                    </div>
                   </div>
                   <div className="sample-details">
                     <p><strong>Day:</strong> {calculateDays(sample.startDate)}</p>
