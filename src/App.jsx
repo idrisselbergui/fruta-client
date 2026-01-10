@@ -13,6 +13,7 @@ import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PA
 import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
 import VenteEcartPage from './pages/VenteEcartPage';
+import DailyChecksPage from './pages/DailyChecksPage';
 import MarqueManagementPage from './pages/MarqueManagementPage';
 import SampleDashboardPage from './pages/SampleDashboardPage';
 import SampleTestManagementPage from './pages/SampleTestManagementPage';
@@ -108,6 +109,11 @@ function App() {
         <Route path="/sample-management" element={
           <PageProtectedRoute user={user} pageName="sample-dashboard">
             <SampleTestManagementPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/daily-checks" element={
+          <PageProtectedRoute user={user} pageName="sample-dashboard">
+            <DailyChecksPage />
           </PageProtectedRoute>
         } />
 

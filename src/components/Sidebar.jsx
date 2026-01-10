@@ -23,6 +23,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
     if (label === 'Marque Management' && !hasPagePermission(user, "marque-management")) hasPermission = false;
     if (label === 'Sample Dashboard' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Sample Management' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Daily Checks' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Admin' && !hasPagePermission(user, "admin")) hasPermission = false;
 
     if (!hasPermission) return null;
@@ -170,6 +171,13 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
               <polyline points="14,2 14,8 20,8"></polyline>
               <line x1="12" y1="18" x2="12" y2="12"></line>
               <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          )}
+          {renderNavItem(
+            '/daily-checks',
+            'Daily Checks',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2v20m8-8H4"></path>
             </svg>
           )}
 

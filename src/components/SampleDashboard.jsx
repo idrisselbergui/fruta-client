@@ -74,6 +74,11 @@ const SampleDashboard = () => {
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
   };
 
+  // Sort samples by startDate (newest first)
+  const sortedSamples = [...samples].sort((a, b) => 
+    new Date(b.startDate) - new Date(a.startDate)
+  );
+
   if (loading) {
     return <div className="loading">Loading samples...</div>;
   }
@@ -86,7 +91,7 @@ const SampleDashboard = () => {
     <div className="sample-dashboard">
       <h2>Quality Control Dashboard</h2>
       
-      {samples.length === 0 ? (
+      {sortedSamples.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📦</div>
           <h3>No Active Samples</h3>
@@ -95,7 +100,7 @@ const SampleDashboard = () => {
         </div>
       ) : (
         <div className="samples-grid">
-          {samples.map((sample) => (
+          {sortedSamples.map((sample) => (
             <div key={sample.id} className="sample-card">
               <div className="card-header">
                 <h3>Reception {sample.numrec}</h3>

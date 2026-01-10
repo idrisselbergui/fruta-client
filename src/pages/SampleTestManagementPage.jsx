@@ -108,7 +108,7 @@ const SampleTestManagementPage = () => {
 
       console.log('Sending sample data:', sampleData);
       await createSampleTest(sampleData);
-      
+
       // Reset form and refresh data
       setFormData({
         numrec: '',
@@ -118,10 +118,11 @@ const SampleTestManagementPage = () => {
         initialFruitCount: 1
       });
       setShowForm(false);
-      
-      // Refresh the lists
+
+      // Refresh all data including receptions after successful creation
+      console.log('Reloading data after successful sample test creation...');
       await fetchData();
-      
+
       alert('Sample test created successfully!');
     } catch (err) {
       console.error('Submission error:', err);
@@ -165,29 +166,58 @@ const SampleTestManagementPage = () => {
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
   };
 
+  // Sort samples by reception number (descending - highest first)
+  const sortedSamples = [...activeSamples].sort((a, b) =>
+    b.numrec - a.numrec
+  );
+
+  // Pagination logic
+  const ITEMS_PER_PAGE = 12;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(sortedSamples.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedSamples = sortedSamples.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
 
   return (
     <div className="sample-test-management">
-      <h1>Sample Test Management</h1>
+      <h1>Shelf Life</h1>
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="content-grid">
-        {/* Left Column: Create New Sample Test */}
+      {/* Outer Container: Create New Sample Test - Always on Top */}
+      <div className="create-section-outer">
         <div className="create-section">
-          <h2>Create New Sample Test</h2>
-          <p>Select a reception to create a sample test for quality monitoring.</p>
+          <h2>Create New Shelf Life</h2>
+          <p>Select a reception to create a Shelf Life for quality monitoring.</p>
 
           {!showForm ? (
             <button className="create-btn" onClick={() => setShowForm(true)}>
-              + Create Sample Test
+              + Create Shelf Life
             </button>
           ) : (
             <div className="form-container">
-              <h3>New Sample Test</h3>
+              <h3>New Shelf Life</h3>
               <form onSubmit={handleSubmit} className="sample-test-form">
                 <div className="form-row">
                   <div className="input-group">
@@ -201,7 +231,7 @@ const SampleTestManagementPage = () => {
                       <option value="">Select Reception...</option>
                       {receptions.map(reception => (
                         <option key={reception.numrec} value={reception.numrec}>
-                          #{reception.numrec} - {reception.dterec ? new Date(reception.dterec).toLocaleDateString() : 'No Date'} 
+                          #{reception.numrec} - {reception.dterec ? new Date(reception.dterec).toLocaleDateString() : 'No Date'}
                           {reception.nbrfru ? ` (${reception.nbrfru} fruits)` : ''}
                         </option>
                       ))}
@@ -213,7 +243,7 @@ const SampleTestManagementPage = () => {
                     <select
                       value={formData.selectedDestination ? formData.selectedDestination.value || formData.selectedDestination.coddes : ''}
                       onChange={(e) => {
-                        const selectedDest = destinations.find(d => 
+                        const selectedDest = destinations.find(d =>
                           d.value === parseInt(e.target.value) || d.coddes === parseInt(e.target.value)
                         );
                         handleDropdownChange('selectedDestination', selectedDest);
@@ -233,7 +263,7 @@ const SampleTestManagementPage = () => {
                     <select
                       value={formData.selectedVariety ? formData.selectedVariety.value || formData.selectedVariety.codvar : ''}
                       onChange={(e) => {
-                        const selectedVar = varieties.find(v => 
+                        const selectedVar = varieties.find(v =>
                           v.value === parseInt(e.target.value) || v.codvar === parseInt(e.target.value)
                         );
                         handleDropdownChange('selectedVariety', selectedVar);
@@ -284,19 +314,21 @@ const SampleTestManagementPage = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Right Column: Existing Sample Tests */}
-        <div className="samples-section">
-          <h2>Active Sample Tests</h2>
-          
-          {activeSamples.length === 0 ? (
-            <div className="empty-state">
-              <p>No active sample tests found.</p>
-              <p>Create a sample test to start monitoring.</p>
-            </div>
-          ) : (
+      {/* Samples Section */}
+      <div className="samples-section">
+        <h2>Active Shelf Life</h2>
+
+        {sortedSamples.length === 0 ? (
+          <div className="empty-state">
+            <p>No active sShelf Life found.</p>
+            <p>Create a Shelf Life to start monitoring.</p>
+          </div>
+        ) : (
+          <>
             <div className="samples-list">
-              {activeSamples.map(sample => (
+              {paginatedSamples.map(sample => (
                 <div key={sample.id} className="sample-item">
                   <div className="sample-header">
                     <h4>Reception #{sample.numrec}</h4>
@@ -314,8 +346,33 @@ const SampleTestManagementPage = () => {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  ← Previous
+                </button>
+
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages} ({sortedSamples.length} total samples)
+                </span>
+
+                <button
+                  className="pagination-btn"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

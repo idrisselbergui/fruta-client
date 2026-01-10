@@ -1,23 +1,62 @@
-import React, { useState } from 'react';
-import { createDailyCheck } from '../apiService';
+import React, { useState, useEffect } from 'react';
+import { createDailyCheck, getDefauts } from '../apiService';
 
 const DailyCheckModal = ({ isOpen, onClose, onSave, sample, destinations = [], varieties = [] }) => {
-  const [defects, setDefects] = useState({
-    Rot: 0,
-    Mold: 0,
-    Soft: 0
-  });
+  const [selectedDefect, setSelectedDefect] = useState('');
+  const [quantity, setQuantity] = useState(0);
+  const [defectRecords, setDefectRecords] = useState([]);
+  const [availableDefects, setAvailableDefects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Load available defects when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadDefects = async () => {
+        try {
+          const defects = await getDefauts();
+          setAvailableDefects(defects || []);
+        } catch (err) {
+          console.error('Failed to load defects:', err);
+          setAvailableDefects([]);
+        }
+      };
+      loadDefects();
+    }
+  }, [isOpen]);
+
   if (!isOpen || !sample) return null;
 
-  const handleInputChange = (defectType, value) => {
-    const numValue = parseInt(value) || 0;
-    setDefects(prev => ({
-      ...prev,
-      [defectType]: numValue
-    }));
+  const addDefectRecord = () => {
+    if (!selectedDefect || quantity <= 0) {
+      setError('Please select a defect and enter a valid quantity');
+      return;
+    }
+
+    const selectedDefectData = availableDefects.find(d => d.coddef.toString() === selectedDefect);
+    if (!selectedDefectData) {
+      setError('Invalid defect selected');
+      return;
+    }
+
+    const newRecord = {
+      id: Date.now(), // Simple ID for removal
+      defectId: selectedDefect,
+      defectName: selectedDefectData.intdef,
+      defectFamily: selectedDefectData.famdef,
+      quantity: quantity
+    };
+
+    setDefectRecords([...defectRecords, newRecord]);
+    
+    // Reset form
+    setSelectedDefect('');
+    setQuantity(0);
+    setError(null);
+  };
+
+  const removeDefectRecord = (id) => {
+    setDefectRecords(defectRecords.filter(record => record.id !== id));
   };
 
   const handleSubmit = async (e) => {
@@ -26,30 +65,32 @@ const DailyCheckModal = ({ isOpen, onClose, onSave, sample, destinations = [], v
     setError(null);
 
     try {
-      // Prepare defects array (only non-zero values)
-      const defectsArray = Object.entries(defects)
-        .filter(([_, quantity]) => quantity > 0)
-        .map(([type, quantity]) => ({
-          type: type.toLowerCase(), // API expects lowercase: 'rot', 'mold', 'soft'
-          quantity
-        }));
+      if (defectRecords.length === 0) {
+        throw new Error('Please add at least one defect record');
+      }
+
+      // Prepare defects array
+      const defectsArray = defectRecords.map(record => ({
+        defectId: record.defectId,
+        quantity: record.quantity
+      }));
 
       const checkData = {
-        checkDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+        checkDate: new Date().toISOString().split('T')[0],
         defects: defectsArray
       };
 
+      console.log('Submitting daily check data:', checkData);
       await createDailyCheck(sample.id, checkData);
       
       // Refresh the samples list
       onSave();
       
-      // Close modal
+      // Close modal and reset
       onClose();
-      
-      // Reset form
-      setDefects({ Rot: 0, Mold: 0, Soft: 0 });
+      resetForm();
     } catch (err) {
+      console.error('Daily check submission error:', err);
       setError(err.message || 'Failed to save daily check');
     } finally {
       setLoading(false);
@@ -57,9 +98,15 @@ const DailyCheckModal = ({ isOpen, onClose, onSave, sample, destinations = [], v
   };
 
   const handleCancel = () => {
-    setDefects({ Rot: 0, Mold: 0, Soft: 0 });
-    setError(null);
+    resetForm();
     onClose();
+  };
+
+  const resetForm = () => {
+    setSelectedDefect('');
+    setQuantity(0);
+    setDefectRecords([]);
+    setError(null);
   };
 
   const calculateDays = (startDate) => {
@@ -111,61 +158,113 @@ const DailyCheckModal = ({ isOpen, onClose, onSave, sample, destinations = [], v
               </div>
             )}
 
-            <div className="defects-input">
-              <div className="defect-input">
-                <label htmlFor="rot">Rot</label>
-                <input
-                  id="rot"
-                  type="number"
-                  min="0"
-                  value={defects.Rot}
-                  onChange={(e) => handleInputChange('Rot', e.target.value)}
-                  disabled={loading}
-                />
+            {availableDefects.length === 0 ? (
+              <div className="no-defects-message">
+                <p>No defects configured. Please add defects in the Quality Defects page first.</p>
               </div>
+            ) : (
+              <>
+                {/* Add Defect Section */}
+                <div className="add-defect-section">
+                  <div className="form-row">
+                    <div className="input-group">
+                      <label>Select Defect</label>
+                      <select
+                        value={selectedDefect}
+                        onChange={(e) => setSelectedDefect(e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="">Choose a defect...</option>
+                        {availableDefects.map(defect => (
+                          <option key={defect.coddef} value={defect.coddef}>
+                            {defect.intdef} ({defect.famdef})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              <div className="defect-input">
-                <label htmlFor="mold">Mold</label>
-                <input
-                  id="mold"
-                  type="number"
-                  min="0"
-                  value={defects.Mold}
-                  onChange={(e) => handleInputChange('Mold', e.target.value)}
-                  disabled={loading}
-                />
-              </div>
+                    <div className="input-group">
+                      <label>Number of Fruits</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                        disabled={loading}
+                        placeholder="Enter quantity"
+                      />
+                    </div>
 
-              <div className="defect-input">
-                <label htmlFor="soft">Soft</label>
-                <input
-                  id="soft"
-                  type="number"
-                  min="0"
-                  value={defects.Soft}
-                  onChange={(e) => handleInputChange('Soft', e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-            </div>
+                    <div className="input-group">
+                      <label>&nbsp;</label>
+                      <button
+                        type="button"
+                        onClick={addDefectRecord}
+                        className="add-btn"
+                        disabled={loading || !selectedDefect || quantity <= 0}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="modal-actions">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="cancel-btn"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="save-btn"
-                disabled={loading}
-              >
-                {loading ? 'Saving...' : 'Save Daily Check'}
-              </button>
-            </div>
+                {/* Defect Records Table */}
+                {defectRecords.length > 0 && (
+                  <div className="defect-records-table">
+                    <h4>Added Defects ({defectRecords.length})</h4>
+                    <table className="records-table">
+                      <thead>
+                        <tr>
+                          <th>Defect</th>
+                          <th>Type</th>
+                          <th>Quantity</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {defectRecords.map(record => (
+                          <tr key={record.id}>
+                            <td>{record.defectName}</td>
+                            <td>{record.defectFamily}</td>
+                            <td>{record.quantity}</td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => removeDefectRecord(record.id)}
+                                className="remove-btn"
+                                disabled={loading}
+                                title="Remove this record"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="cancel-btn"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="save-btn"
+                    disabled={loading || defectRecords.length === 0}
+                  >
+                    {loading ? 'Saving...' : 'Save Daily Check'}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </div>
       </div>
