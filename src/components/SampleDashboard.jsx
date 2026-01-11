@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveSamples, getDestinations, getVarietes } from '../apiService';
+import { getActiveSamples, getAllSamples, getDestinations, getVarietes } from '../apiService';
 import DailyCheckModal from './DailyCheckModal';
 import './SampleDashboard.css';
 import './DailyCheckModal.css';
 
 const SampleDashboard = () => {
-  const [samples, setSamples] = useState([]);
+  const [activeSamples, setActiveSamples] = useState([]);
+  const [allSamples, setAllSamples] = useState([]);
   const [destinations, setDestinations] = useState([]);
   const [varieties, setVarieties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,17 +14,20 @@ const SampleDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 9;
+
 
   const fetchSamples = async () => {
     try {
       setLoading(true);
-      const [samplesData, destinationsData, varietiesData] = await Promise.all([
+      const [activeSamplesData, allSamplesData, destinationsData, varietiesData] = await Promise.all([
         getActiveSamples(),
+        getAllSamples(),
         getDestinations(),
         getVarietes()
       ]);
-      setSamples(samplesData || []);
+      setActiveSamples(activeSamplesData || []);
+      setAllSamples(allSamplesData || []);
       setDestinations(destinationsData || []);
       setVarieties(varietiesData || []);
       setError(null);
@@ -76,8 +80,8 @@ const SampleDashboard = () => {
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
   };
 
-  // Sort samples by startDate (newest first)
-  const sortedSamples = [...samples].sort((a, b) =>
+  // Sort samples by startDate (newest first) - always use allSamples
+  const sortedSamples = [...allSamples].sort((a, b) =>
     new Date(b.startDate) - new Date(a.startDate)
   );
 
@@ -99,6 +103,47 @@ const SampleDashboard = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
 
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages are less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+
+      // Calculate start and end of the middle section
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      // Add ellipsis before middle section if needed
+      if (startPage > 2) {
+        pageNumbers.push('...');
+      }
+
+      // Add middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis after middle section if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('...');
+      }
+
+      // Always show last page if more than 1 page
+      if (totalPages > 1) {
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
+
   if (loading) {
     return <div className="loading">Loading samples...</div>;
   }
@@ -110,12 +155,12 @@ const SampleDashboard = () => {
   return (
     <div className="sample-dashboard">
       <h2>Quality Control Dashboard</h2>
-      
+
       {sortedSamples.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📦</div>
-          <h3>No Active Samples</h3>
-          <p>There are currently no active samples to monitor.</p>
+          <h3>No Samples Found</h3>
+          <p>There are currently no samples in the system.</p>
           <p>Create sample tests to start quality monitoring.</p>
         </div>
       ) : (
@@ -148,34 +193,54 @@ const SampleDashboard = () => {
             ))}
           </div>
 
-          {/* Pagination Controls */}
+          {/* Modern Pagination */}
           {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-              >
-                Previous
-              </button>
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} of {sortedSamples.length} results
+              </div>
 
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map(pageNumber => (
+              <div className="pagination">
                 <button
-                  key={pageNumber}
-                  onClick={() => handlePageChange(pageNumber)}
-                  className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
+                  className="pagination-nav"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
                 >
-                  {pageNumber}
+                  <span className="nav-arrow">‹</span>
+                  Previous
                 </button>
-              ))}
 
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-              >
-                Next
-              </button>
+                <div className="pagination-numbers">
+                  {renderPageNumbers().map((pageNumber, index) => (
+                    pageNumber === '...' ? (
+                      <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={pageNumber}
+                        className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNumber)}
+                        aria-label={`Page ${pageNumber}`}
+                        aria-current={currentPage === pageNumber ? 'page' : undefined}
+                      >
+                        {pageNumber}
+                      </button>
+                    )
+                  ))}
+                </div>
+
+                <button
+                  className="pagination-nav"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                >
+                  Next
+                  <span className="nav-arrow">›</span>
+                </button>
+              </div>
             </div>
           )}
         </>

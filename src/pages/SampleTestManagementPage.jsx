@@ -186,8 +186,49 @@ const SampleTestManagementPage = () => {
   // Current samples based on view mode
   const currentSamples = viewMode === 'active' ? activeSamples : allSamples;
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages are less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+
+      // Calculate start and end of the middle section
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      // Add ellipsis before middle section if needed
+      if (startPage > 2) {
+        pageNumbers.push('...');
+      }
+
+      // Add middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis after middle section if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('...');
+      }
+
+      // Always show last page if more than 1 page
+      if (totalPages > 1) {
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
   };
 
   const handlePrevPage = () => {
@@ -401,28 +442,54 @@ const SampleTestManagementPage = () => {
               ))}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Modern Pagination */}
             {totalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  ← Previous
-                </button>
+              <div className="pagination-container">
+                <div className="pagination-info">
+                  Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, sortedSamples.length)} of {sortedSamples.length} results
+                </div>
 
-                <span className="pagination-info">
-                  Page {currentPage} of {totalPages} ({sortedSamples.length} total samples)
-                </span>
+                <div className="pagination">
+                  <button
+                    className="pagination-nav"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    aria-label="Previous page"
+                  >
+                    <span className="nav-arrow">‹</span>
+                    Previous
+                  </button>
 
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next →
-                </button>
+                  <div className="pagination-numbers">
+                    {renderPageNumbers().map((pageNumber, index) => (
+                      pageNumber === '...' ? (
+                        <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={pageNumber}
+                          className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                          onClick={() => handlePageChange(pageNumber)}
+                          aria-label={`Page ${pageNumber}`}
+                          aria-current={currentPage === pageNumber ? 'page' : undefined}
+                        >
+                          {pageNumber}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  <button
+                    className="pagination-nav"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    aria-label="Next page"
+                  >
+                    Next
+                    <span className="nav-arrow">›</span>
+                  </button>
+                </div>
               </div>
             )}
           </>

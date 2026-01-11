@@ -214,6 +214,47 @@ const DailyChecksPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
 
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages are less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+
+      // Calculate start and end of the middle section
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      // Add ellipsis before middle section if needed
+      if (startPage > 2) {
+        pageNumbers.push('...');
+      }
+
+      // Add middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis after middle section if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('...');
+      }
+
+      // Always show last page if more than 1 page
+      if (totalPages > 1) {
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -382,34 +423,54 @@ const DailyChecksPage = () => {
               ))}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Modern Pagination */}
             {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className="pagination-btn"
-                >
-                  Previous
-                </button>
+              <div className="pagination-container">
+                <div className="pagination-info">
+                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} of {sortedSamples.length} results
+                </div>
 
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map(pageNumber => (
+                <div className="pagination">
                   <button
-                    key={pageNumber}
-                    onClick={() => handlePageChange(pageNumber)}
-                    className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
+                    className="pagination-nav"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    aria-label="Previous page"
                   >
-                    {pageNumber}
+                    <span className="nav-arrow">‹</span>
+                    Previous
                   </button>
-                ))}
 
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className="pagination-btn"
-                >
-                  Next
-                </button>
+                  <div className="pagination-numbers">
+                    {renderPageNumbers().map((pageNumber, index) => (
+                      pageNumber === '...' ? (
+                        <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={pageNumber}
+                          className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                          onClick={() => handlePageChange(pageNumber)}
+                          aria-label={`Page ${pageNumber}`}
+                          aria-current={currentPage === pageNumber ? 'page' : undefined}
+                        >
+                          {pageNumber}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  <button
+                    className="pagination-nav"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    aria-label="Next page"
+                  >
+                    Next
+                    <span className="nav-arrow">›</span>
+                  </button>
+                </div>
               </div>
             )}
           </>
