@@ -12,6 +12,8 @@ const SampleDashboard = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   const fetchSamples = async () => {
     try {
@@ -75,9 +77,27 @@ const SampleDashboard = () => {
   };
 
   // Sort samples by startDate (newest first)
-  const sortedSamples = [...samples].sort((a, b) => 
+  const sortedSamples = [...samples].sort((a, b) =>
     new Date(b.startDate) - new Date(a.startDate)
   );
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedSamples.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedSamples.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
 
   if (loading) {
     return <div className="loading">Loading samples...</div>;
@@ -99,33 +119,66 @@ const SampleDashboard = () => {
           <p>Create sample tests to start quality monitoring.</p>
         </div>
       ) : (
-        <div className="samples-grid">
-          {sortedSamples.map((sample) => (
-            <div key={sample.id} className="sample-card">
-              <div className="card-header">
-                <h3>Reception {sample.numrec}</h3>
-                <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
-                  {sample.status === 0 ? 'Active' : 'Closed'}
-                </span>
+        <>
+          <div className="samples-grid">
+            {currentItems.map((sample) => (
+              <div key={sample.id} className="sample-card">
+                <div className="card-header">
+                  <h3>Reception {sample.numrec}</h3>
+                  <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
+                    {sample.status === 0 ? 'Active' : 'Closed'}
+                  </span>
+                </div>
+                <div className="card-body">
+                  <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
+                  <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
+                  <p><strong>Day {calculateDays(sample.startDate)}</strong></p>
+                  <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
+                </div>
+                <div className="card-footer">
+                  <button
+                    className={`check-button ${sample.isCheckedToday ? 'done' : 'active'}`}
+                    disabled={sample.isCheckedToday}
+                    onClick={() => openModal(sample)}
+                  >
+                    {sample.isCheckedToday ? 'Done ✅' : 'Add Daily Check'}
+                  </button>
+                </div>
               </div>
-              <div className="card-body">
-                <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
-                <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
-                <p><strong>Day {calculateDays(sample.startDate)}</strong></p>
-                <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
-              </div>
-              <div className="card-footer">
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(pageNumber => (
                 <button
-                  className={`check-button ${sample.isCheckedToday ? 'done' : 'active'}`}
-                  disabled={sample.isCheckedToday}
-                  onClick={() => openModal(sample)}
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
                 >
-                  {sample.isCheckedToday ? 'Done ✅' : 'Add Daily Check'}
+                  {pageNumber}
                 </button>
-              </div>
+              ))}
+
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Next
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       <DailyCheckModal

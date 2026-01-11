@@ -16,6 +16,8 @@ const DailyChecksPage = () => {
   const [selectedDefect, setSelectedDefect] = useState('');
   const [quantity, setQuantity] = useState(0);
   const [defectRecords, setDefectRecords] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     fetchData();
@@ -194,6 +196,24 @@ const DailyChecksPage = () => {
     b.numrec - a.numrec
   );
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedSamples.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedSamples.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -341,25 +361,58 @@ const DailyChecksPage = () => {
             <p>Create sample tests to start daily quality monitoring.</p>
           </div>
         ) : (
-          <div className="samples-list">
-            {sortedSamples.map(sample => (
-              <div key={sample.id} className="sample-item">
-                <div className="sample-header">
-                  <h4>Reception #{sample.numrec}</h4>
-                  <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
-                    {sample.status === 0 ? 'Active' : 'Closed'}
-                  </span>
+          <>
+            <div className="samples-list">
+              {currentItems.map(sample => (
+                <div key={sample.id} className="sample-item">
+                  <div className="sample-header">
+                    <h4>Reception #{sample.numrec}</h4>
+                    <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
+                      {sample.status === 0 ? 'Active' : 'Closed'}
+                    </span>
+                  </div>
+                  <div className="sample-details">
+                    <p><strong>Day:</strong> {calculateDays(sample.startDate)}</p>
+                    <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
+                    <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
+                    <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
+                    <p><strong>Status:</strong> {sample.isCheckedToday ? 'Checked Today ✅' : 'Pending Check'}</p>
+                  </div>
                 </div>
-                <div className="sample-details">
-                  <p><strong>Day:</strong> {calculateDays(sample.startDate)}</p>
-                  <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
-                  <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
-                  <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
-                  <p><strong>Status:</strong> {sample.isCheckedToday ? 'Checked Today ✅' : 'Pending Check'}</p>
-                </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  Previous
+                </button>
+
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(pageNumber => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => handlePageChange(pageNumber)}
+                    className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

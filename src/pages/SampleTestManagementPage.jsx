@@ -343,27 +343,26 @@ const SampleTestManagementPage = () => {
         </div>
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="view-toggle-section">
-        <div className="view-toggle">
-          <button
-            className={`view-btn ${viewMode === 'active' ? 'active' : ''}`}
-            onClick={() => setViewMode('active')}
-          >
-            Active Shelf Life
-          </button>
-          <button
-            className={`view-btn ${viewMode === 'all' ? 'active' : ''}`}
-            onClick={() => setViewMode('all')}
-          >
-            All Shelf Life
-          </button>
-        </div>
-      </div>
-
       {/* Samples Section */}
       <div className="samples-section">
-        <h2>{viewMode === 'active' ? 'Active Shelf Life' : 'All Shelf Life'}</h2>
+        <div className="section-header">
+          <h2>All Shelf Life</h2>
+          {/* Modern Segmented Control */}
+          <div className={`segmented-control ${viewMode === 'all' ? 'all-active' : ''}`}>
+            <button
+              className={`segmented-btn ${viewMode === 'active' ? 'active' : ''}`}
+              onClick={() => setViewMode('active')}
+            >
+              Active
+            </button>
+            <button
+              className={`segmented-btn ${viewMode === 'all' ? 'active' : ''}`}
+              onClick={() => setViewMode('all')}
+            >
+              All
+            </button>
+          </div>
+        </div>
 
         {currentSamples.length === 0 ? (
           <div className="empty-state">
