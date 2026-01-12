@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveSamples, getAllSamples, getDestinations, getVarietes } from '../apiService';
+import { getActiveSamples, getAllSamples, getDefauts, getDestinations, getVarietes } from '../apiService';
+import { generateSampleTestReportPDF } from '../utils/pdfGenerator';
 import DailyCheckModal from './DailyCheckModal';
 import './SampleDashboard.css';
 import './DailyCheckModal.css';
@@ -9,6 +10,7 @@ const SampleDashboard = () => {
   const [allSamples, setAllSamples] = useState([]);
   const [destinations, setDestinations] = useState([]);
   const [varieties, setVarieties] = useState([]);
+  const [availableDefects, setAvailableDefects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,16 +22,18 @@ const SampleDashboard = () => {
   const fetchSamples = async () => {
     try {
       setLoading(true);
-      const [activeSamplesData, allSamplesData, destinationsData, varietiesData] = await Promise.all([
+      const [activeSamplesData, allSamplesData, destinationsData, varietiesData, defectsData] = await Promise.all([
         getActiveSamples(),
         getAllSamples(),
         getDestinations(),
-        getVarietes()
+        getVarietes(),
+        getDefauts()
       ]);
       setActiveSamples(activeSamplesData || []);
       setAllSamples(allSamplesData || []);
       setDestinations(destinationsData || []);
       setVarieties(varietiesData || []);
+      setAvailableDefects(defectsData || []);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -101,6 +105,17 @@ const SampleDashboard = () => {
 
   const handleNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const generatePDF = async (sample) => {
+    try {
+      console.log('Generating PDF report for sample:', sample);
+      await generateSampleTestReportPDF(sample, destinations, varieties, availableDefects);
+      console.log('PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF report. Please try again.');
+    }
   };
 
   const renderPageNumbers = () => {
@@ -182,11 +197,10 @@ const SampleDashboard = () => {
                 </div>
                 <div className="card-footer">
                   <button
-                    className={`check-button ${sample.isCheckedToday ? 'done' : 'active'}`}
-                    disabled={sample.isCheckedToday}
-                    onClick={() => openModal(sample)}
+                    className="pdf-button"
+                    onClick={() => generatePDF(sample)}
                   >
-                    {sample.isCheckedToday ? 'Done ✅' : 'Add Daily Check'}
+                    📄 Generate Report
                   </button>
                 </div>
               </div>

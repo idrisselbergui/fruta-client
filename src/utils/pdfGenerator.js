@@ -980,5 +980,181 @@ const generateEcartDirectDetailsPDF = (ecartDirectData, vergers, varietes, typeE
   }
 };
 
+const generateSampleTestReportPDF = (sample, destinations, varieties, availableDefects) => {
+  console.log('Starting Sample Test Report PDF generation for sample:', sample);
+
+  if (!sample) {
+    console.error('No sample data available for PDF generation');
+    throw new Error('No sample data available. Please select a sample.');
+  }
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Add clear logo in top right corner
+  try {
+    const logoPath = '/diaf.png';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+  } catch (error) {
+    console.log('Logo not found, continuing without logo');
+  }
+
+  // Header
+  doc.setFontSize(18);
+  doc.text('Sample Test Quality Report', 20, 20);
+
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+  doc.text(`Report Period: All available data`, 20, 37);
+
+  let yPosition = 50;
+
+  // Sample Information Section
+  doc.setFontSize(14);
+  doc.text('Sample Information', 20, yPosition);
+  yPosition += 10;
+
+  doc.setFontSize(10);
+  const sampleInfo = [
+    ['Reception Number:', sample.numrec || 'N/A'],
+    ['Client:', destinations.find(d => d.value === sample.coddes || d.coddes === sample.coddes)?.label || sample.coddes || 'N/A'],
+    ['Variety:', varieties.find(v => v.value === sample.codvar || v.codvar === sample.codvar)?.label || sample.codvar || 'N/A'],
+    ['Start Date:', sample.startDate ? new Date(sample.startDate).toLocaleDateString('fr-FR') : 'N/A'],
+    ['Initial Fruit Count:', formatNumberWithSpaces(sample.initialFruitCount || 0, 0)],
+    ['Current Status:', sample.status === 0 ? 'Active' : 'Closed'],
+    ['Days Since Start:', sample.startDate ? Math.floor((new Date() - new Date(sample.startDate)) / (1000 * 60 * 60 * 24)) + 1 : 'N/A']
+  ];
+
+  sampleInfo.forEach(([label, value]) => {
+    doc.text(`${label} ${value}`, 25, yPosition);
+    yPosition += 6;
+  });
+
+  yPosition += 10;
+
+  // Defect Performance Section
+  doc.setFontSize(14);
+  doc.text('Defect Performance Analysis', 20, yPosition);
+  yPosition += 10;
+
+  // Get stored defect data from localStorage
+  const storedDefects = localStorage.getItem(`dailyCheck_${sample.id}`);
+  const defectRecords = storedDefects ? JSON.parse(storedDefects) : [];
+
+  if (defectRecords.length === 0) {
+    doc.setFontSize(10);
+    doc.text('No defect records found for this sample.', 25, yPosition);
+  } else {
+    // Group defects by date
+    const defectsByDate = {};
+    defectRecords.forEach(record => {
+      const date = record.checkDate || 'Unknown Date';
+      if (!defectsByDate[date]) {
+        defectsByDate[date] = [];
+      }
+      defectsByDate[date].push(record);
+    });
+
+    // Create daily defect summary table
+    const tableData = [];
+    const headerRow = ['Date', 'Defect Type', 'Defect Name', 'Quantity', 'Family'];
+    tableData.push(headerRow);
+
+    let totalDefects = 0;
+
+    // Sort dates
+    const sortedDates = Object.keys(defectsByDate).sort((a, b) => new Date(a) - new Date(b));
+
+    sortedDates.forEach(date => {
+      defectsByDate[date].forEach((record, index) => {
+        const defectInfo = availableDefects.find(d => d.coddef.toString() === record.defectId.toString());
+        const rowData = [
+          index === 0 ? (date === 'Unknown Date' ? date : new Date(date).toLocaleDateString('fr-FR')) : '',
+          record.defectId,
+          record.defectName || defectInfo?.intdef || 'Unknown',
+          record.quantity,
+          record.defectFamily || defectInfo?.famdef || 'Unknown'
+        ];
+        tableData.push(rowData);
+        totalDefects += record.quantity || 0;
+      });
+    });
+
+    // Add summary row
+    tableData.push([
+      'TOTAL DEFECTS',
+      '',
+      '',
+      totalDefects,
+      ''
+    ]);
+
+    console.log('Sample test report table data:', tableData);
+
+    // Generate the table
+    autoTable(doc, {
+      startY: yPosition,
+      head: [headerRow],
+      body: tableData.slice(1),
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 3
+      },
+      headStyles: {
+        fillColor: [66, 139, 202],
+        textColor: 255,
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      columnStyles: {
+        0: { cellWidth: 30, fontStyle: 'bold' },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 30 }
+      },
+      margin: { left: 15, right: 15 },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    // Add summary statistics after table
+    const finalY = doc.lastAutoTable.finalY + 15;
+
+    doc.setFontSize(12);
+    doc.text('Summary Statistics', 20, finalY);
+
+    doc.setFontSize(10);
+    const summaryStats = [
+      ['Total Defect Records:', defectRecords.length.toString()],
+      ['Total Defects Found:', formatNumberWithSpaces(totalDefects, 0)],
+      ['Monitoring Days:', sortedDates.length.toString()],
+      ['Average Defects per Day:', sortedDates.length > 0 ? formatNumberWithSpaces(totalDefects / sortedDates.length, 1) : '0']
+    ];
+
+    let summaryY = finalY + 10;
+    summaryStats.forEach(([label, value]) => {
+      doc.text(`${label} ${value}`, 25, summaryY);
+      summaryY += 6;
+    });
+  }
+
+  // Save the PDF
+  const fileName = `sample-test-report-reception-${sample.numrec}-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  try {
+    doc.save(fileName);
+    console.log('Sample test report PDF saved successfully:', fileName);
+    return fileName;
+  } catch (error) {
+    console.error('Error saving sample test report PDF:', error);
+    throw error;
+  }
+};
+
 export default generateDetailedExportPDF;
-export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, calculateDateRangeFromTableRows };
+export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateSampleTestReportPDF, calculateDateRangeFromTableRows };

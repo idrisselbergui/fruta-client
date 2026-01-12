@@ -102,6 +102,22 @@
   cursor: not-allowed;
 }
 
+.pdf-button {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pdf-button:hover {
+  background: #218838;
+}
+
 .loading, .error {
   text-align: center;
   padding: 50px;
