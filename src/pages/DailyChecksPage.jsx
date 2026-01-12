@@ -191,9 +191,9 @@ const DailyChecksPage = () => {
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
   };
 
-  // Sort samples by reception number (descending - highest first)
+  // Sort samples by palette number (descending - highest first)
   const sortedSamples = [...samples].sort((a, b) =>
-    b.numrec - a.numrec
+    b.numpal - a.numpal
   );
 
   // Pagination logic
@@ -277,7 +277,7 @@ const DailyChecksPage = () => {
             </button>
           ) : (
             <div className="form-container">
-              <h3>Daily Check - Sample #{selectedSample?.numrec}</h3>
+              <h3>Daily Check - Sample #{selectedSample?.numpal}</h3>
               <div className="daily-check-form">
                 <div className="form-row">
                   <div className="input-group">
@@ -290,7 +290,7 @@ const DailyChecksPage = () => {
                       <option value="">Select a sample...</option>
                       {sortedSamples.map(sample => (
                         <option key={sample.id} value={sample.id}>
-                          #{sample.numrec} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
+                          #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
                         </option>
                       ))}
                     </select>
@@ -342,7 +342,7 @@ const DailyChecksPage = () => {
                 {/* Defect Records Table */}
                 {(defectRecords.length > 0 || defectsLoading) && (
                   <div className="defect-records-table">
-                    <h4>Defects for Sample #{selectedSample?.numrec} ({defectRecords.length})</h4>
+                    <h4>Defects for Sample #{selectedSample?.numpal} ({defectRecords.length})</h4>
                     {defectsLoading ? (
                       <div className="loading-defects">Loading existing defects...</div>
                     ) : (
@@ -407,7 +407,7 @@ const DailyChecksPage = () => {
               {currentItems.map(sample => (
                 <div key={sample.id} className="sample-item">
                   <div className="sample-header">
-                    <h4>Reception #{sample.numrec}</h4>
+                    <h4>Palette #{sample.numpal}</h4>
                     <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
                       {sample.status === 0 ? 'Active' : 'Closed'}
                     </span>

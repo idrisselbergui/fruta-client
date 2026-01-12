@@ -14,11 +14,16 @@ const SampleTestManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState('active'); // 'active' or 'all'
   const [formData, setFormData] = useState({
-    numrec: '',
+    numpal: '',
     selectedDestination: null,
     selectedVariety: null,
     startDate: new Date().toISOString().split('T')[0],
-    initialFruitCount: 1
+    initialFruitCount: 1,
+    pdsfru: '',
+    couleur1: 1,
+    couleur2: 1,
+        nomver: '',
+        nomemb: ''
   });
 
   useEffect(() => {
@@ -56,22 +61,32 @@ const SampleTestManagementPage = () => {
     }));
   };
 
-  const handleReceptionSelect = (e) => {
-    const selectedNumrec = parseInt(e.target.value);
+  const handleCouleurChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      numrec: selectedNumrec
+      [field]: value
+    }));
+  };
+
+  const handlePaletteSelect = (e) => {
+    const selectedNumpal = parseInt(e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      numpal: selectedNumpal
     }));
 
-    // Auto-fill other fields from selected reception
-    const selectedReception = receptions.find(r => r.numrec === selectedNumrec);
-    if (selectedReception) {
+    // Auto-fill other fields from selected palette
+    const selectedPalette = receptions.find(r => r.numpal === selectedNumpal);
+    if (selectedPalette) {
       // Find matching variety from dropdown options
-      const matchingVariety = varieties.find(v => v.codvar === selectedReception.codvar);
+      const matchingVariety = varieties.find(v => v.codvar === selectedPalette.codvar);
       setFormData(prev => ({
         ...prev,
         selectedVariety: matchingVariety || null,
-        initialFruitCount: selectedReception.nbrfru || 1
+        initialFruitCount: selectedPalette.nbrcai || 1,
+        pdsfru: selectedPalette.pdsfru || '',
+        nomver: selectedPalette.nomver || '',
+        nomemb: selectedPalette.nomemb || ''
       }));
     }
   };
@@ -90,9 +105,12 @@ const SampleTestManagementPage = () => {
     try {
       // Send data with proper types matching backend expectations
       const sampleData = {
-        numrec: parseInt(formData.numrec),
+        numpal: parseInt(formData.numpal),
         startDate: formData.startDate, // Keep as string - backend will parse
         initialFruitCount: parseInt(formData.initialFruitCount),
+        pdsfru: formData.pdsfru ? parseFloat(formData.pdsfru) : null,
+        couleur1: parseInt(formData.couleur1),
+        couleur2: parseInt(formData.couleur2),
         status: 0 // 0 = Active (enum value)
       };
 
@@ -115,11 +133,16 @@ const SampleTestManagementPage = () => {
 
       // Reset form and refresh data
       setFormData({
-        numrec: '',
+        numpal: '',
         selectedDestination: null,
         selectedVariety: null,
         startDate: new Date().toISOString().split('T')[0],
-        initialFruitCount: 1
+        initialFruitCount: 1,
+        pdsfru: '',
+        couleur1: 1,
+        couleur2: 1,
+        nomver: '',
+        nomemb: ''
       });
       setShowForm(false);
 
@@ -137,11 +160,16 @@ const SampleTestManagementPage = () => {
   const handleCancel = () => {
     setShowForm(false);
     setFormData({
-      numrec: '',
+      numpal: '',
       selectedDestination: null,
       selectedVariety: null,
       startDate: new Date().toISOString().split('T')[0],
-      initialFruitCount: 1
+      initialFruitCount: 1,
+      pdsfru: '',
+      couleur1: 1,
+      couleur2: 1,
+        nomver: '',
+        nomemb: ''
     });
     setError(null);
   };
@@ -170,9 +198,9 @@ const SampleTestManagementPage = () => {
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
   };
 
-  // Sort samples by reception number (descending - highest first)
+  // Sort samples by palette number (descending - highest first)
   const sortedSamples = [...(viewMode === 'active' ? activeSamples : allSamples)].sort((a, b) =>
-    b.numrec - a.numrec
+    b.numpal - a.numpal
   );
 
   // Pagination logic
@@ -289,25 +317,42 @@ const SampleTestManagementPage = () => {
               <form onSubmit={handleSubmit} className="sample-test-form">
                 <div className="form-row">
                   <div className="input-group">
-                    <label>Reception Number *</label>
+                    <label>Palette Number *</label>
                     <select
-                      name="numrec"
-                      value={formData.numrec}
-                      onChange={handleReceptionSelect}
+                      name="numpal"
+                      value={formData.numpal}
+                      onChange={handlePaletteSelect}
                       required
                     >
-                      <option value="">Select Reception...</option>
-                      {receptions.map(reception => (
-                        <option key={reception.numrec} value={reception.numrec}>
-                          #{reception.numrec} - {reception.dterec ? new Date(reception.dterec).toLocaleDateString() : 'No Date'}
-                          {reception.nbrfru ? ` (${reception.nbrfru} fruits)` : ''}
+                      <option value="">Select Palette...</option>
+                      {receptions.map(palette => (
+                        <option key={palette.numpal} value={palette.numpal}>
+                          #{palette.numpal} (#{palette.numrec}) - {palette.dterec ? new Date(palette.dterec).toLocaleDateString() : 'No Date'}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="input-group">
-                    <label>Client Code</label>
+                    <label>Variety Name</label>
+                    <input
+                      type="text"
+                      value={formData.nomver}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>Palette Type</label>
+                    <input
+                      type="text"
+                      value={formData.nomemb}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>Client Code *</label>
                     <select
                       value={formData.selectedDestination ? formData.selectedDestination.value || formData.selectedDestination.coddes : ''}
                       onChange={(e) => {
@@ -316,6 +361,7 @@ const SampleTestManagementPage = () => {
                         );
                         handleDropdownChange('selectedDestination', selectedDest);
                       }}
+                      required
                     >
                       <option value="">Select Client...</option>
                       {destinations.map(dest => (
@@ -345,7 +391,9 @@ const SampleTestManagementPage = () => {
                       ))}
                     </select>
                   </div>
+                </div>
 
+                <div className="form-row">
                   <div className="input-group">
                     <label>Start Date *</label>
                     <input
@@ -365,6 +413,46 @@ const SampleTestManagementPage = () => {
                       value={formData.initialFruitCount}
                       onChange={handleFormChange}
                       min="1"
+                      required
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>Fruit Weight (kg)</label>
+                    <input
+                      type="number"
+                      name="pdsfru"
+                      value={formData.pdsfru}
+                      onChange={handleFormChange}
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>Coloration 1</label>
+                    <input
+                      type="number"
+                      name="couleur1"
+                      value={formData.couleur1}
+                      onChange={handleFormChange}
+                      min="1"
+                      max="10"
+                      step="1"
+                      required
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>Coloration 2</label>
+                    <input
+                      type="number"
+                      name="couleur2"
+                      value={formData.couleur2}
+                      onChange={handleFormChange}
+                      min="1"
+                      max="10"
+                      step="1"
                       required
                     />
                   </div>
@@ -416,7 +504,7 @@ const SampleTestManagementPage = () => {
               {paginatedSamples.map(sample => (
                 <div key={sample.id} className="sample-item">
                   <div className="sample-header">
-                    <h4>Reception #{sample.numrec}</h4>
+                    <h4>Palette #{sample.numpal}</h4>
                     <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
                       {sample.status === 0 ? 'Active' : 'Closed'}
                     </span>
