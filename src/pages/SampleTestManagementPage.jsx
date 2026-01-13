@@ -297,7 +297,7 @@ const SampleTestManagementPage = () => {
 
   return (
     <div className="sample-test-management">
-      <h1>Shelf Life</h1>
+      <h1>Gestion Shelf Life</h1>
 
       {error && <div className="error-message">{error}</div>}
 
@@ -305,29 +305,29 @@ const SampleTestManagementPage = () => {
       <div className="create-section-outer">
         <div className="create-section">
           <div className="create-section-header">
-            <h2>🫐 Create New Shelf Life</h2>
-            <p>Select a reception to create a Shelf Life for quality monitoring.</p>
+            <h2>🫐 Créer Nouveau Shelf Life</h2>
+            <p>Sélectionnez une réception pour créer un Shelf Life pour le suivi qualité.</p>
 
             {!showForm && (
               <button className="create-btn" onClick={() => setShowForm(true)}>
-                + Create Shelf Life
+                + Créer Shelf Life
               </button>
             )}
           </div>
           {showForm && (
             <div className="form-container">
-              <h3>New Shelf Life</h3>
+              <h3>Nouveau Shelf Life</h3>
               <form onSubmit={handleSubmit} className="sample-test-form">
                 <div className="form-row">
                   <div className="input-group">
-                    <label>Palette Number *</label>
+                    <label>Numéro de Palette *</label>
                     <select
                       name="numpal"
                       value={formData.numpal}
                       onChange={handlePaletteSelect}
                       required
                     >
-                      <option value="">Select Palette...</option>
+                      <option value="">Sélectionner Palette...</option>
                       {receptions.map(palette => (
                         <option key={palette.numpal} value={palette.numpal}>
                           #{palette.numpal} (#{palette.numrec}) - {palette.dterec ? new Date(palette.dterec).toLocaleDateString() : 'No Date'}
@@ -337,7 +337,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Variety Name</label>
+                    <label>Nom de la Variété</label>
                     <input
                       type="text"
                       value={formData.nomver}
@@ -346,7 +346,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Palette Type</label>
+                    <label>Type de Palette</label>
                     <input
                       type="text"
                       value={formData.nomemb}
@@ -355,7 +355,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Client Code *</label>
+                    <label>Code Client *</label>
                     <select
                       value={formData.selectedDestination ? formData.selectedDestination.value || formData.selectedDestination.coddes : ''}
                       onChange={(e) => {
@@ -366,7 +366,7 @@ const SampleTestManagementPage = () => {
                       }}
                       required
                     >
-                      <option value="">Select Client...</option>
+                      <option value="">Sélectionner Client...</option>
                       {destinations.map(dest => (
                         <option key={dest.value || dest.coddes} value={dest.value || dest.coddes}>
                           {dest.label || dest.vildes || `Client ${dest.coddes}`} (#{dest.value || dest.coddes})
@@ -376,7 +376,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Variety Code</label>
+                    <label>Code Variété</label>
                     <select
                       value={formData.selectedVariety ? formData.selectedVariety.value || formData.selectedVariety.codvar : ''}
                       onChange={(e) => {
@@ -386,7 +386,7 @@ const SampleTestManagementPage = () => {
                         handleDropdownChange('selectedVariety', selectedVar);
                       }}
                     >
-                      <option value="">Select Variety...</option>
+                      <option value="">Sélectionner Variété...</option>
                       {varieties.map(variety => (
                         <option key={variety.value || variety.codvar} value={variety.value || variety.codvar}>
                           {variety.label || variety.nomvar || `Variety ${variety.codvar}`} (#{variety.value || variety.codvar})
@@ -398,7 +398,7 @@ const SampleTestManagementPage = () => {
 
                 <div className="form-row">
                   <div className="input-group">
-                    <label>Start Date *</label>
+                    <label>Date de Début *</label>
                     <input
                       type="date"
                       name="startDate"
@@ -409,7 +409,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Initial Fruit Count *</label>
+                    <label>Nombre Initial de Fruits *</label>
                     <input
                       type="number"
                       name="initialFruitCount"
@@ -421,7 +421,7 @@ const SampleTestManagementPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label>Fruit Weight (kg)</label>
+                    <label>Poids Fruits (G)</label>
                     <input
                       type="number"
                       name="pdsfru"
@@ -463,10 +463,10 @@ const SampleTestManagementPage = () => {
 
                 <div className="form-actions">
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
-                    Cancel
+                    Annuler
                   </button>
                   <button type="submit" className="save-btn">
-                    Create Sample Test
+                    Créer Shelf Life
                   </button>
                 </div>
               </form>
@@ -478,28 +478,28 @@ const SampleTestManagementPage = () => {
       {/* Samples Section */}
       <div className="samples-section">
         <div className="section-header">
-          <h2>All Shelf Life</h2>
+          <h2>Tous les Shelf Life</h2>
           {/* Modern Segmented Control */}
           <div className={`segmented-control ${viewMode === 'all' ? 'all-active' : ''}`}>
             <button
               className={`segmented-btn ${viewMode === 'active' ? 'active' : ''}`}
               onClick={() => setViewMode('active')}
             >
-              Active
+              Actifs
             </button>
             <button
               className={`segmented-btn ${viewMode === 'all' ? 'active' : ''}`}
               onClick={() => setViewMode('all')}
             >
-              All
+              Tous
             </button>
           </div>
         </div>
 
         {currentSamples.length === 0 ? (
           <div className="empty-state">
-            <p>No {viewMode === 'active' ? 'active' : ''} Shelf Life found.</p>
-            <p>{viewMode === 'active' ? 'Create a Shelf Life to start monitoring.' : 'No shelf life records found.'}</p>
+            <p>Aucun Shelf Life {viewMode === 'active' ? 'actif' : ''} trouvé.</p>
+            <p>{viewMode === 'active' ? 'Créez un Shelf Life pour commencer le suivi.' : 'Aucun enregistrement trouvé.'}</p>
           </div>
         ) : (
           <>
@@ -509,7 +509,7 @@ const SampleTestManagementPage = () => {
                   <div className="sample-header">
                     <h4>Palette #{sample.numpal}</h4>
                     <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
-                      {sample.status === 0 ? 'Active' : 'Closed'}
+                      {sample.status === 0 ? 'Actif' : 'Fermé'}
                     </span>
                     <div className="status-toggle">
                       <label className="toggle-switch">
@@ -523,11 +523,11 @@ const SampleTestManagementPage = () => {
                     </div>
                   </div>
                   <div className="sample-details">
-                    <p><strong>Day:</strong> {calculateDays(sample.startDate)}</p>
-                    <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
-                    <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
-                    <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
-                    <p><strong>Status:</strong> {sample.isCheckedToday ? 'Checked Today ✅' : 'Pending Check'}</p>
+                    <p><strong>Jour :</strong> {calculateDays(sample.startDate)}</p>
+                    <p><strong>Client :</strong> {getDestinationName(sample.coddes)}</p>
+                    <p><strong>Variété :</strong> {getVarietyName(sample.codvar)}</p>
+                    <p><strong>Fruits :</strong> {sample.initialFruitCount}</p>
+                    <p><strong>Statut :</strong> {sample.isCheckedToday ? 'Contrôlé Aujourd\'hui ✅' : 'En Attente'}</p>
                   </div>
                 </div>
               ))}
@@ -537,7 +537,7 @@ const SampleTestManagementPage = () => {
             {totalPages > 1 && (
               <div className="pagination-container">
                 <div className="pagination-info">
-                  Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, sortedSamples.length)} of {sortedSamples.length} results
+                  Affichage {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, sortedSamples.length)} sur {sortedSamples.length} résultats
                 </div>
 
                 <div className="pagination">
@@ -548,7 +548,7 @@ const SampleTestManagementPage = () => {
                     aria-label="Previous page"
                   >
                     <span className="nav-arrow">‹</span>
-                    Previous
+                    Précédent
                   </button>
 
                   <div className="pagination-numbers">
@@ -577,7 +577,7 @@ const SampleTestManagementPage = () => {
                     disabled={currentPage === totalPages}
                     aria-label="Next page"
                   >
-                    Next
+                    Suivant
                     <span className="nav-arrow">›</span>
                   </button>
                 </div>

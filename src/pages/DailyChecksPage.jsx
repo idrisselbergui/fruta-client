@@ -326,23 +326,23 @@ const DailyChecksPage = () => {
 
   return (
     <div className="daily-checks-page">
-      <h1>Daily Quality Checks</h1>
+      <h1>Contrôles Quotidiens Qualité</h1>
 
       {error && <div className="error-message">{error}</div>}
 
       {/* Outer Container: Record Daily Check - Always on Top */}
       <div className="create-section-outer">
         <div className="create-section">
-          <h2>Record Daily Check</h2>
-          <p>Select a sample test to record daily quality defects.</p>
+          <h2>Enregistrer un Contrôle Quotidien</h2>
+          <p>Sélectionnez un test Shelf Life pour enregistrer les défauts quotidiens.</p>
 
           {!showForm ? (
             <button className="create-btn" onClick={() => setShowForm(true)}>
-              + Record Daily Check
+              + Enregistrer Contrôle Quotidien
             </button>
           ) : (
             <div className="form-container">
-              <h3>Daily Check - Sample #{selectedSample?.numpal}</h3>
+              <h3>Contrôle Quotidien - Shelf Life #{selectedSample?.numpal}</h3>
 
               <div className="daily-check-form">
 
@@ -350,23 +350,23 @@ const DailyChecksPage = () => {
                 <div className="form-section">
                   <div className="form-grid">
                     <div className="input-group">
-                      <label>Select Sample Test <span className="required-star">*</span></label>
+                      <label>Sélectionner Shelf Life <span className="required-star">*</span></label>
                       <select
                         value={selectedSample?.id || ''}
                         onChange={handleSampleSelect}
                         required
                       >
-                        <option value="">Select a sample...</option>
+                        <option value="">Choisir un Shelf Life...</option>
                         {sortedSamples.map(sample => (
                           <option key={sample.id} value={sample.id}>
-                            #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
+                            #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Jour {calculateDays(sample.startDate)})
                           </option>
                         ))}
                       </select>
                     </div>
 
                     <div className="input-group">
-                      <label>Check Date <span className="required-star">*</span></label>
+                      <label>Date du Contrôle <span className="required-star">*</span></label>
                       <input
                         type="date"
                         value={checkDate}
@@ -378,19 +378,19 @@ const DailyChecksPage = () => {
                     {selectedSample && (
                       <>
                         <div className="input-group">
-                          <label>Fruit Weight (kg)</label>
+                          <label>Poids Fruits (G)</label>
                           <input
                             type="number"
                             step="0.01"
                             min="0"
                             value={pdsfru}
                             onChange={(e) => setPdsfru(e.target.value)}
-                            placeholder="Weight"
+                            placeholder="Poids"
                           />
                         </div>
 
                         <div className="input-group narrow-input">
-                          <label>Color 1</label>
+                          <label>Couleur 1</label>
                           <input
                             type="number"
                             min="1"
@@ -401,7 +401,7 @@ const DailyChecksPage = () => {
                         </div>
 
                         <div className="input-group narrow-input">
-                          <label>Color 2</label>
+                          <label>Couleur 2</label>
                           <input
                             type="number"
                             min="1"
@@ -417,15 +417,15 @@ const DailyChecksPage = () => {
                   {selectedSample && (
                     <>
                       {/* Defects Section - now inside same form-section */}
-                      <h4 style={{ marginTop: '2rem' }}>Defects</h4>
+                      <h4 style={{ marginTop: '2rem' }}>Défauts</h4>
                       <div className="form-row defect-entry-row">
                         <div className="input-group">
-                          <label>Select Defect</label>
+                          <label>Sélectionner Défaut</label>
                           <select
                             value={selectedDefect}
                             onChange={(e) => setSelectedDefect(e.target.value)}
                           >
-                            <option value="">Choose a defect...</option>
+                            <option value="">Choisir un défaut...</option>
                             {availableDefects.map(defect => (
                               <option key={defect.coddef} value={defect.coddef}>
                                 {defect.intdef} ({defect.famdef})
@@ -435,13 +435,13 @@ const DailyChecksPage = () => {
                         </div>
 
                         <div className="input-group">
-                          <label>Quantity</label>
+                          <label>Quantité</label>
                           <input
                             type="number"
                             min="1"
                             value={quantity}
                             onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                            placeholder="Qty"
+                            placeholder="Qté"
                           />
                         </div>
 
@@ -453,7 +453,7 @@ const DailyChecksPage = () => {
                             className="add-btn"
                             disabled={!selectedDefect || quantity <= 0}
                           >
-                            Add Defect
+                            Ajouter Défaut
                           </button>
                         </div>
                       </div>
@@ -462,14 +462,14 @@ const DailyChecksPage = () => {
                       {(defectRecords.length > 0 || defectsLoading) && (
                         <div className="defect-records-table">
                           {defectsLoading ? (
-                            <div className="loading-defects">Loading existing defects...</div>
+                            <div className="loading-defects">Chargement des défauts existants...</div>
                           ) : (
                             <table className="records-table">
                               <thead>
                                 <tr>
-                                  <th>Defect</th>
+                                  <th>Défaut</th>
                                   <th>Type</th>
-                                  <th>Quantity</th>
+                                  <th>Quantité</th>
                                   <th>Action</th>
                                 </tr>
                               </thead>
@@ -502,10 +502,10 @@ const DailyChecksPage = () => {
                   {/* Footer Actions */}
                   <div className="form-actions sticky-footer">
                     <button type="button" className="cancel-btn" onClick={handleCancel}>
-                      Cancel
+                      Annuler
                     </button>
                     <button type="button" className="save-btn" onClick={handleSave}>
-                      Save All Changes
+                      Enregistrer Tout
                     </button>
                   </div>
                 </div>
@@ -517,12 +517,12 @@ const DailyChecksPage = () => {
 
       {/* Samples Section */}
       <div className="samples-section">
-        <h2>Active Sample Tests</h2>
+        <h2>Tests Shelf Life Actifs</h2>
 
         {sortedSamples.length === 0 ? (
           <div className="empty-state">
-            <p>No active sample tests found.</p>
-            <p>Create sample tests to start daily quality monitoring.</p>
+            <p>Aucun test Shelf Life actif trouvé.</p>
+            <p>Créez des tests Shelf Life pour commencer le suivi qualité quotidien.</p>
           </div>
         ) : (
           <>
@@ -532,15 +532,15 @@ const DailyChecksPage = () => {
                   <div className="sample-header">
                     <h4>Palette #{sample.numpal}</h4>
                     <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
-                      {sample.status === 0 ? 'Active' : 'Closed'}
+                      {sample.status === 0 ? 'Actif' : 'Fermé'}
                     </span>
                   </div>
                   <div className="sample-details">
-                    <p><strong>Day:</strong> {calculateDays(sample.startDate)}</p>
-                    <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
-                    <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
-                    <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
-                    <p><strong>Status:</strong> {sample.isCheckedToday ? 'Checked Today ✅' : 'Pending Check'}</p>
+                    <p><strong>Jour :</strong> {calculateDays(sample.startDate)}</p>
+                    <p><strong>Client :</strong> {getDestinationName(sample.coddes)}</p>
+                    <p><strong>Variété :</strong> {getVarietyName(sample.codvar)}</p>
+                    <p><strong>Fruits :</strong> {sample.initialFruitCount}</p>
+                    <p><strong>Statut :</strong> {sample.isCheckedToday ? 'Contrôlé Aujourd\'hui ✅' : 'En Attente'}</p>
                   </div>
                 </div>
               ))}
@@ -550,7 +550,7 @@ const DailyChecksPage = () => {
             {totalPages > 1 && (
               <div className="pagination-container">
                 <div className="pagination-info">
-                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} of {sortedSamples.length} results
+                  Affichage {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} sur {sortedSamples.length} résultats
                 </div>
 
                 <div className="pagination">
@@ -561,7 +561,7 @@ const DailyChecksPage = () => {
                     aria-label="Previous page"
                   >
                     <span className="nav-arrow">‹</span>
-                    Previous
+                    Précédent
                   </button>
 
                   <div className="pagination-numbers">
@@ -590,7 +590,7 @@ const DailyChecksPage = () => {
                     disabled={currentPage === totalPages}
                     aria-label="Next page"
                   >
-                    Next
+                    Suivant
                     <span className="nav-arrow">›</span>
                   </button>
                 </div>

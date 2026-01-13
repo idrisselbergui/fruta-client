@@ -1104,6 +1104,13 @@ const generateDefectChart = (dailyChecks, availableDefects) => {
             const yPos = canvas.height - padding - barHeight;
 
             ctx.fillRect(xPos, yPos, singleBarWidth - 2, barHeight); // -2 for small gap between bars
+
+            // Draw Value
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = 'bold 9px Inter, sans-serif';
+            ctx.fillText(val, xPos + (singleBarWidth - 2) / 2, yPos - 2);
           }
         });
         seriesIndex++;
@@ -1121,8 +1128,8 @@ const generateDefectChart = (dailyChecks, availableDefects) => {
         ctx.fillStyle = defect.color;
         ctx.fillRect(currentLegendX, legendY, 15, 15);
         ctx.fillStyle = '#333333';
-        ctx.fillText(defect.name || 'Unknown', currentLegendX + 20, legendY + 12);
-        currentLegendX += ctx.measureText(defect.name || 'Unknown').width + 50;
+        ctx.fillText(defect.name || 'Inconnu', currentLegendX + 20, legendY + 12);
+        currentLegendX += ctx.measureText(defect.name || 'Inconnu').width + 50;
       });
 
       resolve(canvas.toDataURL('image/png'));
@@ -1130,6 +1137,216 @@ const generateDefectChart = (dailyChecks, availableDefects) => {
       console.error('Error generating chart:', e);
       resolve(null);
     }
+  });
+};
+
+const generateColorationChart = (dailyChecks) => {
+  return new Promise((resolve) => {
+    try {
+      if (!dailyChecks || dailyChecks.length === 0) {
+        resolve(null);
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 250;
+      const ctx = canvas.getContext('2d');
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const dates = dailyChecks.map(dc => new Date(dc.checkDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+      // Calculate Average Color
+      const avgColorData = dailyChecks.map(dc => ((dc.couleur1 || 0) + (dc.couleur2 || 0)) / 2);
+
+      const padding = 40;
+      const chartWidth = canvas.width - (padding * 2);
+      const chartHeight = canvas.height - (padding * 2);
+      const maxY = Math.ceil(Math.max(...avgColorData, 8)) + 1; // Ensure enough height
+
+      // Axes
+      ctx.beginPath();
+      ctx.strokeStyle = '#ccc';
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, canvas.height - padding);
+      ctx.lineTo(canvas.width - padding, canvas.height - padding);
+      ctx.stroke();
+
+      // Draw X Axis Labels (Dates)
+      ctx.fillStyle = '#666666';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.font = '10px Inter, sans-serif';
+      const stepX = chartWidth / (dates.length > 1 ? dates.length - 1 : 1);
+      dates.forEach((date, i) => {
+        const x = padding + (i * stepX);
+        ctx.fillText(date, x, canvas.height - padding + 10);
+      });
+
+      // Draw Y Axis Labels
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const yVal = Math.round((maxY / steps) * i * 10) / 10;
+        const yPos = canvas.height - padding - ((yVal / maxY) * chartHeight);
+        ctx.fillText(yVal, padding - 5, yPos);
+
+        // Grid
+        ctx.beginPath();
+        ctx.strokeStyle = '#eee';
+        ctx.moveTo(padding, yPos);
+        ctx.lineTo(canvas.width - padding, yPos);
+        ctx.stroke();
+      }
+
+      // Draw Average Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#9966FF'; // Purple for average
+      ctx.lineWidth = 3;
+      avgColorData.forEach((val, i) => {
+        const x = padding + (i * stepX);
+        const y = canvas.height - padding - ((val / maxY) * chartHeight);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Draw Points & Numbers
+      ctx.fillStyle = '#9966FF';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px Inter, sans-serif';
+
+      avgColorData.forEach((val, i) => {
+        const x = padding + (i * stepX);
+        const y = canvas.height - padding - ((val / maxY) * chartHeight);
+
+        // Point
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Number Label
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(val.toFixed(1), x, y - 8);
+        ctx.fillStyle = '#9966FF'; // Reset for next point
+      });
+
+      // Legend
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#9966FF';
+      ctx.fillRect(padding, 10, 15, 10);
+      ctx.fillStyle = '#333';
+      ctx.fillText('Coul. Moyenne', padding + 20, 10);
+
+      resolve(canvas.toDataURL('image/png'));
+    } catch (e) { resolve(null); }
+  });
+};
+
+const generateWeightChart = (dailyChecks) => {
+  return new Promise((resolve) => {
+    try {
+      if (!dailyChecks || dailyChecks.length === 0) {
+        resolve(null);
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 250;
+      const ctx = canvas.getContext('2d');
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const dates = dailyChecks.map(dc => new Date(dc.checkDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+      const weightData = dailyChecks.map(dc => dc.pdsfru);
+      const padding = 40;
+      const chartWidth = canvas.width - (padding * 2);
+      const chartHeight = canvas.height - (padding * 2);
+
+      const maxVal = Math.max(...weightData);
+      const minVal = Math.min(...weightData);
+      const diff = maxVal - minVal;
+      const range = diff === 0 ? maxVal * 0.2 : diff;
+      const maxY = maxVal + (range * 0.2); // +20%
+
+      // Axes
+      ctx.beginPath();
+      ctx.strokeStyle = '#ccc';
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, canvas.height - padding);
+      ctx.lineTo(canvas.width - padding, canvas.height - padding);
+      ctx.stroke();
+
+      // Draw X Axis Labels (Dates)
+      ctx.fillStyle = '#666666';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.font = '10px Inter, sans-serif';
+      const stepX = chartWidth / (dates.length > 1 ? dates.length - 1 : 1);
+      dates.forEach((date, i) => {
+        const x = padding + (i * stepX);
+        ctx.fillText(date, x, canvas.height - padding + 10);
+      });
+
+      // Draw Y Axis Labels
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const yVal = (maxY / steps) * i;
+        const yPos = canvas.height - padding - ((yVal / maxY) * chartHeight);
+        ctx.fillText(yVal.toFixed(0), padding - 5, yPos);
+
+        // Grid
+        ctx.beginPath();
+        ctx.strokeStyle = '#eee';
+        ctx.moveTo(padding, yPos);
+        ctx.lineTo(canvas.width - padding, yPos);
+        ctx.stroke();
+      }
+
+      // Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#4bc0c0';
+      ctx.lineWidth = 2;
+      weightData.forEach((val, i) => {
+        const x = padding + (i * stepX);
+        const y = canvas.height - padding - ((val / maxY) * chartHeight);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Draw Points & Numbers
+      ctx.fillStyle = '#4bc0c0';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px Inter, sans-serif';
+
+      weightData.forEach((val, i) => {
+        const x = padding + (i * stepX);
+        const y = canvas.height - padding - ((val / maxY) * chartHeight);
+
+        // Point
+        if (val !== undefined && val !== null) {
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Number Label
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(val.toFixed(0), x, y - 8);
+          ctx.fillStyle = '#4bc0c0'; // Reset
+        }
+      });
+
+      // Legend
+      ctx.fillStyle = '#4bc0c0'; ctx.fillText('Poids (G)', padding + 10, 20);
+
+      resolve(canvas.toDataURL('image/png'));
+    } catch (e) { resolve(null); }
   });
 };
 
@@ -1163,11 +1380,11 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Shelf-Life Report - Palette #${sample.numpal}`, 105, 20, { align: 'center' }); // Centered
+  doc.text(`Rapport Shelf-Life - Palette #${sample.numpal}`, 105, 20, { align: 'center' }); // Centered
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Generated on: ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' });
+  doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' });
 
   // Reset Colors
   doc.setTextColor(50, 50, 50);
@@ -1181,7 +1398,7 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   doc.setFontSize(14);
   doc.setTextColor(102, 126, 234); // Purple title
   doc.setFont('helvetica', 'bold');
-  doc.text('Sample Overview', 20, yPosition + 10);
+  doc.text('Détails de l\'Échantillon', 20, yPosition + 10);
 
   // Info Grid
   doc.setFontSize(10);
@@ -1194,14 +1411,14 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   const daysElapsed = sample.startDate ? Math.floor((new Date() - new Date(sample.startDate)) / (1000 * 60 * 60 * 24)) + 1 : 0;
 
   // Col 1
-  doc.text(`Verger: ${sample.vergerName || 'N/A'}`, 20, yPosition + 20);
-  doc.text(`Client: ${clientName}`, 20, yPosition + 28);
-  doc.text(`Variety: ${varietyName}`, 20, yPosition + 36);
+  doc.text(`Verger : ${sample.vergerName || 'N/A'}`, 20, yPosition + 20);
+  doc.text(`Client : ${clientName}`, 20, yPosition + 28);
+  doc.text(`Variété : ${varietyName}`, 20, yPosition + 36);
 
   // Col 2
-  doc.text(`Start Date: ${sample.startDate ? new Date(sample.startDate).toLocaleDateString('fr-FR') : 'N/A'}`, 110, yPosition + 20);
-  doc.text(`Initial Count: ${formatNumber(sample.initialFruitCount)}`, 110, yPosition + 28);
-  doc.text(`Weight: ${formatNumber(sample.pdsfru, 2)} kg`, 110, yPosition + 36);
+  doc.text(`Date de Début : ${sample.startDate ? new Date(sample.startDate).toLocaleDateString('fr-FR') : 'N/A'}`, 110, yPosition + 20);
+  doc.text(`Nombre Initial : ${formatNumber(sample.initialFruitCount)}`, 110, yPosition + 28);
+  doc.text(`Poids : ${formatNumber(sample.pdsfru, 0)} G`, 110, yPosition + 36);
 
   // Status Badge
   const statusColor = sample.status === 0 ? [40, 167, 69] : [220, 53, 69]; // Green or Red
@@ -1210,7 +1427,7 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text(sample.status === 0 ? 'ACTIVE' : 'CLOSED', 175, yPosition + 20.5, { align: 'center' });
+  doc.text(sample.status === 0 ? 'ACTIF' : 'FERMÉ', 175, yPosition + 20.5, { align: 'center' });
 
   yPosition += 55;
 
@@ -1221,19 +1438,19 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   doc.setFontSize(14);
   doc.setTextColor(102, 126, 234);
   doc.setFont('helvetica', 'bold');
-  doc.text('Current Condition', 20, yPosition + 10);
+  doc.text('État Actuel', 20, yPosition + 10);
 
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'normal');
 
   if (lastCheck) {
-    doc.text(`Last Check: ${new Date(lastCheck.checkDate).toLocaleDateString('fr-FR')}`, 20, yPosition + 20);
-    doc.text(`Color 1: ${lastCheck.couleur1 || 0}`, 70, yPosition + 20);
-    doc.text(`Color 2: ${lastCheck.couleur2 || 0}`, 110, yPosition + 20);
-    doc.text(`Avg Color: ${((lastCheck.couleur1 + lastCheck.couleur2) / 2).toFixed(1)}`, 150, yPosition + 20);
+    doc.text(`Dernier Contrôle : ${new Date(lastCheck.checkDate).toLocaleDateString('fr-FR')}`, 20, yPosition + 20);
+    doc.text(`Couleur 1 : ${lastCheck.couleur1 || 0}`, 70, yPosition + 20);
+    doc.text(`Couleur 2 : ${lastCheck.couleur2 || 0}`, 110, yPosition + 20);
+    doc.text(`Coul. Moy. : ${((lastCheck.couleur1 + lastCheck.couleur2) / 2).toFixed(1)}`, 150, yPosition + 20);
   } else {
-    doc.text('No checks performed yet.', 20, yPosition + 20);
+    doc.text('Aucun contrôle effectué.', 20, yPosition + 20);
   }
 
   yPosition += 45;
@@ -1242,7 +1459,7 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   doc.setFontSize(14);
   doc.setTextColor(102, 126, 234);
   doc.setFont('helvetica', 'bold');
-  doc.text('Defect Performance Analysis', 20, yPosition);
+  doc.text('Analyse des Défauts', 20, yPosition);
 
   yPosition += 5;
 
@@ -1254,29 +1471,60 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   } else {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text('Not enough data for chart.', 20, yPosition + 20);
+    doc.text('Pas assez de données pour le graphique.', 20, yPosition + 20);
     yPosition += 30;
+  }
+
+  // Check for page break
+  if (yPosition > 200) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  // --- Sub Charts (Coloration & Weight) ---
+  doc.setFontSize(14);
+  doc.setTextColor(102, 126, 234);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Tendances de Coloration & Poids', 20, yPosition);
+  yPosition += 5;
+
+  const colorChartImage = await generateColorationChart(dailyChecks);
+  const weightChartImage = await generateWeightChart(dailyChecks);
+
+  if (colorChartImage && weightChartImage) {
+    doc.addImage(colorChartImage, 'PNG', 15, yPosition, 85, 60);
+    doc.addImage(weightChartImage, 'PNG', 110, yPosition, 85, 60);
+    yPosition += 70;
+  } else if (colorChartImage) {
+    doc.addImage(colorChartImage, 'PNG', 15, yPosition, 180, 80);
+    yPosition += 90;
+  }
+
+  // Check for page break again for table
+  if (yPosition > 230) {
+    doc.addPage();
+    yPosition = 20;
   }
 
   // --- Detailed History Table ---
   doc.setFontSize(14);
   doc.setTextColor(102, 126, 234);
   doc.setFont('helvetica', 'bold');
-  doc.text('Detailed Defect History', 20, yPosition);
+  doc.text('Historique Détaillé des Défauts', 20, yPosition);
   yPosition += 5;
 
   const tableData = [];
-  const headerRow = ['Date', 'Color 1', 'Color 2', 'Top Defect', 'Qty', 'Total Defects'];
+  const headerRow = ['Date', 'Nb. Fruit', 'Poids (G)', 'Coul. 1', 'Coul. 2', 'Défaut Maj.', 'Qté', '%'];
   tableData.push(headerRow);
 
   dailyChecks.forEach(dc => {
     let topDefect = '-';
     let topDefectQty = 0;
-    let totalDailyDefects = 0;
+
+    // Note: Removed totalDailyDefects as we are now showing % of Major Defect
 
     if (dc.defects && dc.defects.length > 0) {
       dc.defects.forEach(d => {
-        totalDailyDefects += d.quantity;
         if (d.quantity > topDefectQty) {
           topDefectQty = d.quantity;
           const def = availableDefects.find(ad => ad.coddef === d.defectId);
@@ -1285,13 +1533,19 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
       });
     }
 
+    const percentage = sample.initialFruitCount > 0 && topDefectQty > 0
+      ? ((topDefectQty / sample.initialFruitCount) * 100).toFixed(1) + '%'
+      : '-';
+
     tableData.push([
-      new Date(dc.checkDate).toLocaleDateString('fr-FR'),
+      new Date(dc.checkDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+      sample.initialFruitCount,
+      dc.pdsfru !== undefined ? formatNumber(dc.pdsfru, 0) : '-',
       dc.couleur1 || 0,
       dc.couleur2 || 0,
       topDefect,
       topDefectQty > 0 ? topDefectQty : '-',
-      totalDailyDefects
+      percentage
     ]);
   });
 
@@ -1314,11 +1568,13 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
         halign: 'center'
       },
       columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center', fontStyle: 'bold' }
+        0: { halign: 'center' }, // Date
+        1: { halign: 'center' }, // Nb Fruit
+        2: { halign: 'center' }, // Weight
+        3: { halign: 'center' }, // Color 1
+        4: { halign: 'center' }, // Color 2
+        6: { halign: 'center' }, // Qty
+        7: { halign: 'center', fontStyle: 'bold' } // %
       },
       margin: { left: 15, right: 15 },
       alternateRowStyles: { fillColor: [248, 249, 252] }
@@ -1327,7 +1583,7 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
     doc.setFontSize(10);
     doc.setTextColor(60, 60, 60);
     doc.setFont('helvetica', 'normal');
-    doc.text('No daily check data recorded.', 20, yPosition + 10);
+    doc.text('Aucune donnée enregistrée.', 20, yPosition + 10);
   }
 
   // Footer
@@ -1336,8 +1592,46 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(`Page ${i} of ${pageCount}`, 190, 290, { align: 'right' });
-    doc.text('Fruta Client - Shelf Life Management', 20, 290);
+    doc.text(`Page ${i} sur ${pageCount}`, 190, 290, { align: 'right' });
+    doc.text('Fruta - Gestion Shelf Life', 20, 290);
+  }
+
+  // Add Watermark (Diaf Logo) to all pages
+  try {
+    const addWatermark = async () => {
+      const imgData = await new Promise((resolve) => {
+        const img = new Image();
+        img.src = '/diaf.png';
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.globalAlpha = 0.1; // 10% opacity for watermark
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+      });
+
+      if (imgData) {
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const imgSize = 80; // mm
+          const x = (pageWidth - imgSize) / 2;
+          const y = (pageHeight - imgSize) / 2;
+          doc.addImage(imgData, 'PNG', x, y, imgSize, imgSize);
+        }
+      }
+    };
+
+    await addWatermark();
+  } catch (err) {
+    console.error('Error adding watermark:', err);
   }
 
   // Save

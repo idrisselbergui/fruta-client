@@ -176,14 +176,14 @@ const SampleDashboard = () => {
 
   return (
     <div className="sample-dashboard">
-      <h2>Quality Control Dashboard</h2>
+      <h2>Tableau de Bord Contrôle Qualité</h2>
 
       {sortedSamples.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📦</div>
-          <h3>No Samples Found</h3>
-          <p>There are currently no samples in the system.</p>
-          <p>Create sample tests to start quality monitoring.</p>
+          <h3>Aucun Shelf Life Trouvé</h3>
+          <p>Il n'y a actuellement aucun shelf life dans le système.</p>
+          <p>Créez des tests shelf life pour commencer le suivi qualité.</p>
         </div>
       ) : (
         <>
@@ -193,21 +193,21 @@ const SampleDashboard = () => {
                 <div className="card-header">
                   <h3>Palette #{sample.numpal}</h3>
                   <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
-                    {sample.status === 0 ? 'Active' : 'Closed'}
+                    {sample.status === 0 ? 'Actif' : 'Fermé'}
                   </span>
                 </div>
                 <div className="card-body">
-                  <p><strong>Client:</strong> {getDestinationName(sample.coddes)}</p>
-                  <p><strong>Variety:</strong> {getVarietyName(sample.codvar)}</p>
-                  <p><strong>Day {calculateDays(sample.startDate)}</strong></p>
-                  <p><strong>Fruits:</strong> {sample.initialFruitCount}</p>
+                  <p><strong>Client :</strong> {getDestinationName(sample.coddes)}</p>
+                  <p><strong>Variété :</strong> {getVarietyName(sample.codvar)}</p>
+                  <p><strong>Jour {calculateDays(sample.startDate)}</strong></p>
+                  <p><strong>Fruits :</strong> {sample.initialFruitCount}</p>
                 </div>
                 <div className="card-footer">
                   <button
                     className="pdf-button"
                     onClick={() => generatePDF(sample)}
                   >
-                    📄 Generate Report
+                    📄 Générer Rapport
                   </button>
                 </div>
               </div>
@@ -218,7 +218,7 @@ const SampleDashboard = () => {
           {totalPages > 1 && (
             <div className="pagination-container">
               <div className="pagination-info">
-                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} of {sortedSamples.length} results
+                Affichage {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedSamples.length)} sur {sortedSamples.length} résultats
               </div>
 
               <div className="pagination">
@@ -229,7 +229,7 @@ const SampleDashboard = () => {
                   aria-label="Previous page"
                 >
                   <span className="nav-arrow">‹</span>
-                  Previous
+                  Précédent
                 </button>
 
                 <div className="pagination-numbers">
@@ -258,7 +258,7 @@ const SampleDashboard = () => {
                   disabled={currentPage === totalPages}
                   aria-label="Next page"
                 >
-                  Next
+                  Suivant
                   <span className="nav-arrow">›</span>
                 </button>
               </div>
