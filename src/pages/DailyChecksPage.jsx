@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createDailyCheck, getDefauts, getActiveSamples, getDestinations, getVarietes } from '../apiService';
+import { createDailyCheck, getDefauts, getActiveSamples, getDestinations, getVarietes, getDailyCheck } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './DailyChecksPage.css';
 
@@ -16,12 +16,29 @@ const DailyChecksPage = () => {
   const [selectedDefect, setSelectedDefect] = useState('');
   const [quantity, setQuantity] = useState(0);
   const [defectRecords, setDefectRecords] = useState([]);
+  const [pdsfru, setPdsfru] = useState('');
+  const [couleur1, setCouleur1] = useState(1);
+  const [couleur2, setCouleur2] = useState(1);
+  const [checkDate, setCheckDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentStep, setCurrentStep] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reload defects when date changes and a sample is selected
+  useEffect(() => {
+    if (selectedSample?.id && checkDate) {
+      // Clear current records before loading new ones
+      setDefectRecords([]);
+      loadExistingDefects(selectedSample.id, checkDate);
+    } else if (!selectedSample?.id) {
+      // Clear records if no sample is selected
+      setDefectRecords([]);
+    }
+  }, [checkDate, selectedSample?.id]);
 
   const fetchData = async () => {
     try {
@@ -44,20 +61,56 @@ const DailyChecksPage = () => {
     }
   };
 
-  const loadExistingDefects = (sampleId) => {
+  const loadExistingDefects = async (sampleId, selectedDate) => {
     try {
       setDefectsLoading(true);
       setError(null);
 
-      // Load from localStorage
-      const stored = localStorage.getItem(`dailyCheck_${sampleId}`);
-      const defects = stored ? JSON.parse(stored) : [];
+      // Load from API
+      const dailyCheckData = await getDailyCheck(sampleId, selectedDate);
 
-      setDefectRecords(defects);
+      // Populate form fields with existing data
+      if (dailyCheckData) {
+        setPdsfru(dailyCheckData.pdsfru ? dailyCheckData.pdsfru.toString() : '');
+        setCouleur1(dailyCheckData.couleur1 || 1);
+        setCouleur2(dailyCheckData.couleur2 || 1);
+
+        // Load defects if present
+        if (dailyCheckData.details && dailyCheckData.details.length > 0) {
+          const loadedDefects = dailyCheckData.details.map(detail => {
+            // Find defect metadata
+            const defectMeta = availableDefects.find(d => d.coddef === detail.defectId);
+
+            return {
+              id: `server-${detail.id}-${Math.random()}`, // Unique ID for UI
+              defectId: detail.defectId.toString(),
+              defectName: defectMeta ? defectMeta.intdef : `Defect ${detail.defectId}`,
+              defectFamily: defectMeta ? defectMeta.famdef : 'Unknown',
+              quantity: detail.quantity
+            };
+          });
+          setDefectRecords(loadedDefects);
+        } else {
+          setDefectRecords([]);
+        }
+      } else {
+        // Reset to defaults if no data exists
+        setPdsfru('');
+        setCouleur1(1);
+        setCouleur2(1);
+        setDefectRecords([]);
+      }
     } catch (err) {
-      console.error('Failed to load existing defects:', err);
-      setError('Failed to load existing defects: ' + err.message);
-      setDefectRecords([]);
+      console.error('Failed to load existing daily check:', err);
+      // If no data exists (404), that's fine - just reset to defaults
+      if (err.message && err.message.includes('404')) {
+        setPdsfru('');
+        setCouleur1(1);
+        setCouleur2(1);
+        setDefectRecords([]);
+      } else {
+        setError('Failed to load existing daily check: ' + err.message);
+      }
     } finally {
       setDefectsLoading(false);
     }
@@ -69,7 +122,7 @@ const DailyChecksPage = () => {
     setSelectedSample(sample);
 
     if (sample) {
-      await loadExistingDefects(sample.id);
+      await loadExistingDefects(sample.id, checkDate);
     } else {
       setDefectRecords([]);
     }
@@ -80,7 +133,7 @@ const DailyChecksPage = () => {
     setError(null);
   };
 
-  const addDefectRecord = async () => {
+  const addDefectRecord = () => {
     if (!selectedSample || !selectedDefect || quantity <= 0) {
       setError('Please select a sample, defect and enter a valid quantity');
       return;
@@ -92,78 +145,103 @@ const DailyChecksPage = () => {
       return;
     }
 
-    try {
-      setError(null);
+    setError(null);
 
-      // Prepare defect data for API
-      const defectData = {
-        checkDate: new Date().toISOString().split('T')[0],
-        defects: [{
-          defectId: selectedDefect,
-          quantity: quantity
-        }]
-      };
+    // Create new defect record object
+    const newRecord = {
+      id: `local-${Date.now()}-${Math.random()}`,
+      defectId: selectedDefect,
+      defectName: selectedDefectData.intdef,
+      defectFamily: selectedDefectData.famdef,
+      quantity: quantity,
+      checkDate: checkDate, // Use selected check date
+      createdAt: new Date().toISOString()
+    };
 
-      console.log('Submitting defect data:', defectData);
-      await createDailyCheck(selectedSample.id, defectData);
+    // Combine with existing records
+    const updatedRecords = [...defectRecords, newRecord];
 
-      // Create new defect record for display
-      const newRecord = {
-        id: `saved-${Date.now()}-${Math.random()}`,
-        defectId: selectedDefect,
-        defectName: selectedDefectData.intdef,
-        defectFamily: selectedDefectData.famdef,
-        quantity: quantity,
-        checkDate: new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString()
-      };
+    // Update local state 
+    setDefectRecords(updatedRecords);
 
-      // Add to local state
-      const updatedRecords = [...defectRecords, newRecord];
-      setDefectRecords(updatedRecords);
-
-      // Save to localStorage for persistence
-      localStorage.setItem(`dailyCheck_${selectedSample.id}`, JSON.stringify(updatedRecords));
-
-      // Reset form
-      setSelectedDefect('');
-      setQuantity(0);
-
-      // Refresh the samples list to update status
-      await fetchData();
-
-    } catch (err) {
-      console.error('Failed to add defect:', err);
-      setError('Failed to add defect: ' + err.message);
-    }
+    // Reset form inputs
+    setSelectedDefect('');
+    setQuantity(0);
   };
 
   const removeDefectRecord = (id) => {
     if (!selectedSample) return;
 
-    // Remove from local state
+    // Calculate updated records locally
     const updatedRecords = defectRecords.filter(record => record.id !== id);
-    setDefectRecords(updatedRecords);
 
-    // Update localStorage
-    localStorage.setItem(`dailyCheck_${selectedSample.id}`, JSON.stringify(updatedRecords));
+    // Update local state
+    setDefectRecords(updatedRecords);
   };
 
 
 
 
+  const handleNextStep = () => {
+    if (currentStep === 1 && selectedSample) {
+      // Validate fields if needed, but DO NOT SAVE to API yet
+      setCurrentStep(2);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedSample) return;
+
+    try {
+      setError(null);
+
+      const payload = {
+        checkDate: checkDate,
+        pdsfru: pdsfru ? parseFloat(pdsfru) : null,
+        couleur1: couleur1,
+        couleur2: couleur2,
+        defects: defectRecords.map(r => ({
+          defectId: parseInt(r.defectId),
+          quantity: r.quantity
+        }))
+      };
+
+      console.log('Submitting Final Daily Check:', payload);
+      await createDailyCheck(selectedSample.id, payload);
+
+      // Refresh data
+      await fetchData();
+
+      // Close and Reset
+      handleCancel();
+
+    } catch (err) {
+      console.error('Failed to save daily check:', err);
+      setError('Failed to save data: ' + err.message);
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   const handleCancel = () => {
-    // Clear localStorage for current sample if canceling
-    if (selectedSample) {
-      localStorage.removeItem(`dailyCheck_${selectedSample.id}`);
+    // Clear localStorage for current sample and date if canceling
+    if (selectedSample && checkDate) {
+      localStorage.removeItem(`dailyCheck_${selectedSample.id}_${checkDate}`);
     }
 
     setSelectedSample(null);
     setSelectedDefect('');
     setQuantity(0);
+    setPdsfru('');
+    setCouleur1(1);
+    setCouleur2(1);
     setDefectRecords([]);
     setShowForm(false);
+    setCurrentStep(1);
     setError(null);
   };
 
@@ -177,7 +255,7 @@ const DailyChecksPage = () => {
 
   const getDestinationName = (coddes) => {
     if (!coddes) return 'Unknown';
-    const destination = destinations.find(d => 
+    const destination = destinations.find(d =>
       d.value === coddes || d.coddes === coddes
     );
     return destination ? (destination.label || destination.vildes || `Client ${coddes}`) : `Client ${coddes}`;
@@ -185,7 +263,7 @@ const DailyChecksPage = () => {
 
   const getVarietyName = (codvar) => {
     if (!codvar) return 'Unknown';
-    const variety = varieties.find(v => 
+    const variety = varieties.find(v =>
       v.value === codvar || v.codvar === codvar
     );
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
@@ -277,27 +355,101 @@ const DailyChecksPage = () => {
             </button>
           ) : (
             <div className="form-container">
-              <h3>Daily Check - Sample #{selectedSample?.numpal}</h3>
-              <div className="daily-check-form">
-                <div className="form-row">
-                  <div className="input-group">
-                    <label>Select Sample Test *</label>
-                    <select
-                      value={selectedSample?.id || ''}
-                      onChange={handleSampleSelect}
-                      required
-                    >
-                      <option value="">Select a sample...</option>
-                      {sortedSamples.map(sample => (
-                        <option key={sample.id} value={sample.id}>
-                          #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              {/* Step Indicator */}
+              <div className="step-indicator">
+                <span className={currentStep >= 1 ? 'active' : ''}>Step 1: Quality Measurements</span>
+                <span className={currentStep >= 2 ? 'active' : ''}>Step 2: Defect Recording</span>
+              </div>
 
-                  {selectedSample && (
-                    <>
+              <h3>Daily Check - Sample #{selectedSample?.numpal} ({currentStep === 1 ? 'Quality Data' : 'Defect Recording'})</h3>
+
+              <div className="daily-check-form">
+                {/* Step 1: Quality Measurements */}
+                {currentStep === 1 && (
+                  <>
+                    <div className="form-row">
+                      <div className="input-group">
+                        <label>Select Sample Test *</label>
+                        <select
+                          value={selectedSample?.id || ''}
+                          onChange={handleSampleSelect}
+                          required
+                        >
+                          <option value="">Select a sample...</option>
+                          {sortedSamples.map(sample => (
+                            <option key={sample.id} value={sample.id}>
+                              #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="input-group">
+                        <label>Check Date *</label>
+                        <input
+                          type="date"
+                          value={checkDate}
+                          onChange={(e) => setCheckDate(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {selectedSample && (
+                        <>
+                          <div className="input-group">
+                            <label>Fruit Weight (kg)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pdsfru}
+                              onChange={(e) => setPdsfru(e.target.value)}
+                              placeholder="Enter weight"
+                            />
+                          </div>
+
+                          <div className="input-group narrow-input">
+                            <label>Coloration 1</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={couleur1}
+                              onChange={(e) => setCouleur1(parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+
+                          <div className="input-group narrow-input">
+                            <label>Coloration 2</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={couleur2}
+                              onChange={(e) => setCouleur2(parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="form-actions">
+                      <button type="button" className="cancel-btn" onClick={handleCancel}>
+                        Cancel
+                      </button>
+                      {selectedSample && (
+                        <button type="button" className="save-btn" onClick={handleNextStep}>
+                          Next: Record Defects →
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Step 2: Defect Recording */}
+                {currentStep === 2 && selectedSample && (
+                  <>
+                    <div className="form-row">
                       <div className="input-group">
                         <label>Select Defect</label>
                         <select
@@ -335,57 +487,60 @@ const DailyChecksPage = () => {
                           Add Defect
                         </button>
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
 
-                {/* Defect Records Table */}
-                {(defectRecords.length > 0 || defectsLoading) && (
-                  <div className="defect-records-table">
-                    <h4>Defects for Sample #{selectedSample?.numpal} ({defectRecords.length})</h4>
-                    {defectsLoading ? (
-                      <div className="loading-defects">Loading existing defects...</div>
-                    ) : (
-                      <table className="records-table">
-                        <thead>
-                          <tr>
-                            <th>Date</th>
-                            <th>Defect</th>
-                            <th>Type</th>
-                            <th>Quantity</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {defectRecords.map(record => (
-                            <tr key={record.id}>
-                              <td>{record.checkDate ? new Date(record.checkDate).toLocaleDateString() : 'Today'}</td>
-                              <td>{record.defectName}</td>
-                              <td>{record.defectFamily}</td>
-                              <td>{record.quantity}</td>
-                              <td>
-                                <button
-                                  type="button"
-                                  onClick={() => removeDefectRecord(record.id)}
-                                  className="remove-btn"
-                                  title="Remove this defect"
-                                >
-                                  🗑️
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    {/* Defect Records Table */}
+                    {(defectRecords.length > 0 || defectsLoading) && (
+                      <div className="defect-records-table">
+                        <h4>Defects for Sample #{selectedSample?.numpal} ({defectRecords.length})</h4>
+                        {defectsLoading ? (
+                          <div className="loading-defects">Loading existing defects...</div>
+                        ) : (
+                          <table className="records-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Defect</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {defectRecords.map(record => (
+                                <tr key={record.id}>
+                                  <td>{record.checkDate ? new Date(record.checkDate).toLocaleDateString() : 'Today'}</td>
+                                  <td>{record.defectName}</td>
+                                  <td>{record.defectFamily}</td>
+                                  <td>{record.quantity}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDefectRecord(record.id)}
+                                      className="remove-btn"
+                                      title="Remove this defect"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
 
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={handleCancel}>
-                    Close
-                  </button>
-                </div>
+                    <div className="form-actions">
+                      <button type="button" className="cancel-btn" onClick={handlePrevStep}>
+                        ← Back
+                      </button>
+                      <button type="button" className="save-btn" onClick={handleSave}>
+                        Save All Changes
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

@@ -263,3 +263,7 @@ export const createSampleTest = (sampleData, databaseName = null) => {
 export const updateSampleStatus = (sampleId, statusData, databaseName = null) => {
   return apiPut(`/api/Sample/${sampleId}/status`, statusData, databaseName);
 };
+
+export const getDailyCheck = (sampleId, date, databaseName = null) => {
+  return apiGet(`/api/Sample/${sampleId}/daily-check/${date}`, null, databaseName);
+};

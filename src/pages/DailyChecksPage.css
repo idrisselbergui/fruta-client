@@ -98,11 +98,12 @@
 
 .input-group select,
 .input-group input {
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: border-color 0.2s;
+  height: 36px;
 }
 
 .input-group select:focus,
@@ -199,9 +200,58 @@
 
 .form-actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
   justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Center the Add Defect button within its input-group */
+.input-group .add-btn {
+  align-self: center;
+  margin-top: 0;
+}
+
+/* Narrow input styling for coloration fields */
+.narrow-input {
+  max-width: 120px !important;
+}
+
+/* Step Indicator Styles */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.step-indicator span {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #6c757d;
+  background: #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.step-indicator span.active {
+  color: #007bff;
+  background: #cce5ff;
+  font-weight: 600;
+}
+
+.step-indicator span.active::before {
+  content: '✓';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: bold;
 }
 
 .cancel-btn {
