@@ -75,7 +75,7 @@ const CollapsibleCard = ({ title, children, defaultOpen = false, open, onToggle,
   //   }
   // }, [isOpen, children]);
 
-  return (
+  return ( 
     <div className={`collapsible-card ${className}`} style={cardStyle}>
       <div 
         className={`collapsible-card-header ${!isOpen ? 'closed' : 'open'}`} 
