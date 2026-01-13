@@ -413,15 +413,11 @@ const DailyChecksPage = () => {
                       </>
                     )}
                   </div>
-                </div>
 
-                {selectedSample && (
-                  <>
-                    {/* Quality Section removed (merged above) */}
-
-                    {/* Section 3: Defect Recording */}
-                    <div className="form-section defects-section">
-                      <h4>Defects</h4>
+                  {selectedSample && (
+                    <>
+                      {/* Defects Section - now inside same form-section */}
+                      <h4 style={{ marginTop: '2rem' }}>Defects</h4>
                       <div className="form-row defect-entry-row">
                         <div className="input-group">
                           <label>Select Defect</label>
@@ -500,19 +496,19 @@ const DailyChecksPage = () => {
                           )}
                         </div>
                       )}
-                    </div>
+                    </>
+                  )}
 
-                    {/* Footer Actions */}
-                    <div className="form-actions sticky-footer">
-                      <button type="button" className="cancel-btn" onClick={handleCancel}>
-                        Cancel
-                      </button>
-                      <button type="button" className="save-btn" onClick={handleSave}>
-                        Save All Changes
-                      </button>
-                    </div>
-                  </>
-                )}
+                  {/* Footer Actions */}
+                  <div className="form-actions sticky-footer">
+                    <button type="button" className="cancel-btn" onClick={handleCancel}>
+                      Cancel
+                    </button>
+                    <button type="button" className="save-btn" onClick={handleSave}>
+                      Save All Changes
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -603,7 +599,7 @@ const DailyChecksPage = () => {
           </>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 
