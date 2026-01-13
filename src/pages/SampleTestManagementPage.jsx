@@ -22,8 +22,8 @@ const SampleTestManagementPage = () => {
     pdsfru: '',
     couleur1: 1,
     couleur2: 1,
-        nomver: '',
-        nomemb: ''
+    nomver: '',
+    nomemb: ''
   });
 
   useEffect(() => {
@@ -168,8 +168,8 @@ const SampleTestManagementPage = () => {
       pdsfru: '',
       couleur1: 1,
       couleur2: 1,
-        nomver: '',
-        nomemb: ''
+      nomver: '',
+      nomemb: ''
     });
     setError(null);
   };
@@ -184,7 +184,7 @@ const SampleTestManagementPage = () => {
 
   const getDestinationName = (coddes) => {
     if (!coddes) return 'Unknown';
-    const destination = destinations.find(d => 
+    const destination = destinations.find(d =>
       d.value === coddes || d.coddes === coddes
     );
     return destination ? (destination.label || destination.vildes || `Client ${coddes}`) : `Client ${coddes}`;
@@ -192,7 +192,7 @@ const SampleTestManagementPage = () => {
 
   const getVarietyName = (codvar) => {
     if (!codvar) return 'Unknown';
-    const variety = varieties.find(v => 
+    const variety = varieties.find(v =>
       v.value === codvar || v.codvar === codvar
     );
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
@@ -304,14 +304,17 @@ const SampleTestManagementPage = () => {
       {/* Outer Container: Create New Sample Test - Always on Top */}
       <div className="create-section-outer">
         <div className="create-section">
-          <h2>Create New Shelf Life</h2>
-          <p>Select a reception to create a Shelf Life for quality monitoring.</p>
+          <div className="create-section-header">
+            <h2>🫐 Create New Shelf Life</h2>
+            <p>Select a reception to create a Shelf Life for quality monitoring.</p>
 
-          {!showForm ? (
-            <button className="create-btn" onClick={() => setShowForm(true)}>
-              + Create Shelf Life
-            </button>
-          ) : (
+            {!showForm && (
+              <button className="create-btn" onClick={() => setShowForm(true)}>
+                + Create Shelf Life
+              </button>
+            )}
+          </div>
+          {showForm && (
             <div className="form-container">
               <h3>New Shelf Life</h3>
               <form onSubmit={handleSubmit} className="sample-test-form">
