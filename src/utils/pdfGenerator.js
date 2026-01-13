@@ -980,13 +980,173 @@ const generateEcartDirectDetailsPDF = (ecartDirectData, vergers, varietes, typeE
   }
 };
 
-const generateSampleTestReportPDF = (sample, destinations, varieties, availableDefects) => {
-  console.log('Starting Sample Test Report PDF generation for sample:', sample);
+// Helper to generate defect performance chart using Canvas
+const generateDefectChart = (dailyChecks, availableDefects) => {
+  return new Promise((resolve) => {
+    try {
+      if (!dailyChecks || dailyChecks.length === 0) {
+        resolve(null);
+        return;
+      }
 
-  if (!sample) {
-    console.error('No sample data available for PDF generation');
-    throw new Error('No sample data available. Please select a sample.');
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Extract all unique dates and defect types
+      const dates = dailyChecks.map(dc => new Date(dc.checkDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+
+      const defectMap = new Map(); // defectId -> { name, color, data: [] }
+      const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED', '#71B37C'];
+
+      let colorIndex = 0;
+
+      // Initialize defect map
+      dailyChecks.forEach(dc => {
+        dc.defects.forEach(d => {
+          if (!defectMap.has(d.defectId)) {
+            const defectInfo = availableDefects.find(ad => ad.coddef === d.defectId);
+            defectMap.set(d.defectId, {
+              name: defectInfo ? defectInfo.intdef : `Defect ${d.defectId}`, // Use intdef from Defaut model
+              color: colors[colorIndex % colors.length],
+              data: new Array(dailyChecks.length).fill(0)
+            });
+            colorIndex++;
+          }
+        });
+      });
+
+      // Fill data
+      dailyChecks.forEach((dc, dayIndex) => {
+        dc.defects.forEach(d => {
+          if (defectMap.has(d.defectId)) {
+            defectMap.get(d.defectId).data[dayIndex] = d.quantity;
+          }
+        });
+      });
+
+      // Chart Dimensions
+      const padding = 50;
+      const chartWidth = canvas.width - (padding * 2);
+      const chartHeight = canvas.height - (padding * 2);
+
+      // Calculate Max Y
+      let maxY = 0;
+      defectMap.forEach(d => {
+        const localMax = Math.max(...d.data);
+        if (localMax > maxY) maxY = localMax;
+      });
+      maxY = Math.ceil(maxY * 1.1) || 10; // Add 10% buffering, min 10
+
+      // Draw Axes
+      ctx.beginPath();
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 1; // Thinner axis lines
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, canvas.height - padding); // Y Axis
+      ctx.lineTo(canvas.width - padding, canvas.height - padding); // X Axis
+      ctx.stroke();
+
+      // Draw Y Labels & Grid
+      ctx.fillStyle = '#666666';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.font = '12px Inter, sans-serif';
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const yVal = Math.round((maxY / steps) * i);
+        const yPos = canvas.height - padding - ((yVal / maxY) * chartHeight);
+        ctx.fillText(formatNumber(yVal), padding - 10, yPos);
+
+        // Grid line
+        ctx.beginPath();
+        ctx.strokeStyle = '#eeeeee';
+        ctx.moveTo(padding, yPos);
+        ctx.lineTo(canvas.width - padding, yPos);
+        ctx.stroke();
+      }
+
+      // Bar Configuration
+      const numGroups = dates.length;
+      const numSeries = defectMap.size;
+      const groupWidth = chartWidth / numGroups;
+      // Use 70% of the group width for bars, reserving 30% for spacing between groups
+      const totalBarWidth = groupWidth * 0.7;
+      const singleBarWidth = totalBarWidth / numSeries;
+      const groupSpacing = groupWidth * 0.15; // 15% padding on each side
+
+      // Draw X Labels
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // const stepX = chartWidth / (dates.length > 0 ? dates.length : 1); // Logic adjusted for bars
+
+      dates.forEach((date, i) => {
+        const xCenter = padding + (i * groupWidth) + (groupWidth / 2);
+        ctx.fillText(date, xCenter, canvas.height - padding + 10);
+      });
+
+      // Draw Bars
+      let seriesIndex = 0;
+      defectMap.forEach((defect) => {
+        ctx.fillStyle = defect.color;
+
+        defect.data.forEach((val, groupIndex) => {
+          if (val > 0) {
+            const barHeight = (val / maxY) * chartHeight;
+            // Calculate x position for this specific bar
+            // Start of group + spacing + (this series * bar width)
+            const xPos = padding + (groupIndex * groupWidth) + groupSpacing + (seriesIndex * singleBarWidth);
+            const yPos = canvas.height - padding - barHeight;
+
+            ctx.fillRect(xPos, yPos, singleBarWidth - 2, barHeight); // -2 for small gap between bars
+          }
+        });
+        seriesIndex++;
+      });
+
+      // Draw Legend
+      const legendX = padding;
+      const legendY = 20;
+      let currentLegendX = legendX;
+
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic'; // Reset baseline for normal text
+
+      defectMap.forEach((defect) => {
+        ctx.fillStyle = defect.color;
+        ctx.fillRect(currentLegendX, legendY, 15, 15);
+        ctx.fillStyle = '#333333';
+        ctx.fillText(defect.name || 'Unknown', currentLegendX + 20, legendY + 12);
+        currentLegendX += ctx.measureText(defect.name || 'Unknown').width + 50;
+      });
+
+      resolve(canvas.toDataURL('image/png'));
+    } catch (e) {
+      console.error('Error generating chart:', e);
+      resolve(null);
+    }
+  });
+};
+
+const formatNumber = (num, decimals = 0) => {
+  return num !== undefined && num !== null
+    ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(num)
+    : 'N/A';
+};
+
+const generateSampleTestReportPDF = async (historyData, destinations, varieties, availableDefects) => {
+  console.log('Starting Premium Sample Test Report generation for:', historyData);
+
+  if (!historyData || !historyData.sample) {
+    throw new Error('No valid sample history data available.');
   }
+
+  const { sample, dailyChecks } = historyData;
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -994,167 +1154,198 @@ const generateSampleTestReportPDF = (sample, destinations, varieties, availableD
     format: 'a4'
   });
 
-  // Add clear logo in top right corner
-  try {
-    const logoPath = '/diaf.png';
-    const pageWidth = doc.internal.pageSize.getWidth();
-    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
-  } catch (error) {
-    console.log('Logo not found, continuing without logo');
+  // --- Header Section (Premium Gradient Look) ---
+  // Since jsPDF doesn't support linear gradients easily, we'll use the primary purple color from the design
+  doc.setFillColor(102, 126, 234); // #667eea
+  doc.rect(0, 0, 210, 40, 'F');
+
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Shelf-Life Report - Palette #${sample.numpal}`, 105, 20, { align: 'center' }); // Centered
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated on: ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' });
+
+  // Reset Colors
+  doc.setTextColor(50, 50, 50);
+
+  let yPosition = 55;
+
+  // --- Sample Overview Section ---
+  doc.setFillColor(248, 249, 252); // Light background
+  doc.roundedRect(15, yPosition, 180, 45, 3, 3, 'F');
+
+  doc.setFontSize(14);
+  doc.setTextColor(102, 126, 234); // Purple title
+  doc.setFont('helvetica', 'bold');
+  doc.text('Sample Overview', 20, yPosition + 10);
+
+  // Info Grid
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.setFont('helvetica', 'normal');
+
+  const clientName = destinations.find(d => d.value === sample.coddes || d.coddes === sample.coddes)?.vildes || sample.coddes || 'N/A';
+  const varietyName = varieties.find(v => v.value === sample.codvar || v.codvar === sample.codvar)?.nomvar || sample.codvar || 'N/A';
+  const lastCheck = dailyChecks && dailyChecks.length > 0 ? dailyChecks[dailyChecks.length - 1] : null;
+  const daysElapsed = sample.startDate ? Math.floor((new Date() - new Date(sample.startDate)) / (1000 * 60 * 60 * 24)) + 1 : 0;
+
+  // Col 1
+  doc.text(`Verger: ${sample.vergerName || 'N/A'}`, 20, yPosition + 20);
+  doc.text(`Client: ${clientName}`, 20, yPosition + 28);
+  doc.text(`Variety: ${varietyName}`, 20, yPosition + 36);
+
+  // Col 2
+  doc.text(`Start Date: ${sample.startDate ? new Date(sample.startDate).toLocaleDateString('fr-FR') : 'N/A'}`, 110, yPosition + 20);
+  doc.text(`Initial Count: ${formatNumber(sample.initialFruitCount)}`, 110, yPosition + 28);
+  doc.text(`Weight: ${formatNumber(sample.pdsfru, 2)} kg`, 110, yPosition + 36);
+
+  // Status Badge
+  const statusColor = sample.status === 0 ? [40, 167, 69] : [220, 53, 69]; // Green or Red
+  doc.setFillColor(...statusColor);
+  doc.roundedRect(160, yPosition + 15, 30, 8, 4, 4, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text(sample.status === 0 ? 'ACTIVE' : 'CLOSED', 175, yPosition + 20.5, { align: 'center' });
+
+  yPosition += 55;
+
+  // --- Current Condition Section ---
+  doc.setFillColor(248, 249, 252);
+  doc.roundedRect(15, yPosition, 180, 35, 3, 3, 'F');
+
+  doc.setFontSize(14);
+  doc.setTextColor(102, 126, 234);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Current Condition', 20, yPosition + 10);
+
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.setFont('helvetica', 'normal');
+
+  if (lastCheck) {
+    doc.text(`Last Check: ${new Date(lastCheck.checkDate).toLocaleDateString('fr-FR')}`, 20, yPosition + 20);
+    doc.text(`Color 1: ${lastCheck.couleur1 || 0}`, 70, yPosition + 20);
+    doc.text(`Color 2: ${lastCheck.couleur2 || 0}`, 110, yPosition + 20);
+    doc.text(`Avg Color: ${((lastCheck.couleur1 + lastCheck.couleur2) / 2).toFixed(1)}`, 150, yPosition + 20);
+  } else {
+    doc.text('No checks performed yet.', 20, yPosition + 20);
   }
 
-  // Header
-  doc.setFontSize(18);
-  doc.text('Sample Test Quality Report', 20, 20);
+  yPosition += 45;
 
-  doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-  doc.text(`Report Period: All available data`, 20, 37);
-
-  let yPosition = 50;
-
-  // Sample Information Section
+  // --- Defect Performance Chart ---
   doc.setFontSize(14);
-  doc.text('Sample Information', 20, yPosition);
-  yPosition += 10;
+  doc.setTextColor(102, 126, 234);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Defect Performance Analysis', 20, yPosition);
 
-  doc.setFontSize(10);
-  const sampleInfo = [
-    ['Reception Number:', sample.numrec || 'N/A'],
-    ['Client:', destinations.find(d => d.value === sample.coddes || d.coddes === sample.coddes)?.label || sample.coddes || 'N/A'],
-    ['Variety:', varieties.find(v => v.value === sample.codvar || v.codvar === sample.codvar)?.label || sample.codvar || 'N/A'],
-    ['Start Date:', sample.startDate ? new Date(sample.startDate).toLocaleDateString('fr-FR') : 'N/A'],
-    ['Initial Fruit Count:', formatNumberWithSpaces(sample.initialFruitCount || 0, 0)],
-    ['Current Status:', sample.status === 0 ? 'Active' : 'Closed'],
-    ['Days Since Start:', sample.startDate ? Math.floor((new Date() - new Date(sample.startDate)) / (1000 * 60 * 60 * 24)) + 1 : 'N/A']
-  ];
+  yPosition += 5;
 
-  sampleInfo.forEach(([label, value]) => {
-    doc.text(`${label} ${value}`, 25, yPosition);
-    yPosition += 6;
+  // Generate Chart
+  const chartImage = await generateDefectChart(dailyChecks, availableDefects);
+  if (chartImage) {
+    doc.addImage(chartImage, 'PNG', 15, yPosition, 180, 90);
+    yPosition += 100;
+  } else {
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Not enough data for chart.', 20, yPosition + 20);
+    yPosition += 30;
+  }
+
+  // --- Detailed History Table ---
+  doc.setFontSize(14);
+  doc.setTextColor(102, 126, 234);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detailed Defect History', 20, yPosition);
+  yPosition += 5;
+
+  const tableData = [];
+  const headerRow = ['Date', 'Color 1', 'Color 2', 'Top Defect', 'Qty', 'Total Defects'];
+  tableData.push(headerRow);
+
+  dailyChecks.forEach(dc => {
+    let topDefect = '-';
+    let topDefectQty = 0;
+    let totalDailyDefects = 0;
+
+    if (dc.defects && dc.defects.length > 0) {
+      dc.defects.forEach(d => {
+        totalDailyDefects += d.quantity;
+        if (d.quantity > topDefectQty) {
+          topDefectQty = d.quantity;
+          const def = availableDefects.find(ad => ad.coddef === d.defectId);
+          topDefect = def ? def.intdef : `ID: ${d.defectId}`;
+        }
+      });
+    }
+
+    tableData.push([
+      new Date(dc.checkDate).toLocaleDateString('fr-FR'),
+      dc.couleur1 || 0,
+      dc.couleur2 || 0,
+      topDefect,
+      topDefectQty > 0 ? topDefectQty : '-',
+      totalDailyDefects
+    ]);
   });
 
-  yPosition += 10;
-
-  // Defect Performance Section
-  doc.setFontSize(14);
-  doc.text('Defect Performance Analysis', 20, yPosition);
-  yPosition += 10;
-
-  // Get stored defect data from localStorage
-  const storedDefects = localStorage.getItem(`dailyCheck_${sample.id}`);
-  const defectRecords = storedDefects ? JSON.parse(storedDefects) : [];
-
-  if (defectRecords.length === 0) {
-    doc.setFontSize(10);
-    doc.text('No defect records found for this sample.', 25, yPosition);
-  } else {
-    // Group defects by date
-    const defectsByDate = {};
-    defectRecords.forEach(record => {
-      const date = record.checkDate || 'Unknown Date';
-      if (!defectsByDate[date]) {
-        defectsByDate[date] = [];
-      }
-      defectsByDate[date].push(record);
-    });
-
-    // Create daily defect summary table
-    const tableData = [];
-    const headerRow = ['Date', 'Defect Type', 'Defect Name', 'Quantity', 'Family'];
-    tableData.push(headerRow);
-
-    let totalDefects = 0;
-
-    // Sort dates
-    const sortedDates = Object.keys(defectsByDate).sort((a, b) => new Date(a) - new Date(b));
-
-    sortedDates.forEach(date => {
-      defectsByDate[date].forEach((record, index) => {
-        const defectInfo = availableDefects.find(d => d.coddef.toString() === record.defectId.toString());
-        const rowData = [
-          index === 0 ? (date === 'Unknown Date' ? date : new Date(date).toLocaleDateString('fr-FR')) : '',
-          record.defectId,
-          record.defectName || defectInfo?.intdef || 'Unknown',
-          record.quantity,
-          record.defectFamily || defectInfo?.famdef || 'Unknown'
-        ];
-        tableData.push(rowData);
-        totalDefects += record.quantity || 0;
-      });
-    });
-
-    // Add summary row
-    tableData.push([
-      'TOTAL DEFECTS',
-      '',
-      '',
-      totalDefects,
-      ''
-    ]);
-
-    console.log('Sample test report table data:', tableData);
-
-    // Generate the table
+  if (tableData.length > 1) { // If there is data + header
     autoTable(doc, {
       startY: yPosition,
       head: [headerRow],
       body: tableData.slice(1),
       theme: 'grid',
       styles: {
-        fontSize: 8,
-        cellPadding: 3
+        fontSize: 9,
+        cellPadding: 3,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
       },
       headStyles: {
-        fillColor: [66, 139, 202],
+        fillColor: [102, 126, 234], // Primary Purple
         textColor: 255,
         fontStyle: 'bold',
-        fontSize: 9
+        halign: 'center'
       },
       columnStyles: {
-        0: { cellWidth: 30, fontStyle: 'bold' },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 20, halign: 'center' },
-        4: { cellWidth: 30 }
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center', fontStyle: 'bold' }
       },
       margin: { left: 15, right: 15 },
-      alternateRowStyles: { fillColor: [245, 245, 245] }
+      alternateRowStyles: { fillColor: [248, 249, 252] }
     });
-
-    // Add summary statistics after table
-    const finalY = doc.lastAutoTable.finalY + 15;
-
-    doc.setFontSize(12);
-    doc.text('Summary Statistics', 20, finalY);
-
+  } else {
     doc.setFontSize(10);
-    const summaryStats = [
-      ['Total Defect Records:', defectRecords.length.toString()],
-      ['Total Defects Found:', formatNumberWithSpaces(totalDefects, 0)],
-      ['Monitoring Days:', sortedDates.length.toString()],
-      ['Average Defects per Day:', sortedDates.length > 0 ? formatNumberWithSpaces(totalDefects / sortedDates.length, 1) : '0']
-    ];
-
-    let summaryY = finalY + 10;
-    summaryStats.forEach(([label, value]) => {
-      doc.text(`${label} ${value}`, 25, summaryY);
-      summaryY += 6;
-    });
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No daily check data recorded.', 20, yPosition + 10);
   }
 
-  // Save the PDF
-  const fileName = `sample-test-report-reception-${sample.numrec}-${new Date().toISOString().split('T')[0]}.pdf`;
-
-  try {
-    doc.save(fileName);
-    console.log('Sample test report PDF saved successfully:', fileName);
-    return fileName;
-  } catch (error) {
-    console.error('Error saving sample test report PDF:', error);
-    throw error;
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Page ${i} of ${pageCount}`, 190, 290, { align: 'right' });
+    doc.text('Fruta Client - Shelf Life Management', 20, 290);
   }
+
+  // Save
+  const fileName = `shelf-life-report-P${sample.numpal}-${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+  return fileName;
 };
 
 export default generateDetailedExportPDF;
 export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateSampleTestReportPDF, calculateDateRangeFromTableRows };
+

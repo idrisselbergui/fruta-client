@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveSamples, getAllSamples, getDefauts, getDestinations, getVarietes } from '../apiService';
+import { getActiveSamples, getAllSamples, getDefauts, getDestinations, getVarietes, getSampleHistory } from '../apiService';
 import { generateSampleTestReportPDF } from '../utils/pdfGenerator';
 import DailyCheckModal from './DailyCheckModal';
 import './SampleDashboard.css';
@@ -70,7 +70,7 @@ const SampleDashboard = () => {
 
   const getDestinationName = (coddes) => {
     if (!coddes) return 'Unknown';
-    const destination = destinations.find(d => 
+    const destination = destinations.find(d =>
       d.value === coddes || d.coddes === coddes
     );
     return destination ? (destination.label || destination.vildes || `Client ${coddes}`) : `Client ${coddes}`;
@@ -78,7 +78,7 @@ const SampleDashboard = () => {
 
   const getVarietyName = (codvar) => {
     if (!codvar) return 'Unknown';
-    const variety = varieties.find(v => 
+    const variety = varieties.find(v =>
       v.value === codvar || v.codvar === codvar
     );
     return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
@@ -110,7 +110,14 @@ const SampleDashboard = () => {
   const generatePDF = async (sample) => {
     try {
       console.log('Generating PDF report for sample:', sample);
-      await generateSampleTestReportPDF(sample, destinations, varieties, availableDefects);
+      // Fetch full history data including daily checks and defects
+      const historyData = await getSampleHistory(sample.id);
+
+      if (!historyData) {
+        throw new Error('Failed to fetch sample history');
+      }
+
+      await generateSampleTestReportPDF(historyData, destinations, varieties, availableDefects);
       console.log('PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -184,7 +191,7 @@ const SampleDashboard = () => {
             {currentItems.map((sample) => (
               <div key={sample.id} className="sample-card">
                 <div className="card-header">
-                  <h3>Reception {sample.numrec}</h3>
+                  <h3>Palette #{sample.numpal}</h3>
                   <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
                     {sample.status === 0 ? 'Active' : 'Closed'}
                   </span>

@@ -267,3 +267,7 @@ export const updateSampleStatus = (sampleId, statusData, databaseName = null) =>
 export const getDailyCheck = (sampleId, date, databaseName = null) => {
   return apiGet(`/api/Sample/${sampleId}/daily-check/${date}`, null, databaseName);
 };
+
+export const getSampleHistory = (sampleId, databaseName = null) => {
+  return apiGet(`/api/Sample/${sampleId}/history`, null, databaseName);
+};
