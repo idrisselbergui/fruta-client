@@ -20,7 +20,7 @@ const DailyChecksPage = () => {
   const [couleur1, setCouleur1] = useState(1);
   const [couleur2, setCouleur2] = useState(1);
   const [checkDate, setCheckDate] = useState(new Date().toISOString().split('T')[0]);
-  const [currentStep, setCurrentStep] = useState(1);
+  // currentStep removed
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -182,13 +182,6 @@ const DailyChecksPage = () => {
 
 
 
-  const handleNextStep = () => {
-    if (currentStep === 1 && selectedSample) {
-      // Validate fields if needed, but DO NOT SAVE to API yet
-      setCurrentStep(2);
-    }
-  };
-
   const handleSave = async () => {
     if (!selectedSample) return;
 
@@ -221,12 +214,6 @@ const DailyChecksPage = () => {
     }
   };
 
-  const handlePrevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   const handleCancel = () => {
     // Clear localStorage for current sample and date if canceling
     if (selectedSample && checkDate) {
@@ -241,7 +228,7 @@ const DailyChecksPage = () => {
     setCouleur2(1);
     setDefectRecords([]);
     setShowForm(false);
-    setCurrentStep(1);
+    // setCurrentStep(1); removed
     setError(null);
   };
 
@@ -355,185 +342,170 @@ const DailyChecksPage = () => {
             </button>
           ) : (
             <div className="form-container">
-              {/* Step Indicator */}
-              <div className="step-indicator">
-                <span className={currentStep >= 1 ? 'active' : ''}>Step 1: Quality Measurements</span>
-                <span className={currentStep >= 2 ? 'active' : ''}>Step 2: Defect Recording</span>
-              </div>
-
-              <h3>Daily Check - Sample #{selectedSample?.numpal} ({currentStep === 1 ? 'Quality Data' : 'Defect Recording'})</h3>
+              <h3>Daily Check - Sample #{selectedSample?.numpal}</h3>
 
               <div className="daily-check-form">
-                {/* Step 1: Quality Measurements */}
-                {currentStep === 1 && (
+
+                {/* Section 1: Top Controls (Sample, Date & Quality) */}
+                <div className="form-section">
+                  <div className="form-grid">
+                    <div className="input-group">
+                      <label>Select Sample Test <span className="required-star">*</span></label>
+                      <select
+                        value={selectedSample?.id || ''}
+                        onChange={handleSampleSelect}
+                        required
+                      >
+                        <option value="">Select a sample...</option>
+                        {sortedSamples.map(sample => (
+                          <option key={sample.id} value={sample.id}>
+                            #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="input-group">
+                      <label>Check Date <span className="required-star">*</span></label>
+                      <input
+                        type="date"
+                        value={checkDate}
+                        onChange={(e) => setCheckDate(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {selectedSample && (
+                      <>
+                        <div className="input-group">
+                          <label>Fruit Weight (kg)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pdsfru}
+                            onChange={(e) => setPdsfru(e.target.value)}
+                            placeholder="Weight"
+                          />
+                        </div>
+
+                        <div className="input-group narrow-input">
+                          <label>Color 1</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={couleur1}
+                            onChange={(e) => setCouleur1(parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+
+                        <div className="input-group narrow-input">
+                          <label>Color 2</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={couleur2}
+                            onChange={(e) => setCouleur2(parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {selectedSample && (
                   <>
-                    <div className="form-row">
-                      <div className="input-group">
-                        <label>Select Sample Test *</label>
-                        <select
-                          value={selectedSample?.id || ''}
-                          onChange={handleSampleSelect}
-                          required
-                        >
-                          <option value="">Select a sample...</option>
-                          {sortedSamples.map(sample => (
-                            <option key={sample.id} value={sample.id}>
-                              #{sample.numpal} - {getDestinationName(sample.coddes)} - {getVarietyName(sample.codvar)} (Day {calculateDays(sample.startDate)})
-                            </option>
-                          ))}
-                        </select>
+                    {/* Quality Section removed (merged above) */}
+
+                    {/* Section 3: Defect Recording */}
+                    <div className="form-section defects-section">
+                      <h4>Defects</h4>
+                      <div className="form-row defect-entry-row">
+                        <div className="input-group">
+                          <label>Select Defect</label>
+                          <select
+                            value={selectedDefect}
+                            onChange={(e) => setSelectedDefect(e.target.value)}
+                          >
+                            <option value="">Choose a defect...</option>
+                            {availableDefects.map(defect => (
+                              <option key={defect.coddef} value={defect.coddef}>
+                                {defect.intdef} ({defect.famdef})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="input-group">
+                          <label>Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={quantity}
+                            onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                            placeholder="Qty"
+                          />
+                        </div>
+
+                        <div className="input-group actions">
+                          <label>&nbsp;</label>
+                          <button
+                            type="button"
+                            onClick={addDefectRecord}
+                            className="add-btn"
+                            disabled={!selectedDefect || quantity <= 0}
+                          >
+                            Add Defect
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="input-group">
-                        <label>Check Date *</label>
-                        <input
-                          type="date"
-                          value={checkDate}
-                          onChange={(e) => setCheckDate(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      {selectedSample && (
-                        <>
-                          <div className="input-group">
-                            <label>Fruit Weight (kg)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={pdsfru}
-                              onChange={(e) => setPdsfru(e.target.value)}
-                              placeholder="Enter weight"
-                            />
-                          </div>
-
-                          <div className="input-group narrow-input">
-                            <label>Coloration 1</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={couleur1}
-                              onChange={(e) => setCouleur1(parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-
-                          <div className="input-group narrow-input">
-                            <label>Coloration 2</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={couleur2}
-                              onChange={(e) => setCouleur2(parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                        </>
+                      {/* Defect Records Table */}
+                      {(defectRecords.length > 0 || defectsLoading) && (
+                        <div className="defect-records-table">
+                          {defectsLoading ? (
+                            <div className="loading-defects">Loading existing defects...</div>
+                          ) : (
+                            <table className="records-table">
+                              <thead>
+                                <tr>
+                                  <th>Defect</th>
+                                  <th>Type</th>
+                                  <th>Quantity</th>
+                                  <th>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {defectRecords.map(record => (
+                                  <tr key={record.id}>
+                                    <td>{record.defectName}</td>
+                                    <td>{record.defectFamily}</td>
+                                    <td>{record.quantity}</td>
+                                    <td>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeDefectRecord(record.id)}
+                                        className="remove-btn"
+                                        title="Remove this defect"
+                                      >
+                                        🗑️
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    <div className="form-actions">
+                    {/* Footer Actions */}
+                    <div className="form-actions sticky-footer">
                       <button type="button" className="cancel-btn" onClick={handleCancel}>
                         Cancel
-                      </button>
-                      {selectedSample && (
-                        <button type="button" className="save-btn" onClick={handleNextStep}>
-                          Next: Record Defects →
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {/* Step 2: Defect Recording */}
-                {currentStep === 2 && selectedSample && (
-                  <>
-                    <div className="form-row">
-                      <div className="input-group">
-                        <label>Select Defect</label>
-                        <select
-                          value={selectedDefect}
-                          onChange={(e) => setSelectedDefect(e.target.value)}
-                        >
-                          <option value="">Choose a defect...</option>
-                          {availableDefects.map(defect => (
-                            <option key={defect.coddef} value={defect.coddef}>
-                              {defect.intdef} ({defect.famdef})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="input-group">
-                        <label>Number of Fruits</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={quantity}
-                          onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                          placeholder="Enter quantity"
-                        />
-                      </div>
-
-                      <div className="input-group">
-                        <label>&nbsp;</label>
-                        <button
-                          type="button"
-                          onClick={addDefectRecord}
-                          className="add-btn"
-                          disabled={!selectedDefect || quantity <= 0}
-                        >
-                          Add Defect
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Defect Records Table */}
-                    {(defectRecords.length > 0 || defectsLoading) && (
-                      <div className="defect-records-table">
-                        <h4>Defects for Sample #{selectedSample?.numpal} ({defectRecords.length})</h4>
-                        {defectsLoading ? (
-                          <div className="loading-defects">Loading existing defects...</div>
-                        ) : (
-                          <table className="records-table">
-                            <thead>
-                              <tr>
-                                <th>Date</th>
-                                <th>Defect</th>
-                                <th>Type</th>
-                                <th>Quantity</th>
-                                <th>Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {defectRecords.map(record => (
-                                <tr key={record.id}>
-                                  <td>{record.checkDate ? new Date(record.checkDate).toLocaleDateString() : 'Today'}</td>
-                                  <td>{record.defectName}</td>
-                                  <td>{record.defectFamily}</td>
-                                  <td>{record.quantity}</td>
-                                  <td>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeDefectRecord(record.id)}
-                                      className="remove-btn"
-                                      title="Remove this defect"
-                                    >
-                                      🗑️
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="form-actions">
-                      <button type="button" className="cancel-btn" onClick={handlePrevStep}>
-                        ← Back
                       </button>
                       <button type="button" className="save-btn" onClick={handleSave}>
                         Save All Changes
