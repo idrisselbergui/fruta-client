@@ -1661,54 +1661,61 @@ const generateVenteEcartPDF = (vente, details, vergers, grpvars, typeEcarts) => 
   // Header Title
   doc.setFontSize(22);
   doc.setTextColor(44, 62, 80);
-  doc.text('Bon de Vente Écart', 20, 25);
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  const typeEcart = typeEcarts.find(t => t.codtype === vente.codtype);
+  const mainTitle = typeEcart ? typeEcart.destype : 'Bon de Vente Écart';
+  const subTitle = typeEcart ? 'Bon de Vente Écart' : '';
+
+  doc.text(mainTitle, pageWidth / 2, 25, { align: 'center' });
+
+  // Subtitle
+  if (subTitle) {
+    doc.setFontSize(14);
+    doc.setTextColor(100, 100, 100);
+    doc.text(subTitle, pageWidth / 2, 32, { align: 'center' });
+  }
 
   // Vente Information Box
   doc.setDrawColor(200);
   doc.setFillColor(248, 249, 250);
-  doc.rect(20, 35, 170, 45, 'FD');
+  doc.rect(20, 38, 170, 42, 'FD'); // Adjusted Y and Height
 
   doc.setFontSize(11);
   doc.setTextColor(50);
 
   // Left Column
   doc.setFont(undefined, 'bold');
-  doc.text(`N° Bon de Vente:`, 25, 45);
+  doc.text(`N° Bon de Vente:`, 25, 48);
   doc.setFont(undefined, 'normal');
-  doc.text(`${vente.numbonvente || 'N/A'}`, 65, 45);
+  doc.text(`${vente.numbonvente || 'N/A'}`, 65, 48);
 
   doc.setFont(undefined, 'bold');
-  doc.text(`Date:`, 25, 53);
+  doc.text(`Date:`, 25, 56);
   doc.setFont(undefined, 'normal');
-  doc.text(`${new Date(vente.date).toLocaleDateString('fr-FR')}`, 65, 53);
+  doc.text(`${new Date(vente.date).toLocaleDateString('fr-FR')}`, 65, 56);
 
   doc.setFont(undefined, 'bold');
-  doc.text(`Type d'Écart:`, 25, 61);
+  doc.text(`Numéro de Lot:`, 25, 64);
   doc.setFont(undefined, 'normal');
-  const typeEcart = typeEcarts.find(t => t.codtype === vente.codtype);
-  doc.text(`${typeEcart?.destype || 'N/A'}`, 65, 61);
-
-  doc.setFont(undefined, 'bold');
-  doc.text(`Numéro de Lot:`, 25, 69);
-  doc.setFont(undefined, 'normal');
-  doc.text(`${vente.numlot || '-'}`, 65, 69);
+  doc.text(`${vente.numlot || '-'}`, 65, 64);
 
   // Right Column (Financials)
   doc.setFont(undefined, 'bold');
-  doc.text(`Prix Unitaire:`, 110, 45);
+  doc.text(`Prix Unitaire:`, 110, 48);
   doc.setFont(undefined, 'normal');
-  doc.text(`${formatNumberWithSpaces(vente.price)} DH/kg`, 150, 45);
+  doc.text(`${formatNumberWithSpaces(vente.price)} DH/kg`, 150, 48);
 
   doc.setFont(undefined, 'bold');
-  doc.text(`Poids Total:`, 110, 53);
+  doc.text(`Poids Total:`, 110, 56);
   doc.setFont(undefined, 'normal');
-  doc.text(`${formatNumberWithSpaces(vente.poidsTotal)} kg`, 150, 53);
+  doc.text(`${formatNumberWithSpaces(vente.poidsTotal)} kg`, 150, 56);
 
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 100, 0); // Green color for total
-  doc.text(`Montant Total:`, 110, 69);
+  doc.text(`Montant Total:`, 110, 64); // Adjusted to align with last row
   doc.setFontSize(12);
-  doc.text(`${formatNumberWithSpaces(vente.montantTotal)} DH`, 150, 69);
+  doc.text(`${formatNumberWithSpaces(vente.montantTotal)} DH`, 150, 64);
 
   // Reset Font
   doc.setFontSize(10);
@@ -1729,13 +1736,13 @@ const generateVenteEcartPDF = (vente, details, vergers, grpvars, typeEcarts) => 
   const headerRow = ['Verger', 'Variété (Groupe)', 'Poids (kg)'];
 
   autoTable(doc, {
-    startY: 90,
+    startY: 85, // Moved up slightly
     head: [headerRow],
     body: tableData,
     theme: 'grid',
     styles: {
-      fontSize: 10,
-      cellPadding: 6,
+      fontSize: 8, // Smaller font
+      cellPadding: 3, // Smaller padding
       lineColor: [220, 220, 220]
     },
     headStyles: {
