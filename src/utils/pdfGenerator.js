@@ -1640,6 +1640,147 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   return fileName;
 };
 
-export default generateDetailedExportPDF;
-export { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateSampleTestReportPDF, calculateDateRangeFromTableRows };
+const generateVenteEcartPDF = (vente, details, vergers, grpvars, typeEcarts) => {
+  console.log('Starting Vente Ecart PDF generation', { vente, details });
 
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Add Logo
+  try {
+    const logoPath = '/diaf.png';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+  } catch (error) {
+    console.log('Logo not found');
+  }
+
+  // Header Title
+  doc.setFontSize(22);
+  doc.setTextColor(44, 62, 80);
+  doc.text('Bon de Vente Écart', 20, 25);
+
+  // Vente Information Box
+  doc.setDrawColor(200);
+  doc.setFillColor(248, 249, 250);
+  doc.rect(20, 35, 170, 45, 'FD');
+
+  doc.setFontSize(11);
+  doc.setTextColor(50);
+
+  // Left Column
+  doc.setFont(undefined, 'bold');
+  doc.text(`N° Bon de Vente:`, 25, 45);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${vente.numbonvente || 'N/A'}`, 65, 45);
+
+  doc.setFont(undefined, 'bold');
+  doc.text(`Date:`, 25, 53);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${new Date(vente.date).toLocaleDateString('fr-FR')}`, 65, 53);
+
+  doc.setFont(undefined, 'bold');
+  doc.text(`Type d'Écart:`, 25, 61);
+  doc.setFont(undefined, 'normal');
+  const typeEcart = typeEcarts.find(t => t.codtype === vente.codtype);
+  doc.text(`${typeEcart?.destype || 'N/A'}`, 65, 61);
+
+  doc.setFont(undefined, 'bold');
+  doc.text(`Numéro de Lot:`, 25, 69);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${vente.numlot || '-'}`, 65, 69);
+
+  // Right Column (Financials)
+  doc.setFont(undefined, 'bold');
+  doc.text(`Prix Unitaire:`, 110, 45);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${formatNumberWithSpaces(vente.price)} DH/kg`, 150, 45);
+
+  doc.setFont(undefined, 'bold');
+  doc.text(`Poids Total:`, 110, 53);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${formatNumberWithSpaces(vente.poidsTotal)} kg`, 150, 53);
+
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 100, 0); // Green color for total
+  doc.text(`Montant Total:`, 110, 69);
+  doc.setFontSize(12);
+  doc.text(`${formatNumberWithSpaces(vente.montantTotal)} DH`, 150, 69);
+
+  // Reset Font
+  doc.setFontSize(10);
+  doc.setTextColor(0);
+
+  // Details Table
+  const tableData = details.map(item => {
+    // Determine labels. If item comes from edit form (mapped), it has .label.
+    // If it comes directly from DB traverse, we might need to find it again, but handlePrintVente usually prepares mapped data.
+    // We will ensure handlePrintVente mimics the structure used in edit.
+    return [
+      item.refver?.label || vergers.find(v => v.refver === item.refver)?.nomver || 'N/A',
+      item.codgrv?.label || grpvars.find(g => g.codgrv === item.codgrv)?.nomgrv || 'N/A',
+      formatNumberWithSpaces(item.pds)
+    ];
+  });
+
+  const headerRow = ['Verger', 'Variété (Groupe)', 'Poids (kg)'];
+
+  autoTable(doc, {
+    startY: 90,
+    head: [headerRow],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      fontSize: 10,
+      cellPadding: 6,
+      lineColor: [220, 220, 220]
+    },
+    headStyles: {
+      fillColor: [52, 152, 219],
+      textColor: 255,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { cellWidth: 80 },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+    },
+    margin: { left: 20, right: 20 },
+    alternateRowStyles: { fillColor: [248, 250, 252] }
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(
+      `Page ${i} / ${pageCount}`,
+      doc.internal.pageSize.getWidth() / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+  }
+
+  // Save
+  const fileName = `Bon_Vente_${vente.numbonvente || vente.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+};
+
+export {
+  generateDetailedExportPDF,
+  generateVarietesPDF,
+  generateGroupVarietePDF,
+  generateEcartDetailsPDF,
+  generateEcartGroupDetailsPDF,
+  generateEcartDirectGroupedPDF,
+  generateEcartDirectDetailsPDF,
+  generateSampleTestReportPDF,
+  calculateDateRangeFromTableRows,
+  generateVenteEcartPDF
+};

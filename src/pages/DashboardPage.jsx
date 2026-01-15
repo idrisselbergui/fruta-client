@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import generateDetailedExportPDF, { generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, calculateDateRangeFromTableRows } from '../utils/pdfGenerator';
+import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
@@ -33,7 +33,7 @@ const DashboardPage = () => {
   });
 
   const debouncedFilters = useDebounce(filters, 500);
-  
+
   // Data states
   const [dashboardData, setDashboardData] = useState(null);
   const [groupedData, setGroupedData] = useState({ tableRows: [] });
@@ -42,14 +42,14 @@ const DashboardPage = () => {
   const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
   const [ecartGroupDetails, setEcartGroupDetails] = useState({ data: [], totalPdsfru: 0 });
   const [periodicTrendData, setPeriodicTrendData] = useState([]);
-  
+
   // Dropdown options states
   const [vergerOptions, setVergerOptions] = useState([]);
   const [grpVarOptions, setGrpVarOptions] = useState([]);
   const [varieteOptions, setVarieteOptions] = useState([]);
   const [destinationOptions, setDestinationOptions] = useState([]);
   const [ecartTypeOptions, setEcartTypeOptions] = useState([]);
-  
+
   // Sorting states
   const [sortConfig, setSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
   const [ecartSortConfig, setEcartSortConfig] = useState({ key: 'vergerName', direction: 'ascending' });
@@ -103,7 +103,7 @@ const DashboardPage = () => {
           apiGet('/api/lookup/typeecarts'),
           apiGet('/api/lookup/grpvars')
         ]);
-        
+
         setVergerOptions(vergerData.map(v => ({ value: v.refver, label: `${v.refver} - ${v.nomver}` })));
         setVarieteOptions(varieteData.map(v => ({ value: v.codvar, label: v.nomvar, grpVarId: v.codgrv })));
         setDestinationOptions(destData.map(d => ({ value: d.coddes, label: d.vildes })));
@@ -122,13 +122,13 @@ const DashboardPage = () => {
   // Main data fetching logic, triggered by debounced filters
   useEffect(() => {
     if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate) {
-        return;
+      return;
     }
 
     const fetchAllDashboardData = async () => {
       setIsDataLoading(true);
       const { startDate, endDate, selectedVerger, selectedGrpVar, selectedVariete, selectedDestination, selectedEcartType } = debouncedFilters;
-      
+
       const baseParams = { startDate, endDate };
       if (selectedVerger) baseParams.vergerId = selectedVerger.value;
       if (selectedGrpVar) baseParams.grpVarId = selectedGrpVar.value;
@@ -174,7 +174,7 @@ const DashboardPage = () => {
   // Fetch periodic trend data when filters, chart type, or time period changes
   useEffect(() => {
     if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate) {
-        return;
+      return;
     }
 
     const fetchPeriodicTrendData = async () => {
@@ -220,7 +220,7 @@ const DashboardPage = () => {
   // Fetch combined trend data when combined chart type is selected
   useEffect(() => {
     if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate || selectedChartType !== 'combined') {
-        return;
+      return;
     }
 
     const fetchCombinedTrendData = async () => {
@@ -317,7 +317,7 @@ const DashboardPage = () => {
   // Fetch grouped data for PDF generation
   useEffect(() => {
     if (isLoading || !debouncedFilters.startDate || !debouncedFilters.endDate) {
-        return;
+      return;
     }
 
     const fetchGroupedData = async () => {
@@ -347,17 +347,17 @@ const DashboardPage = () => {
   // --- BUG FIX: Correctly handle cascading dropdown ---
   const handleGrpVarChange = useCallback((selectedOption) => {
     setFilters(currentFilters => {
-        const newFilters = { ...currentFilters, selectedGrpVar: selectedOption };
-        if (currentFilters.selectedVariete) {
-            const isStillValid = varieteOptions.some(v => 
-                v.value === currentFilters.selectedVariete.value && 
-                v.grpVarId === selectedOption?.value
-            );
-            if (!isStillValid) {
-                newFilters.selectedVariete = null;
-            }
+      const newFilters = { ...currentFilters, selectedGrpVar: selectedOption };
+      if (currentFilters.selectedVariete) {
+        const isStillValid = varieteOptions.some(v =>
+          v.value === currentFilters.selectedVariete.value &&
+          v.grpVarId === selectedOption?.value
+        );
+        if (!isStillValid) {
+          newFilters.selectedVariete = null;
         }
-        return newFilters;
+      }
+      return newFilters;
     });
   }, [varieteOptions]);
 
@@ -377,14 +377,14 @@ const DashboardPage = () => {
     if (!ecartDetails?.data) return [];
 
     return [...ecartDetails.data].sort((a, b) => {
-        const aValue = a[ecartSortConfig.key];
-        const bValue = b[ecartSortConfig.key];
-        if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
-        if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
-        return 0;
+      const aValue = a[ecartSortConfig.key];
+      const bValue = b[ecartSortConfig.key];
+      if (aValue < bValue) return ecartSortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return ecartSortConfig.direction === 'ascending' ? 1 : -1;
+      return 0;
     });
   }, [ecartDetails.data, ecartSortConfig]);
-  
+
   const handleSort = (key, isEcart) => {
     const currentConfig = isEcart ? ecartSortConfig : sortConfig;
     const setConfig = isEcart ? setEcartSortConfig : setSortConfig;
@@ -443,34 +443,34 @@ const DashboardPage = () => {
       console.log('Table element:', document.getElementById('detail-data-table'));
 
       // Generate PDF with chart and table
-          // Extract variety names from data if no specific variety is selected
-          let varieteDisplayName = filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés';
-          if (!filters.selectedVariete && dashboardData?.tableRows && dashboardData.tableRows.length > 0) {
-            // Get unique variety names from table rows that have data
-            const dataVarieties = [...new Set(
-              dashboardData.tableRows
-                .filter(row => !filters.selectedVerger || row.vergerName === filters.selectedVerger.label.split(' - ')[1]) // Match verger
-                .filter(row => !filters.selectedGrpVar || row.groupVarieteName === filters.selectedGrpVar.label) // Match group if selected
-                .filter(row => parseFloat(row.totalPdsfru) > 0 || parseFloat(row.totalPdscom) > 0 || parseFloat(row.totalEcart) > 0) // Has data
-                .map(row => row.varieteName)
-            )];
-            if (dataVarieties.length > 0) {
-              varieteDisplayName = dataVarieties.join('-');
-            }
-          }
+      // Extract variety names from data if no specific variety is selected
+      let varieteDisplayName = filters.selectedVariete ? filters.selectedVariete.label : 'Toutes les Variétés';
+      if (!filters.selectedVariete && dashboardData?.tableRows && dashboardData.tableRows.length > 0) {
+        // Get unique variety names from table rows that have data
+        const dataVarieties = [...new Set(
+          dashboardData.tableRows
+            .filter(row => !filters.selectedVerger || row.vergerName === filters.selectedVerger.label.split(' - ')[1]) // Match verger
+            .filter(row => !filters.selectedGrpVar || row.groupVarieteName === filters.selectedGrpVar.label) // Match group if selected
+            .filter(row => parseFloat(row.totalPdsfru) > 0 || parseFloat(row.totalPdscom) > 0 || parseFloat(row.totalEcart) > 0) // Has data
+            .map(row => row.varieteName)
+        )];
+        if (dataVarieties.length > 0) {
+          varieteDisplayName = dataVarieties.join('-');
+        }
+      }
 
-          await generateChartPDF(
-            document.getElementById('trend-chart-container'),
-            document.getElementById('detail-data-table'),
-            {
-              title: 'Rapport de Performance du Verger',
-              orchardName: orchardName,
-              chartType: chartTypeLabel,
-              timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
-              varieteName: varieteDisplayName,
-              includeTable: true // Always include table in PDF
-            }
-          );
+      await generateChartPDF(
+        document.getElementById('trend-chart-container'),
+        document.getElementById('detail-data-table'),
+        {
+          title: 'Rapport de Performance du Verger',
+          orchardName: orchardName,
+          chartType: chartTypeLabel,
+          timePeriod: selectedTimePeriod.charAt(0).toUpperCase() + selectedTimePeriod.slice(1),
+          varieteName: varieteDisplayName,
+          includeTable: true // Always include table in PDF
+        }
+      );
 
       // Restore button state
       document.querySelector('.btn-primary').textContent = originalButtonText;
@@ -793,14 +793,14 @@ const DashboardPage = () => {
       alert('Erreur lors de la génération du PDF des détails d\'écart groupés: ' + error.message);
     }
   };
-  
+
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
   return (
     <div className="dashboard-container">
       <h1>Tableau de Bord de Production</h1>
-      
+
       <div className="dashboard-filters">
         <div className="filter-item"><label>Date de Début</label><input type="date" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} /></div>
         <div className="filter-item"><label>Date de Fin</label><input type="date" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} /></div>
@@ -819,15 +819,15 @@ const DashboardPage = () => {
             <div className="stat-card export-card">
               <h3>Export</h3>
               <div className="stat-value-container">
-                  <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalPdscom)}</p>
-                  <span className="stat-percentage">({formatNumberWithSpaces(dashboardData.exportPercentage, 2)}%)</span>
+                <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalPdscom)}</p>
+                <span className="stat-percentage">({formatNumberWithSpaces(dashboardData.exportPercentage, 2)}%)</span>
               </div>
             </div>
             <div className="stat-card ecart-card">
               <h3>Écart</h3>
               <div className="stat-value-container">
-                  <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalEcart)}</p>
-                  <span className="stat-percentage ecart-percentage">({formatNumberWithSpaces(dashboardData.ecartPercentage, 2)}%)</span>
+                <p className="stat-value">{formatNumberWithSpaces(dashboardData.totalEcart)}</p>
+                <span className="stat-percentage ecart-percentage">({formatNumberWithSpaces(dashboardData.ecartPercentage, 2)}%)</span>
               </div>
             </div>
           </div>
@@ -838,80 +838,80 @@ const DashboardPage = () => {
               <DashboardChart data={dashboardData.exportByVergerChart} title="Export par Verger" dataKey="value" color="#2ecc71" />
             </div>
           </CollapsibleCard>
-          
+
           <CollapsibleCard title="Analyse Détaillée des Exportations" open={cardStates.detailedExport} onToggle={(isOpen) => handleCardToggle('detailedExport', isOpen)}>
             <div className="charts-grid">
-                <div className="chart-container">
-                    <h3>Export par Verger (Groupé par Variété)</h3>
-                    <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
-                        <label>Filtrer par Client</label>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <Select
-                                options={destinationOptions}
-                                value={filters.selectedDestination}
-                                onChange={val => handleFilterChange('selectedDestination', val)}
-                                isClearable
-                                placeholder="Select a client..."
-                                styles={{
-                                    container: (provided) => ({
-                                        ...provided,
-                                        flex: 1
-                                    })
-                                }}
-                            />
-                            {filters.selectedDestination && (
-                                <button
-                                    onClick={handleGeneratePDF}
-                                    className="print-icon-button"
-                                    title="Imprimer le PDF"
-                                    style={{
-                                        padding: '8px',
-                                        backgroundColor: '#dc3545',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        width: '40px',
-                                        height: '38px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        alignSelf: 'stretch'
-                                    }}
-                                >
-                                    📄
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    {filters.selectedDestination ? (
-                        <StackedBarChart
-                            data={destinationChartData.data}
-                            keys={destinationChartData.keys}
-                            title={`Total Export for ${filters.selectedDestination.label}`}
-                            xAxisDataKey="name"
-                        />
-                    ) : (
-                        <p>Veuillez sélectionner un client pour voir le graphique.</p>
+              <div className="chart-container">
+                <h3>Export par Verger (Groupé par Variété)</h3>
+                <div className="filter-item" style={{ marginBottom: '1.5rem', maxWidth: '400px' }}>
+                  <label>Filtrer par Client</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <Select
+                      options={destinationOptions}
+                      value={filters.selectedDestination}
+                      onChange={val => handleFilterChange('selectedDestination', val)}
+                      isClearable
+                      placeholder="Select a client..."
+                      styles={{
+                        container: (provided) => ({
+                          ...provided,
+                          flex: 1
+                        })
+                      }}
+                    />
+                    {filters.selectedDestination && (
+                      <button
+                        onClick={handleGeneratePDF}
+                        className="print-icon-button"
+                        title="Imprimer le PDF"
+                        style={{
+                          padding: '8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          width: '40px',
+                          height: '38px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          alignSelf: 'stretch'
+                        }}
+                      >
+                        📄
+                      </button>
                     )}
+                  </div>
                 </div>
-                <div className="chart-container">
-                    <h3>Export par Client (Groupé par Variété)</h3>
-                    <div className="chart-placeholder"></div>
-                    {!filters.selectedVerger ? (
-                        <p>Veuillez sélectionner un verger pour voir ce graphique.</p>
-                    ) : salesByDestinationChartData.data.length > 0 ? (
-                        <StackedBarChart
-                            data={salesByDestinationChartData.data}
-                            keys={salesByDestinationChartData.keys}
-                            title={`Sales for ${filters.selectedVerger.label}`}
-                            xAxisDataKey="name"
-                        />
-                    ) : (
-                        <p>Aucune donnée d'export disponible pour ce verger.</p>
-                    )}
-                </div>
+                {filters.selectedDestination ? (
+                  <StackedBarChart
+                    data={destinationChartData.data}
+                    keys={destinationChartData.keys}
+                    title={`Total Export for ${filters.selectedDestination.label}`}
+                    xAxisDataKey="name"
+                  />
+                ) : (
+                  <p>Veuillez sélectionner un client pour voir le graphique.</p>
+                )}
+              </div>
+              <div className="chart-container">
+                <h3>Export par Client (Groupé par Variété)</h3>
+                <div className="chart-placeholder"></div>
+                {!filters.selectedVerger ? (
+                  <p>Veuillez sélectionner un verger pour voir ce graphique.</p>
+                ) : salesByDestinationChartData.data.length > 0 ? (
+                  <StackedBarChart
+                    data={salesByDestinationChartData.data}
+                    keys={salesByDestinationChartData.keys}
+                    title={`Sales for ${filters.selectedVerger.label}`}
+                    xAxisDataKey="name"
+                  />
+                ) : (
+                  <p>Aucune donnée d'export disponible pour ce verger.</p>
+                )}
+              </div>
             </div>
           </CollapsibleCard>
 
@@ -1121,107 +1121,107 @@ const DashboardPage = () => {
               </div>
             </div>
             <div className="full-width-chart">
-                <div id="trend-chart-container" className="chart-container">
-                    <h3>Tendances de Performance du Verger</h3>
-                    {selectedChartType === 'combined' ? (
-                        combinedTrendData.length > 0 ? (
-                            <CombinedTrendChart
-                                data={combinedTrendData}
-                                timePeriod={selectedTimePeriod}
-                                title={`Tendances Combinées ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
-                            />
-                        ) : (
-                            <p>Aucune donnée de tendance combinée disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
-                        )
-                    ) : periodicTrendData.length > 0 ? (
-                        <TrendChart
-                            data={periodicTrendData}
-                            chartType={selectedChartType}
-                            timePeriod={selectedTimePeriod}
-                            title={`Tendances de Performance ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
-                        />
-                    ) : (
-                        <p>Aucune donnée de tendance disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
-                    )}
-                </div>
+              <div id="trend-chart-container" className="chart-container">
+                <h3>Tendances de Performance du Verger</h3>
+                {selectedChartType === 'combined' ? (
+                  combinedTrendData.length > 0 ? (
+                    <CombinedTrendChart
+                      data={combinedTrendData}
+                      timePeriod={selectedTimePeriod}
+                      title={`Tendances Combinées ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
+                    />
+                  ) : (
+                    <p>Aucune donnée de tendance combinée disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
+                  )
+                ) : periodicTrendData.length > 0 ? (
+                  <TrendChart
+                    data={periodicTrendData}
+                    chartType={selectedChartType}
+                    timePeriod={selectedTimePeriod}
+                    title={`Tendances de Performance ${filters.selectedVerger ? `du Verger - ${filters.selectedVerger.label}` : 'Tous les Vergers'}`}
+                  />
+                ) : (
+                  <p>Aucune donnée de tendance disponible{filters.selectedVerger ? ` pour le verger sélectionné` : ' pour les verg ers sélectionnés'}.</p>
+                )}
+              </div>
             </div>
 
             {/* Hidden Table for PDF Generation - Not Visible on Screen */}
             <div id="detail-data-table" className="detail-data-table" style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden', pointerEvents: 'none' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Period</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Start Date</th>
-                            {selectedChartType === 'combined' ? (
-                                <>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Reception</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Export</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Ecart</th>
-                                </>
-                            ) : (
-                                <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {selectedChartType === 'combined' && combinedTrendData.length > 0 ? (
-                            combinedTrendData.map((item, index) => (
-                                <tr key={index}>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.reception || 0)}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.export || 0)}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.ecart || 0)}</td>
-                                </tr>
-                            ))
-                        ) : periodicTrendData.length > 0 ? (
-                            periodicTrendData.map((item, index) => (
-                                <tr key={index}>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.value || 0)}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center', color: '#6c757d' }}>
-                                    Aucune donnée disponible
-                                </td>
-                            </tr>
-                        )}
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Period</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Start Date</th>
+                    {selectedChartType === 'combined' ? (
+                      <>
+                        <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Reception</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Export</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Ecart</th>
+                      </>
+                    ) : (
+                      <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedChartType === 'combined' && combinedTrendData.length > 0 ? (
+                    combinedTrendData.map((item, index) => (
+                      <tr key={index}>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.reception || 0)}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.export || 0)}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.ecart || 0)}</td>
+                      </tr>
+                    ))
+                  ) : periodicTrendData.length > 0 ? (
+                    periodicTrendData.map((item, index) => (
+                      <tr key={index}>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.label}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.date}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.value || 0)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={selectedChartType === 'combined' ? 5 : 3} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center', color: '#6c757d' }}>
+                        Aucune donnée disponible
+                      </td>
+                    </tr>
+                  )}
 
-                        {/* Totals Row */}
-                        {((selectedChartType === 'combined' && combinedTrendData.length > 0) || (selectedChartType !== 'combined' && periodicTrendData.length > 0)) && (
-                            <tr style={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
-                                <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>TOTAL</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>-</td>
-                                {selectedChartType === 'combined' ? (
-                                    <>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.reception || 0), 0))}
-                                        </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.export || 0), 0))}
-                                        </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.ecart || 0), 0))}
-                                        </td>
-                                    </>
-                                ) : (
-                                    <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
-                                        {formatNumberWithSpaces(periodicTrendData.reduce((sum, item) => sum + (item.value || 0), 0))}
-                                    </td>
-                                )}
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                  {/* Totals Row */}
+                  {((selectedChartType === 'combined' && combinedTrendData.length > 0) || (selectedChartType !== 'combined' && periodicTrendData.length > 0)) && (
+                    <tr style={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
+                      <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>TOTAL</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>-</td>
+                      {selectedChartType === 'combined' ? (
+                        <>
+                          <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.reception || 0), 0))}
+                          </td>
+                          <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.export || 0), 0))}
+                          </td>
+                          <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                            {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.ecart || 0), 0))}
+                          </td>
+                        </>
+                      ) : (
+                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                          {formatNumberWithSpaces(periodicTrendData.reduce((sum, item) => sum + (item.value || 0), 0))}
+                        </td>
+                      )}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
 
           </CollapsibleCard>
-          
+
           <CollapsibleCard title="Détails des Données" open={cardStates.dataDetails} onToggle={(isOpen) => handleCardToggle('dataDetails', isOpen)}>
             <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <button
@@ -1286,60 +1286,60 @@ const DashboardPage = () => {
           </CollapsibleCard>
 
           <CollapsibleCard title="Détails des Écarts" open={cardStates.ecartDetails} onToggle={(isOpen) => handleCardToggle('ecartDetails', isOpen)}>
-           
+
             <div className="ecart-filter-container">
-                <div className="filter-item">
-                  
-                    <label>Filtrer par Type d'Écart</label>
-                    <Select
-                        options={ecartTypeOptions}
-                        value={filters.selectedEcartType}
-                        onChange={val => handleFilterChange('selectedEcartType', val)}
-                        isClearable
-                        placeholder="Tous les Types d'Écart..."
-                    />
-                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-              <button
-              onClick={handleExportEcartDetailsPDF}
-              className="btn btn-secondary"
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-              title="Exporter les détails d'écart en PDF (avec caisses)"
-            >
-              📄  Écarts Par variete
-            </button>
-            <button
-              onClick={handleExportEcartGroupDetailsPDF}
-              className="btn btn-secondary"
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-              title="Exporter les détails d'écart groupés en PDF"
-            >
-              📄 Écarts Par Group Variete
-            </button>
-            </div>
+              <div className="filter-item">
+
+                <label>Filtrer par Type d'Écart</label>
+                <Select
+                  options={ecartTypeOptions}
+                  value={filters.selectedEcartType}
+                  onChange={val => handleFilterChange('selectedEcartType', val)}
+                  isClearable
+                  placeholder="Tous les Types d'Écart..."
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <button
+                    onClick={handleExportEcartDetailsPDF}
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}
+                    title="Exporter les détails d'écart en PDF (avec caisses)"
+                  >
+                    📄  Écarts Par variete
+                  </button>
+                  <button
+                    onClick={handleExportEcartGroupDetailsPDF}
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}
+                    title="Exporter les détails d'écart groupés en PDF"
+                  >
+                    📄 Écarts Par Group Variete
+                  </button>
                 </div>
-                <div className="stat-card ecart-card ecart-total-card">
-                    <h3>Total Poids Fruit (Ecart)</h3>
-                    <p className="stat-value">{formatNumberWithSpaces(ecartDetails.totalPdsfru)}</p>
-                </div>
-                
+              </div>
+              <div className="stat-card ecart-card ecart-total-card">
+                <h3>Total Poids Fruit (Ecart)</h3>
+                <p className="stat-value">{formatNumberWithSpaces(ecartDetails.totalPdsfru)}</p>
+              </div>
+
             </div>
             {isDataLoading ? <LoadingSpinner /> : (
               <div className="dashboard-table-container">

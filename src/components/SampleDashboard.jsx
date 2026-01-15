@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getActiveSamples, getAllSamples, getDefauts, getDestinations, getVarietes, getSampleHistory } from '../apiService';
-import { generateSampleTestReportPDF } from '../utils/pdfGenerator';
+import { generateDetailedExportPDF, generateSampleTestReportPDF } from '../utils/pdfGenerator';
 import DailyCheckModal from './DailyCheckModal';
 import './SampleDashboard.css';
 import './DailyCheckModal.css';
@@ -73,7 +73,7 @@ const SampleDashboard = () => {
     const destination = destinations.find(d =>
       d.value === coddes || d.coddes === coddes
     );
-    return destination ? (destination.label || destination.vildes || `Client ${coddes}`) : `Client ${coddes}`;
+    return destination ? (destination.label || destination.vildes || `Client ${coddes} `) : `Client ${coddes} `;
   };
 
   const getVarietyName = (codvar) => {
@@ -81,7 +81,7 @@ const SampleDashboard = () => {
     const variety = varieties.find(v =>
       v.value === codvar || v.codvar === codvar
     );
-    return variety ? (variety.label || variety.nomvar || `Variety ${codvar}`) : `Variety ${codvar}`;
+    return variety ? (variety.label || variety.nomvar || `Variety ${codvar} `) : `Variety ${codvar} `;
   };
 
   // Sort samples by startDate (newest first) - always use allSamples
@@ -192,7 +192,7 @@ const SampleDashboard = () => {
               <div key={sample.id} className="sample-card">
                 <div className="card-header">
                   <h3>Palette #{sample.numpal}</h3>
-                  <span className={`status-badge ${sample.status === 0 ? 'active' : 'closed'}`}>
+                  <span className={`status - badge ${sample.status === 0 ? 'active' : 'closed'} `}>
                     {sample.status === 0 ? 'Actif' : 'Fermé'}
                   </span>
                 </div>
@@ -235,15 +235,15 @@ const SampleDashboard = () => {
                 <div className="pagination-numbers">
                   {renderPageNumbers().map((pageNumber, index) => (
                     pageNumber === '...' ? (
-                      <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                      <span key={`ellipsis - ${index} `} className="pagination-ellipsis">
                         …
                       </span>
                     ) : (
                       <button
                         key={pageNumber}
-                        className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                        className={`pagination - number ${currentPage === pageNumber ? 'active' : ''} `}
                         onClick={() => handlePageChange(pageNumber)}
-                        aria-label={`Page ${pageNumber}`}
+                        aria-label={`Page ${pageNumber} `}
                         aria-current={currentPage === pageNumber ? 'page' : undefined}
                       >
                         {pageNumber}

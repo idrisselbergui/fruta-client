@@ -380,7 +380,7 @@ const EcartDirectPage = () => {
                 </div>
             )}
 
-           
+
 
             {/* Filters Section */}
             <div className="dashboard-filters" style={{
@@ -476,7 +476,7 @@ const EcartDirectPage = () => {
                     📋 Rapport Détails
                 </button>
             </div>
-     {/* Search Input */}
+            {/* Search Input */}
             <div className="search-container">
                 <input
                     type="text"
@@ -490,7 +490,7 @@ const EcartDirectPage = () => {
                 />
             </div>
             <div className="table-container">
-            
+
                 <table className="data-table">
                     <thead>
                         <tr>

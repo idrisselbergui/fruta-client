@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { apiGet } from '../apiService';
-import { getVentes, getVente, createVenteEcart, deleteVente, updateVente } from '../apiService';
+import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
+import { generateVenteEcartPDF } from '../utils/pdfGenerator';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
@@ -26,13 +26,13 @@ const VenteEcartPage = () => {
 
     // Manual details list: [{ refver, codgrv, pds, uniqueId }]
     const [details, setDetails] = useState([]);
-
     // New detail entry state
     const [newDetail, setNewDetail] = useState({
         refver: null,
         codgrv: null,
         pds: ''
     });
+    const [isPrinting, setIsPrinting] = useState(false);
 
     const [ventes, setVentes] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +52,7 @@ const VenteEcartPage = () => {
                     apiGet('/api/lookup/typeecarts'), // Fetch type ecarts
                     apiGet('/api/lookup/vergers'),
                     apiGet('/api/lookup/grpvars'),
-                    getVentes()
+                    apiGet('/api/vente-ecart')
                 ]);
                 setTypeEcarts(typeData);
                 setVergers(vergerData);
@@ -154,13 +154,13 @@ const VenteEcartPage = () => {
                 }))
             };
             if (isEditing && editingVenteId) {
-                await updateVente(editingVenteId, requestData);
+                await apiPut(`/api/vente-ecart/${editingVenteId}`, requestData);
                 alert('Vente modifiée avec succès!');
             } else {
-                await createVenteEcart(requestData);
+                await apiPost('/api/vente-ecart', requestData);
                 alert('Vente créée avec succès!');
             }
-            const updatedVentes = await getVentes();
+            const updatedVentes = await apiGet('/api/vente-ecart');
             setVentes(updatedVentes.sort((a, b) => b.id - a.id));
             setCurrentPage(1);
 
@@ -168,6 +168,7 @@ const VenteEcartPage = () => {
             setIsEditing(false);
             setEditingVenteId(null);
             setFormData({
+                typeEcart: null,
                 numbonvente: '',
                 date: new Date().toISOString().split('T')[0],
                 price: '',
@@ -194,17 +195,18 @@ const VenteEcartPage = () => {
     const handleDeleteVente = async (id) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
             try {
-                await deleteVente(id);
-                setVentes(prev => prev.filter(v => v.id !== id));
+                await apiDelete(`/api/vente-ecart/${id}`);
+                // Refresh list
+                const refreshedVentes = await apiGet('/api/vente-ecart');
+                setVentes(refreshedVentes.sort((a, b) => b.id - a.id));
 
-                // If we were viewing/editing this one, close the form
-                if (viewingVenteId === id || editingVenteId === id) {
+                // If the deleted vente was being edited or viewed, reset form
+                if (editingVenteId === id || viewingVenteId === id) {
                     setShowForm(false);
-                    setIsViewing(false);
                     setIsEditing(false);
-                    setViewingVenteId(null);
                     setEditingVenteId(null);
-                    setDetails([]);
+                    setIsViewing(false);
+                    setViewingVenteId(null);
                     setFormData({
                         typeEcart: null,
                         numbonvente: '',
@@ -214,16 +216,39 @@ const VenteEcartPage = () => {
                         montantTotal: '',
                         numlot: null
                     });
+                    setDetails([]);
                 }
             } catch (err) {
-                alert('Erreur lors de la suppression de la vente: ' + err.message);
+                setError(err.message);
             }
+        }
+    };
+
+    const handlePrintVente = async (venteId) => {
+        try {
+            setIsPrinting(true);
+            const data = await apiGet(`/api/vente-ecart/${venteId}`);
+            const { vente, details: fetchedDetails } = data;
+
+            // Map details for the PDF generator using the same lookups
+            const mappedDetails = fetchedDetails.map(d => ({
+                refver: { label: vergers.find(v => v.refver === d.refver)?.nomver || 'N/A' },
+                codgrv: { label: grpvars.find(v => v.codgrv === d.codgrv)?.nomgrv || 'N/A' },
+                pds: d.pds
+            }));
+
+            generateVenteEcartPDF(vente, mappedDetails, vergers, grpvars, typeEcarts);
+        } catch (err) {
+            console.error("Error printing PDF:", err);
+            alert("Erreur lors de la génération du PDF.");
+        } finally {
+            setIsPrinting(false);
         }
     };
 
     const handleEditVente = async (venteId) => {
         try {
-            const data = await getVente(venteId);
+            const data = await apiGet(`/api/vente-ecart/${venteId}`);
             const { vente, details: fetchedDetails } = data;
 
             setFormData({
@@ -513,7 +538,7 @@ const VenteEcartPage = () => {
                                             />
                                         </div>
                                         <div className="input-group" style={{ flex: '0 0 120px' }}>
-                                            <label>Prix (€/kg)</label>
+                                            <label>Prix (DH/kg)</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -809,9 +834,9 @@ const VenteEcartPage = () => {
                                 <th>N° Bon de Vente</th>
                                 <th>Numéro de Lot</th>
                                 <th>Date</th>
-                                <th>Prix (€/kg)</th>
+                                <th>Prix (DH/kg)</th>
                                 <th>Poids Total (kg)</th>
-                                <th>Montant Total (€)</th>
+                                <th>Montant Total (DH)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -833,6 +858,15 @@ const VenteEcartPage = () => {
                                                 title="Modifier"
                                             >
                                                 ✏️
+                                            </button>
+                                            <button
+                                                className="action-btn"
+                                                style={{ color: '#6f42c1', backgroundColor: '#f3e5f5' }}
+                                                onClick={() => handlePrintVente(vente.id)}
+                                                title="Imprimer PDF"
+                                                disabled={isPrinting}
+                                            >
+                                                🖨️
                                             </button>
                                             <button
                                                 className="action-btn delete-btn"
