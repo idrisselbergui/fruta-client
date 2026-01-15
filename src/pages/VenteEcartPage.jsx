@@ -143,6 +143,7 @@ const VenteEcartPage = () => {
             const requestData = {
                 Numbonvente: formData.numbonvente ? parseInt(formData.numbonvente) : null,
                 Date: new Date(formData.date),
+                Price: parseFloat(formData.price), // Added Price
                 PoidsTotal: parseFloat(formData.poidsTotal),
                 MontantTotal: parseFloat(formData.montantTotal),
                 Numlot: formData.numlot ? parseInt(formData.numlot) : null,
@@ -650,29 +651,29 @@ const VenteEcartPage = () => {
                                             </div>
 
                                             {/* Details Table - Moved inside detail-entry for better layout */}
-                                            <div className="table-container" style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '1.5rem' }}>
-                                                <table className="data-table" style={{ fontSize: '0.9em' }}>
+                                            <div className="table-container" style={{ maxHeight: '250px', overflowY: 'auto', marginTop: '1rem' }}>
+                                                <table className="data-table" style={{ fontSize: '0.85em' }}>
                                                     <thead>
                                                         <tr>
-                                                            <th style={{ padding: '6px' }}>Verger</th>
-                                                            <th style={{ padding: '6px' }}>Variété</th>
-                                                            <th style={{ textAlign: 'right', padding: '6px' }}>Poids (kg)</th>
-                                                            {!isViewing && <th style={{ textAlign: 'center', padding: '6px' }}>Action</th>}
+                                                            <th style={{ padding: '3px 6px' }}>Verger</th>
+                                                            <th style={{ padding: '3px 6px' }}>Variété</th>
+                                                            <th style={{ textAlign: 'right', padding: '3px 6px' }}>Poids (kg)</th>
+                                                            {!isViewing && <th style={{ textAlign: 'center', padding: '3px 6px' }}>Action</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {details.length > 0 ? (
                                                             details.map((item, index) => (
                                                                 <tr key={item.uniqueId || index}>
-                                                                    <td style={{ padding: '4px 6px' }}>{item.refver?.label || 'N/A'}</td>
-                                                                    <td style={{ padding: '4px 6px' }}>{item.codgrv?.label || 'N/A'}</td>
-                                                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '4px 6px' }}>{parseFloat(item.pds).toFixed(2)}</td>
+                                                                    <td style={{ padding: '2px 6px' }}>{item.refver?.label || 'N/A'}</td>
+                                                                    <td style={{ padding: '2px 6px' }}>{item.codgrv?.label || 'N/A'}</td>
+                                                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '2px 6px' }}>{parseFloat(item.pds).toFixed(2)}</td>
                                                                     {!isViewing && (
-                                                                        <td style={{ textAlign: 'center', padding: '4px 6px' }}>
+                                                                        <td style={{ textAlign: 'center', padding: '2px 6px' }}>
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => handleRemoveDetail(item.uniqueId)}
-                                                                                style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', padding: '0' }}
+                                                                                style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', padding: '0', lineHeight: '1' }}
                                                                             >
                                                                                 &times;
                                                                             </button>
@@ -682,7 +683,7 @@ const VenteEcartPage = () => {
                                                             ))
                                                         ) : (
                                                             <tr>
-                                                                <td colSpan={isViewing ? 3 : 4} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic' }}>
+                                                                <td colSpan={isViewing ? 3 : 4} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', padding: '10px' }}>
                                                                     Aucun détail ajouté.
                                                                 </td>
                                                             </tr>
