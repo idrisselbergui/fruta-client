@@ -3,32 +3,37 @@ import Select from 'react-select';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { apiGet } from '../apiService';
-import { getUnsoldEcartDirect, getUnsoldEcartE, getVentes, getVente, createVenteEcart, deleteVente, updateVente } from '../apiService';
+import { getVentes, getVente, createVenteEcart, deleteVente, updateVente } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
 const VenteEcartPage = () => {
-    const [ecartDirects, setEcartDirects] = useState([]);
-    const [ecartEs, setEcartEs] = useState([]);
+    const [typeEcarts, setTypeEcarts] = useState([]); // Add TypeEcarts state
     const [vergers, setVergers] = useState([]);
-    const [varietes, setVarietes] = useState([]);
-    const [typeEcarts, setTypeEcarts] = useState([]);
+    const [grpvars, setGrpvars] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [selectedTypeEcart, setSelectedTypeEcart] = useState(null);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
 
     const [formData, setFormData] = useState({
+        typeEcart: null, // Add typeEcart to formData
         numbonvente: '',
         date: new Date().toISOString().split('T')[0],
         price: '',
         poidsTotal: '',
         montantTotal: '',
-        numlot: null // Added numlot
+        numlot: null
     });
 
-    const [selectedEcarts, setSelectedEcarts] = useState([]); // [{table: 'ecart_direct'|'ecart_e', id, pdsvent}]
+    // Manual details list: [{ refver, codgrv, pds, uniqueId }]
+    const [details, setDetails] = useState([]);
+
+    // New detail entry state
+    const [newDetail, setNewDetail] = useState({
+        refver: null,
+        codgrv: null,
+        pds: ''
+    });
+
     const [ventes, setVentes] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -36,23 +41,22 @@ const VenteEcartPage = () => {
     const [editingVenteId, setEditingVenteId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
     const [viewingVenteId, setViewingVenteId] = useState(null);
-    const [searchEcartDirect, setSearchEcartDirect] = useState('');
     const [searchVentes, setSearchVentes] = useState('');
+    const [showForm, setShowForm] = useState(false);
 
-    // Fetch typeecarts and vergers/varietes for display
+    // Fetch lookups
     useEffect(() => {
         const fetchLookups = async () => {
             try {
-                const [typeEcartData, vergerData, varieteData, ventesData] = await Promise.all([
-                    apiGet('/api/lookup/typeecarts'),
+                const [typeData, vergerData, grpvarData, ventesData] = await Promise.all([
+                    apiGet('/api/lookup/typeecarts'), // Fetch type ecarts
                     apiGet('/api/lookup/vergers'),
-                    apiGet('/api/lookup/varietes'),
+                    apiGet('/api/lookup/grpvars'),
                     getVentes()
                 ]);
-                setTypeEcarts(typeEcartData);
+                setTypeEcarts(typeData);
                 setVergers(vergerData);
-                setVarietes(varieteData);
-                // Sort ventes by id in descending order (latest first)
+                setGrpvars(grpvarData);
                 setVentes(ventesData.sort((a, b) => b.id - a.id));
             } catch (err) {
                 setError('Failed to fetch lookup data.');
@@ -60,47 +64,6 @@ const VenteEcartPage = () => {
         };
         fetchLookups();
     }, []);
-
-    // Fetch ecarts when typeecart is selected
-    const fetchEcarts = async () => {
-        if (!selectedTypeEcart) return;
-        try {
-            setIsLoading(true);
-            setError(null);
-            const [directData, eData] = await Promise.all([
-                getUnsoldEcartDirect(selectedTypeEcart.value, startDate || null, endDate || null, editingVenteId || null),
-                getUnsoldEcartE(selectedTypeEcart.value, startDate || null, endDate || null, editingVenteId || null)
-            ]);
-            setEcartDirects(directData);
-            setEcartEs(eData);
-            // Remove automatic selection in editing mode - let user select manually
-        } catch (err) {
-            setError('Failed to fetch ecarts.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Re-fetch when filters change or editing mode on
-    useEffect(() => {
-        fetchEcarts();
-    }, [selectedTypeEcart, startDate, endDate, editingVenteId]);
-
-    // Filter ecartDirects and ventes based on search
-    const filteredEcartDirects = useMemo(() => {
-        if (!searchEcartDirect.trim()) return ecartDirects;
-        const searchTerm = searchEcartDirect.toLowerCase();
-        return ecartDirects.filter(item => {
-            const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-            return (
-                item.numpal?.toString().toLowerCase().includes(searchTerm) ||
-                (item.numbl || '').toLowerCase().includes(searchTerm) ||
-                verger.toLowerCase().includes(searchTerm) ||
-                variete.toLowerCase().includes(searchTerm) ||
-                item.pdsfru?.toString().toLowerCase().includes(searchTerm)
-            );
-        });
-    }, [ecartDirects, searchEcartDirect, vergers, varietes]);
 
     const filteredVentes = useMemo(() => {
         if (!searchVentes.trim()) return ventes;
@@ -116,10 +79,10 @@ const VenteEcartPage = () => {
         ));
     }, [ventes, searchVentes]);
 
-    // Calculate poidsTotal and montantTotal from selected ecarts
+    // Calculate poidsTotal and montantTotal from details
     const calculatedPoidsTotal = useMemo(() => {
-        return selectedEcarts.reduce((sum, ecart) => sum + (parseFloat(ecart.pdsvent) || 0), 0);
-    }, [selectedEcarts]);
+        return details.reduce((sum, item) => sum + (parseFloat(item.pds) || 0), 0);
+    }, [details]);
 
     const calculatedMontantTotal = useMemo(() => {
         if (!formData.price || !calculatedPoidsTotal) return '';
@@ -140,49 +103,55 @@ const VenteEcartPage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleEcartSelect = (table, id, checked, defaultPoids) => {
-        if (checked) {
-            // Check if this ecart is already selected
-            const alreadySelected = selectedEcarts.find(ec => ec.table === table && ec.id === id);
-            if (alreadySelected) {
-                // If already selected, keep the existing pdsvent value
-                setSelectedEcarts(prev => [...prev.filter(ec => ec.table !== table || ec.id !== id), alreadySelected]);
-            } else {
-                // If newly selected, default to the full poids, allowing for modification
-                const initialPdsvent = (defaultPoids !== undefined && defaultPoids !== null) ? defaultPoids.toFixed(2) : '';
-                setSelectedEcarts(prev => [...prev, { table, id, pdsvent: initialPdsvent }]);
-            }
-        } else {
-            setSelectedEcarts(prev => prev.filter(ec => ec.table !== table || ec.id !== id));
+    const handleAddDetail = () => {
+        if (!newDetail.refver || !newDetail.codgrv || !newDetail.pds) {
+            alert('Veuillez remplir Verger, Variété (Groupe) et Poids.');
+            return;
         }
+
+        // Check for duplicates
+        const exists = details.some(d =>
+            d.refver.value === newDetail.refver.value &&
+            d.codgrv.value === newDetail.codgrv.value
+        );
+
+        if (exists) {
+            alert('Ce Verger et cette Variété ont déjà été ajoutés.');
+            return;
+        }
+
+        const detail = {
+            ...newDetail,
+            uniqueId: Date.now() // Simple unique ID for list rendering
+        };
+        setDetails(prev => [...prev, detail]);
+        setNewDetail({ refver: null, codgrv: null, pds: '' }); // Reset input
     };
 
-    const handlePdsventChange = (table, id, value) => {
-        setSelectedEcarts(prev =>
-            prev.map(ec =>
-                ec.table === table && ec.id === id
-                    ? { ...ec, pdsvent: value }
-                    : ec
-            )
-        );
+    const handleRemoveDetail = (uniqueId) => {
+        setDetails(prev => prev.filter(d => d.uniqueId !== uniqueId));
     };
 
     const handleSave = async (e) => {
         e.preventDefault();
         setError(null);
-        if (!formData.date || !formData.price || selectedEcarts.length === 0) {
-            setError('Veuillez remplir les champs requis et sélectionner au moins un écart.');
+        if (!formData.date || !formData.price || details.length === 0) {
+            setError('Veuillez remplir les champs requis et ajouter au moins un détail.');
             return;
         }
         try {
             const requestData = {
-                numbonvente: formData.numbonvente ? parseInt(formData.numbonvente) : null,
-                date: new Date(formData.date),
-                price: parseFloat(formData.price),
-                poidsTotal: parseFloat(formData.poidsTotal),
-                montantTotal: parseFloat(formData.montantTotal),
-                numlot: formData.numlot ? parseInt(formData.numlot) : null, // Added numlot to requestData
-                selectedEcarts: selectedEcarts
+                Numbonvente: formData.numbonvente ? parseInt(formData.numbonvente) : null,
+                Date: new Date(formData.date),
+                PoidsTotal: parseFloat(formData.poidsTotal),
+                MontantTotal: parseFloat(formData.montantTotal),
+                Numlot: formData.numlot ? parseInt(formData.numlot) : null,
+                Codtype: formData.typeEcart ? formData.typeEcart.value : null, // Send Codtype
+                Details: details.map(d => ({
+                    Refver: d.refver.value, // Ensure this is int
+                    Codgrv: d.codgrv.value, // Ensure this is int
+                    Pds: parseFloat(d.pds)
+                }))
             };
             if (isEditing && editingVenteId) {
                 await updateVente(editingVenteId, requestData);
@@ -192,9 +161,10 @@ const VenteEcartPage = () => {
                 alert('Vente créée avec succès!');
             }
             const updatedVentes = await getVentes();
-            setVentes(updatedVentes.sort((a, b) => b.id - a.id)); // Re-sort after update
-            setCurrentPage(1); // Reset to first page after data change
-            // Exit edit mode and reset form
+            setVentes(updatedVentes.sort((a, b) => b.id - a.id));
+            setCurrentPage(1);
+
+            // Reset
             setIsEditing(false);
             setEditingVenteId(null);
             setFormData({
@@ -203,46 +173,58 @@ const VenteEcartPage = () => {
                 price: '',
                 poidsTotal: '',
                 montantTotal: '',
-                numlot: null // Reset numlot
+                numlot: null
             });
-            setSelectedEcarts([]);
-            setSelectedTypeEcart(null);
-            setEcartDirects([]);
-            setEcartEs([]);
+            setDetails([]);
+            setNewDetail({ refver: null, codgrv: null, pds: '' });
         } catch (err) {
             setError(err.message);
         }
     };
 
-    const typeEcartOptions = typeEcarts.map(t => ({ value: t.codtype, label: t.destype }));
+    const vergerOptions = vergers.map(v => ({ value: v.refver, label: v.nomver }));
+    const grpvarOptions = grpvars.map(v => ({ value: v.codgrv, label: v.nomgrv })); // Changed from varietes
 
-    const getDisplayName = (verRef, verList, varCod, varList) => {
+    const getDisplayName = (verRef, verList, grpCod, grpList) => {
         const verger = verList.find(v => v.refver === verRef);
-        const variete = varList.find(v => v.codvar === varCod);
-        return { verger: verger?.nomver || 'N/A', variete: variete?.nomvar || 'N/A' };
+        const grpvar = grpList.find(v => v.codgrv === grpCod);
+        return { verger: verger?.nomver || 'N/A', variete: grpvar?.nomgrv || 'N/A' }; // keeping 'variete' key for compatibility or rename it
     };
 
-    const handleDeleteVente = async (venteId) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette vente?')) {
+    const handleDeleteVente = async (id) => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
             try {
-                await deleteVente(venteId);
-                const updatedVentes = await getVentes();
-                setVentes(updatedVentes.sort((a, b) => b.id - a.id)); // Re-sort after delete
-                setCurrentPage(1); // Reset to first page after data change
-                alert('Vente supprimée avec succès!');
+                await deleteVente(id);
+                setVentes(prev => prev.filter(v => v.id !== id));
+
+                // If we were viewing/editing this one, close the form
+                if (viewingVenteId === id || editingVenteId === id) {
+                    setShowForm(false);
+                    setIsViewing(false);
+                    setIsEditing(false);
+                    setViewingVenteId(null);
+                    setEditingVenteId(null);
+                    setDetails([]);
+                    setFormData({
+                        typeEcart: null,
+                        numbonvente: '',
+                        date: new Date().toISOString().split('T')[0],
+                        price: '',
+                        poidsTotal: '',
+                        montantTotal: '',
+                        numlot: null
+                    });
+                }
             } catch (err) {
-                setError(err.message);
+                alert('Erreur lors de la suppression de la vente: ' + err.message);
             }
         }
     };
 
-    const handleViewVente = async (venteId) => {
+    const handleEditVente = async (venteId) => {
         try {
             const data = await getVente(venteId);
-            console.log('View Vente Data:', data); // Debug what the API actually returns
-
-            const { vente, codtype, ecarts } = data; // Check if ecarts data is available
-            const typeOption = typeEcarts.find(t => t.codtype === codtype);
+            const { vente, details: fetchedDetails } = data;
 
             setFormData({
                 numbonvente: vente.numbonvente || '',
@@ -250,29 +232,25 @@ const VenteEcartPage = () => {
                 price: vente.price,
                 poidsTotal: vente.poidsTotal || '0',
                 montantTotal: vente.montantTotal || '0',
-                numlot: vente.numlot || null // Populated numlot from fetched data
+                numlot: vente.numlot || null,
+                typeEcart: vente.codtype ? { value: vente.codtype, label: typeEcarts.find(t => t.codtype === vente.codtype)?.destype || 'Inconnu' } : null
             });
-            setIsViewing(true);
-            setViewingVenteId(venteId);
-            setSelectedTypeEcart(typeOption ? { value: typeOption.codtype, label: typeOption.destype } : null);
+            setIsEditing(true);
+            setEditingVenteId(venteId);
+            setIsViewing(false);
+            setShowForm(true);
 
-            // Store any ecart data that comes from the API
-            // Try multiple possible property names
-            if (ecarts && Array.isArray(ecarts)) {
-                console.log('Ecarts from Vente API (ecarts):', ecarts);
-                setSelectedEcarts(ecarts);
-            } else if (data.selectedEcarts && Array.isArray(data.selectedEcarts)) {
-                console.log('Ecarts from Vente API (selectedEcarts):', data.selectedEcarts);
-                setSelectedEcarts(data.selectedEcarts);
-            } else if (vente.selectedEcarts && Array.isArray(vente.selectedEcarts)) {
-                console.log('Ecarts from Vente API (vente.selectedEcarts):', vente.selectedEcarts);
-                setSelectedEcarts(vente.selectedEcarts);
-            } else if (data.ecartDetails && Array.isArray(data.ecartDetails)) {
-                console.log('Ecarts from Vente API (ecartDetails):', data.ecartDetails);
-                setSelectedEcarts(data.ecartDetails);
+            if (fetchedDetails && Array.isArray(fetchedDetails)) {
+                // Map fetched details which have raw IDs to the {value, label} structure we use for Select
+                const mappedDetails = fetchedDetails.map(d => ({
+                    uniqueId: d.id, // Use DB id as uniqueId
+                    refver: { value: d.refver, label: vergers.find(v => v.refver === d.refver)?.nomver || 'N/A' },
+                    codgrv: { value: d.codgrv, label: grpvars.find(v => v.codgrv === d.codgrv)?.nomgrv || 'N/A' }, // Changed to codgrv
+                    pds: d.pds
+                }));
+                setDetails(mappedDetails);
             } else {
-                console.log('No ecarts found in API response');
-                setSelectedEcarts([]);
+                setDetails([]);
             }
 
         } catch (err) {
@@ -285,8 +263,7 @@ const VenteEcartPage = () => {
 
         try {
             const data = await getVente(venteId);
-            const { vente, codtype, ecarts } = data;
-            const typeOption = typeEcarts.find(t => t.codtype === codtype);
+            const { vente, details } = data;
 
             const doc = new jsPDF({
                 orientation: 'portrait',
@@ -305,8 +282,6 @@ const VenteEcartPage = () => {
             // Header
             doc.setFontSize(20);
             doc.text('BON DE VENTE', 105, 20, { align: 'center' });
-            doc.setFontSize(16);
-            doc.text(`${typeOption ? typeOption.destype : 'Inconnu'}`, 20, 40);
             doc.setFontSize(10);
             doc.text(`${new Date().toLocaleDateString('fr-FR')}`, 170, 40);
 
@@ -325,39 +300,22 @@ const VenteEcartPage = () => {
 
             // Ecarts table
             const tableData = [];
-            const headerRow = ['N° Palette', 'N° BL', 'Type', 'Verger', 'Variété', 'Poids Vendu (kg)'];
+            const headerRow = ['Verger', 'Variété', 'Poids Vendu (kg)'];
             tableData.push(headerRow);
 
-            if (ecarts && Array.isArray(ecarts) && ecarts.length > 0) {
-                ecarts.forEach(ecart => {
-                    const { verger, variete } = getDisplayName(ecart.refver, vergers, ecart.codvar, varietes);
-                    const typeText = ecart.table === 'ecart_direct' ? 'Direct' : 'Station';
-                    const numblValue = ecart.table === 'ecart_direct' ? ecart.numbl || 'N/A' : '-';
+            const itemsToPrint = details || [];
+
+            if (itemsToPrint.length > 0) {
+                itemsToPrint.forEach(item => {
+                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codgrv, grpvars); // Use codgrv/grpvars
                     tableData.push([
-                        ecart.id,
-                        numblValue,
-                        typeText,
                         verger,
                         variete,
-                        ecart.pdsvent
-                    ]);
-                });
-            } else if (selectedEcarts.length > 0) {
-                selectedEcarts.forEach(ecart => {
-                    const { verger, variete } = getDisplayName(ecart.refver, vergers, ecart.codvar, varietes);
-                    const typeText = ecart.table === 'ecart_direct' ? 'Direct' : 'Station';
-                    const numblValue = ecart.table === 'ecart_direct' ? ecart.numbl || 'N/A' : '-';
-                    tableData.push([
-                        ecart.id,
-                        numblValue,
-                        typeText,
-                        verger,
-                        variete,
-                        ecart.pdsvent
+                        parseFloat(item.pds).toFixed(2)
                     ]);
                 });
             } else {
-                tableData.push(['Aucune donnée d\'écart disponible', '', '', '', '', '']);
+                tableData.push(['Aucun détail', '', '']);
             }
 
             // Generate the table
@@ -376,8 +334,7 @@ const VenteEcartPage = () => {
                     fontStyle: 'bold'
                 },
                 columnStyles: {
-                    0: { halign: 'center' },
-                    5: { halign: 'right' }
+                    2: { halign: 'right' }
                 },
                 margin: { left: 20, right: 20 },
                 alternateRowStyles: { fillColor: [245, 245, 245] }
@@ -423,6 +380,49 @@ const VenteEcartPage = () => {
         }
     };
 
+    const renderPageNumbers = () => {
+        const pages = [];
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+
+            if (currentPage > 3) {
+                pages.push('...');
+            }
+
+            // Show pages around current
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+
+            // Adjust window if near start
+            if (currentPage <= 3) {
+                end = Math.min(totalPages - 1, 4);
+            }
+            // Adjust window if near end
+            if (currentPage >= totalPages - 2) {
+                start = Math.max(2, totalPages - 3);
+            }
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            if (currentPage < totalPages - 2) {
+                pages.push('...');
+            }
+
+            // Always show last page
+            pages.push(totalPages);
+        }
+        return pages;
+    };
+
     if (isLoading) return <LoadingSpinner />;
 
     return (
@@ -433,325 +433,355 @@ const VenteEcartPage = () => {
 
             {error && <p className="error-message">{error}</p>}
 
-            {/* Form Section */}
-            <div className="form-container">
-                <h3>Détails de Vente</h3>
-                <form onSubmit={handleSave} className="ecart-form">
-                    <div className="form-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>N° Bon de Vente</label>
-                            <input
-                                type="number"
-                                name="numbonvente"
-                                value={formData.numbonvente}
-                                onChange={handleFormChange}
-                                placeholder=""
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
-                            />
+            {/* Create Section - Outer Container like Daily Checks */}
+            <div className="create-section-outer">
+                <div className="form-container">
+                    <h2>{isEditing ? 'Modifier la Vente Écart' : 'Enregistrer une Vente Écart'}</h2>
+                    <p style={{ marginBottom: '1.5rem', color: '#6c757d', fontSize: '0.95rem' }}>Créez ou modifiez une vente d'écart.</p>
+
+                    {!showForm ? (
+                        <button type="button" className="ve-create-btn" onClick={() => setShowForm(true)}>
+                            + Créer une Vente Écart
+                        </button>
+                    ) : (
+                        <div className="daily-check-form">
+                            <div className="form-section">
+                                <form onSubmit={handleSave} className="ecart-form">
+                                    <div className="form-row" style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'flex-end',
+                                        gap: '1.5rem',
+                                        marginBottom: '1.5rem'
+                                    }}>
+                                        <div className="input-group" style={{ flex: '2 1 200px' }}>
+                                            <label>Type d'Écart</label>
+                                            <Select
+                                                options={typeEcarts.map(t => ({ value: t.codtype, label: t.destype }))}
+                                                value={formData.typeEcart}
+                                                onChange={(val) => setFormData(prev => ({ ...prev, typeEcart: val }))}
+                                                placeholder="Type"
+                                                styles={{
+                                                    control: (base) => ({
+                                                        ...base,
+                                                        minHeight: '48px',
+                                                        height: '48px',
+                                                        fontSize: '1rem',
+                                                        borderRadius: '8px',
+                                                        borderColor: '#e0e6ed',
+                                                        backgroundColor: '#f8f9fa',
+                                                        boxShadow: 'none',
+                                                        '&:hover': { borderColor: '#adb5bd' }
+                                                    }),
+                                                    valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
+                                                    input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                                                    singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                    placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                    dropdownIndicator: (base) => ({ ...base, padding: '8px' }),
+                                                    indicatorsContainer: (base) => ({ ...base, height: '48px' }),
+                                                    menu: (base) => ({ ...base, zIndex: 100 })
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '1 1 120px' }}>
+                                            <label>N° Bon Vente</label>
+                                            <input
+                                                type="number"
+                                                name="numbonvente"
+                                                value={formData.numbonvente}
+                                                onChange={handleFormChange}
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '1 1 120px' }}>
+                                            <label>N° Lot</label>
+                                            <input
+                                                type="number"
+                                                name="numlot"
+                                                value={formData.numlot || ""}
+                                                onChange={handleFormChange}
+                                                placeholder="Opt."
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '1 1 140px' }}>
+                                            <label>Date</label>
+                                            <input
+                                                type="date"
+                                                name="date"
+                                                value={formData.date}
+                                                onChange={handleFormChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '0 0 120px' }}>
+                                            <label>Prix (€/kg)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                name="price"
+                                                value={formData.price}
+                                                onChange={handleFormChange}
+                                                required
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '0 0 130px' }}>
+                                            <label>Poids Total</label>
+                                            <input
+                                                type="text"
+                                                name="poidsTotal"
+                                                value={formData.poidsTotal}
+                                                readOnly
+                                                style={{ fontWeight: 'bold', color: '#007bff' }}
+                                            />
+                                        </div>
+                                        <div className="input-group" style={{ flex: '0 0 130px' }}>
+                                            <label>Montant Total</label>
+                                            <input
+                                                type="text"
+                                                name="montantTotal"
+                                                value={formData.montantTotal}
+                                                readOnly
+                                                style={{ fontWeight: 'bold', color: '#28a745' }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Merged Manual Detail Entry Section */}
+                                    {(!isViewing) && (
+                                        <div className="detail-entry" style={{ marginTop: '0.5rem', paddingTop: '1rem' }}>
+                                            <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                                <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
+                                                    <label>Verger</label>
+                                                    <Select
+                                                        options={vergerOptions}
+                                                        value={newDetail.refver}
+                                                        onChange={(val) => setNewDetail(prev => ({ ...prev, refver: val }))}
+                                                        placeholder="Choisir Verger"
+                                                        styles={{
+                                                            control: (base) => ({
+                                                                ...base,
+                                                                minHeight: '48px',
+                                                                height: '48px',
+                                                                fontSize: '1rem',
+                                                                borderRadius: '8px',
+                                                                borderColor: '#e0e6ed',
+                                                                backgroundColor: 'white',
+                                                                boxShadow: 'none',
+                                                                '&:hover': { borderColor: '#adb5bd' }
+                                                            }),
+                                                            valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
+                                                            singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                            placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                            indicatorsContainer: (base) => ({ ...base, height: '48px' })
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
+                                                    <label>Variété (Groupe)</label>
+                                                    <Select
+                                                        options={grpvarOptions}
+                                                        value={newDetail.codgrv}
+                                                        onChange={(val) => setNewDetail(prev => ({ ...prev, codgrv: val }))}
+                                                        placeholder="Choisir Variété"
+                                                        styles={{
+                                                            control: (base) => ({
+                                                                ...base,
+                                                                minHeight: '48px',
+                                                                height: '48px',
+                                                                fontSize: '1rem',
+                                                                borderRadius: '8px',
+                                                                borderColor: '#e0e6ed',
+                                                                backgroundColor: 'white',
+                                                                boxShadow: 'none',
+                                                                '&:hover': { borderColor: '#adb5bd' }
+                                                            }),
+                                                            valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
+                                                            singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                            placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                            indicatorsContainer: (base) => ({ ...base, height: '48px' })
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="input-group" style={{ flex: '1', minWidth: '120px' }}>
+                                                    <label>Poids (kg)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={newDetail.pds}
+                                                        onChange={(e) => setNewDetail(prev => ({ ...prev, pds: e.target.value }))}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                                <div className="input-group" style={{ flex: '0 0 auto', minWidth: '120px' }}>
+                                                    <label>&nbsp;</label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddDetail}
+                                                        className="ve-add-btn"
+                                                    >
+                                                        + Ajouter
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Details Table - Moved inside detail-entry for better layout */}
+                                            <div className="table-container" style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '1.5rem' }}>
+                                                <table className="data-table" style={{ fontSize: '0.9em' }}>
+                                                    <thead>
+                                                        <tr>
+                                                            <th style={{ padding: '6px' }}>Verger</th>
+                                                            <th style={{ padding: '6px' }}>Variété</th>
+                                                            <th style={{ textAlign: 'right', padding: '6px' }}>Poids (kg)</th>
+                                                            {!isViewing && <th style={{ textAlign: 'center', padding: '6px' }}>Action</th>}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {details.length > 0 ? (
+                                                            details.map((item, index) => (
+                                                                <tr key={item.uniqueId || index}>
+                                                                    <td style={{ padding: '4px 6px' }}>{item.refver?.label || 'N/A'}</td>
+                                                                    <td style={{ padding: '4px 6px' }}>{item.codgrv?.label || 'N/A'}</td>
+                                                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '4px 6px' }}>{parseFloat(item.pds).toFixed(2)}</td>
+                                                                    {!isViewing && (
+                                                                        <td style={{ textAlign: 'center', padding: '4px 6px' }}>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveDetail(item.uniqueId)}
+                                                                                style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', padding: '0' }}
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </td>
+                                                                    )}
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan={isViewing ? 3 : 4} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic' }}>
+                                                                    Aucun détail ajouté.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="form-actions">
+                                        {/* Show Save/Update button only when not viewing */}
+                                        {!isViewing && (
+                                            <button type="submit" style={{ backgroundColor: isEditing ? '#ffc107' : '#28a745', color: isEditing ? 'black' : 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{isEditing ? 'Modifier Vente' : 'Enregistrer Vente'}</button>
+                                        )}
+                                        {/* Always show Cancel button */}
+                                        <button type="button" className="cancel-btn" onClick={() => {
+                                            setShowForm(false);
+                                            setIsEditing(false);
+                                            setEditingVenteId(null);
+                                            setIsViewing(false);
+                                            setViewingVenteId(null);
+                                            setFormData({
+                                                typeEcart: null,
+                                                numbonvente: '',
+                                                date: new Date().toISOString().split('T')[0],
+                                                price: '',
+                                                poidsTotal: '',
+                                                montantTotal: '',
+                                                numlot: null
+                                            });
+                                            setDetails([]);
+                                            setNewDetail({ refver: null, codgrv: null, pds: '' });
+                                        }}>
+                                            {isViewing ? 'Fermer' : 'Annuler'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            {/* Visualisation Vente */}
+                            {isViewing && (
+                                <div style={{ marginTop: '20px' }}>
+                                    <div className="table-section" style={{ padding: '0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+
+
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: '400px' }}>
+                                            {/* Summary Section */}
+                                            <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '0', border: '1px solid #ddd' }}>
+                                                <button onClick={() => generateBonDeLivraison(viewingVenteId)} style={{ fontSize: '0.8em', backgroundColor: '#5cb85c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}>Générer Bon de Livraison</button>
+                                                <h3 style={{ color: '#007bff', marginTop: '0', marginBottom: '10px' }}>  Vente   #{viewingVenteId} <span style={{ fontSize: '0.9em', color: 'black', textAlign: 'center' }}>{selectedTypeEcart?.label || 'Inconnu'} </span></h3>
+
+                                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
+                                                    N° Bon: {formData.numbonvente}
+                                                </div>
+                                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
+                                                    Numéro de Lot:{formData.numlot || 'N/A'}
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '15px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Poids Total</div>
+                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#007bff' }}>{formData.poidsTotal || '0'} kg</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Prix par kg</div>
+                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#ffc107' }}>MAD {formData.price || '0'}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Montant Total</div>
+                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#28a745' }}>MAD {formData.montantTotal || '0'}</div>
+                                                    </div>
+
+
+                                                </div>
+                                            </div>
+                                            {/* Details Section */}
+                                            <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '0 0 10px 10px' }}>
+                                                <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>Détails des Écarts Vendus</h3>
+                                                {details.length > 0 ? (
+                                                    <div className="table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                                                        <table className="data-table" style={{ fontSize: '0.85em' }}>
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Verger</th>
+                                                                    <th>Variété</th>
+                                                                    <th style={{ textAlign: 'right' }}>Poids (kg)</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {details.map((item, index) => (
+                                                                    <tr key={item.uniqueId || index}>
+                                                                        <td>{item.refver?.label || 'N/A'}</td>
+                                                                        <td>{item.codgrv?.label || 'N/A'}</td>
+                                                                        <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{parseFloat(item.pds).toFixed(2)}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '10px' }}>
+                                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📦</div>
+                                                        <p style={{ color: '#856404', margin: '0', fontSize: '0.9em' }}>
+                                                            <strong>Note :</strong> L'API ne fournit actuellement pas les détails individuels des écarts pour cette vente. Si le backend est mis à jour pour inclure les informations sur les écarts dans la réponse de getVente, la liste détaillée des palettes sera affichée ici automatiquement.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
-                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Numéro de Lot</label>
-                            <input
-                                type="number"
-                                name="numlot"
-                                value={formData.numlot || ""}
-                                onChange={handleFormChange}
-                                placeholder="Facultatif"
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
-                            />
-                        </div>
-                        <div className="input-group" style={{ flex: '1', minWidth: '100px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Date</label>
-                            <input
-                                type="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleFormChange}
-                                required
-                                style={{ padding: '4px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
-                            />
-                        </div>
-                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Prix (€/kg)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleFormChange}
-                                required
-                                placeholder="Prix"
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box' }}
-                            />
-                        </div>
-                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Poids Total (kg)</label>
-                            <input
-                                type="text"
-                                name="poidsTotal"
-                                value={formData.poidsTotal}
-                                readOnly
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box', backgroundColor: '#f9f9f9' }}
-                            />
-                        </div>
-                        <div className="input-group" style={{ flex: '1', minWidth: '90px' }}>
-                            <label style={{ fontSize: '0.8em', marginBottom: '2px' }}>Montant Total (€)</label>
-                            <input
-                                type="text"
-                                name="montantTotal"
-                                value={formData.montantTotal}
-                                readOnly
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8em', width: '100%', boxSizing: 'border-box', backgroundColor: '#f9f9f9' }}
-                            />
-                        </div>
-                    </div>
-                    <div className="form-filter" style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
-                        <label style={{ fontSize: '0.9em', fontWeight: '600', color: '#34495e', marginRight: '15px', minWidth: '120px' }}>Type d'Écart</label>
-                        <Select
-                            options={typeEcartOptions}
-                            value={selectedTypeEcart}
-                            onChange={setSelectedTypeEcart}
-                            isClearable
-                            isDisabled={isEditing || isViewing}
-                            placeholder="Sélectionnez le Type d'Écart pour charger les articles"
-                            menuPortalTarget={document.body}
-                            styles={{
-                                container: (provided) => ({
-                                    ...provided,
-                                    flex: 1,
-                                    minWidth: '250px'
-                                }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                                menu: (provided) => ({
-                                    ...provided,
-                                    zIndex: 9999,
-                                }),
-                            }}
-                        />
-                    </div>
-                    <div className="form-actions">
-                        {/* Show Save/Update button only when not viewing */}
-                        {!isViewing && (
-                            <button type="submit" style={{ backgroundColor: isEditing ? '#ffc107' : '#28a745', color: isEditing ? 'black' : 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{isEditing ? 'Modifier Vente' : 'Enregistrer Vente'}</button>
-                        )}
-                        {/* Always show Cancel button */}
-                        <button type="button" style={{ backgroundColor: '#6c757d', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => {
-                            setIsEditing(false);
-                            setEditingVenteId(null);
-                            setIsViewing(false);
-                            setViewingVenteId(null);
-                            setFormData({
-                                numbonvente: '',
-                                date: new Date().toISOString().split('T')[0],
-                                price: '',
-                                poidsTotal: '',
-                                montantTotal: '',
-                                numlot: null // Reset numlot
-                            });
-                            setSelectedEcarts([]);
-                            setSelectedTypeEcart(null);
-                            setEcartDirects([]);
-                            setEcartEs([]);
-                        }}>Annuler</button>
-                    </div>
-                </form>
+                    )}
+                </div>
             </div>
 
-            {/* Visualisation Vente */}
-            {isViewing && (
-                <div style={{ marginTop: '20px' }}>
-                    <div className="table-section" style={{ padding: '0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
-                                 
-                               
-                         
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: '400px' }}>
-                            {/* Summary Section */}
-                            <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '0', border: '1px solid #ddd' }}>
-                                <button onClick={() => generateBonDeLivraison(viewingVenteId)} style={{ fontSize: '0.8em', backgroundColor: '#5cb85c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}>Générer Bon de Livraison</button>
-                                <h3 style={{ color: '#007bff', marginTop: '0', marginBottom: '10px' }}>  Vente   #{viewingVenteId} <span style={{ fontSize: '0.9em', color: 'black', textAlign: 'center' }}>{selectedTypeEcart?.label || 'Inconnu'} </span></h3>
-                                 
-                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
-                                    N° Bon: {formData.numbonvente}
-                                </div>
-                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
-                                    Numéro de Lot:{formData.numlot || 'N/A'}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '15px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Poids Total</div>
-                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#007bff' }}>{formData.poidsTotal || '0'} kg</div>
-                                    </div>
-                                      <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Prix par kg</div>
-                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#ffc107' }}>MAD {formData.price || '0'}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Montant Total</div>
-                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#28a745' }}>MAD {formData.montantTotal || '0'}</div>
-                                    </div>
-                                  
-                                 
-                                </div>
-                            </div>
-                            {/* Details Section */}
-                            <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '0 0 10px 10px' }}>
-                                <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>Détails des Écarts Vendus</h3>
-                                {selectedEcarts.length > 0 ? (
-                                    <div className="table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                                        <table className="data-table" style={{ fontSize: '0.85em' }}>
-                                            <thead>
-                                                <tr>
-                                                    <th>Type</th>
-                                                    <th style={{ textAlign: 'right' }}>N° Palette</th>
-                                                    <th style={{ textAlign: 'right' }}>N° BL</th>
-                                                    <th>Verger</th>
-                                                    <th>Variété</th>
-                                                    <th style={{ textAlign: 'right' }}>Poids Vendu (kg)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {selectedEcarts.map(item => {
-                                                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                                    return (
-                                                        <tr key={`${item.table}-${item.id}`}>
-                                                            <td style={{ fontWeight: 'bold', color: item.table === 'ecart_direct' ? '#007bff' : '#17a2b8' }}>
-                                                                {item.table === 'ecart_direct' ? 'Direct' : 'Station'}
-                                                            </td>
-                                                            <td style={{ textAlign: 'right' }}>{item.id}</td>
-                                                            <td style={{ textAlign: 'right' }}>{item.table === 'ecart_direct' ? item.numbl || 'N/A' : '-'}</td>
-                                                            <td>{verger}</td>
-                                                            <td>{variete}</td>
-                                                            <td style={{ fontWeight: 'bold', textAlign: 'right' }}>{item.pdsvent} kg</td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ) : (
-                                    <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '10px' }}>
-                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📦</div>
-                                        <p style={{ color: '#856404', margin: '0', fontSize: '0.9em' }}>
-                                            <strong>Note :</strong> L'API ne fournit actuellement pas les détails individuels des écarts pour cette vente. Si le backend est mis à jour pour inclure les informations sur les écarts dans la réponse de getVente, la liste détaillée des palettes sera affichée ici automatiquement.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {selectedTypeEcart && !isViewing && (
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                    {/* Ecart Direct List */}
-                    <div style={{ flex: 1, minWidth: '300px' }}>
-                        <h3>Écart Direct</h3>
-                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            <table className="data-table" style={{ fontSize: '0.6em' }}>
-                                <thead>
-                                    <tr style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1 }}>
-                                        <th style={{ fontSize: 'smaller' }}> </th>
-                                        <th style={{ fontSize: 'smaller' }}>N°Palette</th>
-                                        <th style={{ fontSize: 'smaller' }}>N° BL</th>
-                                        <th style={{ fontSize: 'smaller' }}>Verger</th>
-                                        <th style={{ fontSize: 'smaller' }}>Variété</th>
-                                        <th style={{ fontSize: 'smaller' }}>Poids (kg)</th>
-                                        <th style={{ fontSize: 'smaller' }}>Poids Vente (kg)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredEcartDirects.map(item => {
-                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                        const selected = selectedEcarts.find(se => se.table === 'ecart_direct' && se.id === item.numpal);
-                                        return (
-                                            <tr key={item.numpal}>
-                                                <td>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={!!selected}
-                                                        onChange={(e) => handleEcartSelect('ecart_direct', item.numpal, e.target.checked, item.pdsfru)}
-                                                    />
-                                                </td>
-                                                <td>{item.numpal}</td>
-                                                <td>{item.numbl || 'N/A'}</td>
-                                                <td>{verger}</td>
-                                                <td>{variete}</td>
-                                                <td>{selected && item.Pdsvent ? item.Pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
-                                                <td>
-                                                    {selected && (
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={selected.pdsvent}
-                                                            onChange={(e) => handlePdsventChange('ecart_direct', item.numpal, e.target.value)}
-                                                            placeholder="Poids Vente"
-                                                        />
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Ecart E List */}
-                    <div style={{ flex: 1, minWidth: '300px' }}>
-                        <h3>Écart Station</h3>
-                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            <table className="data-table" style={{ fontSize: '0.6em' }}>
-                                <thead>
-                                    <tr style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1 }}>
-                                        <th style={{ fontSize: 'smaller' }}> </th>
-                                        <th style={{ fontSize: 'smaller' }}>N°Palette</th>
-                                        <th style={{ fontSize: 'smaller' }}>Verger</th>
-                                        <th style={{ fontSize: 'smaller' }}>Variété</th>
-                                        <th style={{ fontSize: 'smaller' }}>Poids (kg)</th>
-                                        <th style={{ fontSize: 'smaller' }}>Poids Vente (kg)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {ecartEs.map(item => {
-                                        const { verger, variete } = getDisplayName(item.refver, vergers, item.codvar, varietes);
-                                        const selected = selectedEcarts.find(se => se.table === 'ecart_e' && se.id === item.numpal);
-                                        return (
-                                            <tr key={item.numpal}>
-                                                <td>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={!!selected}
-                                                        onChange={(e) => handleEcartSelect('ecart_e', item.numpal, e.target.checked, item.pdsfru)}
-                                                    />
-                                                </td>
-                                                <td>{item.numpal}</td>
-                                                <td>{verger}</td>
-                                                <td>{variete}</td>
-                                                <td>{selected && item.pdsvent ? item.pdsvent?.toFixed(2) : item.pdsfru?.toFixed(2)} {item.pdsfru || item.Pdsvent ? 'kg' : ''}</td>
-                                                <td>
-                                                    {selected && (
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={selected.pdsvent}
-                                                            placeholder="Poids Vente"
-                                                            onChange={(e) => handlePdsventChange('ecart_e', item.numpal, e.target.value)}
-                                                        />
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Separator */}
+            <hr style={{ border: '0', height: '1px', background: '#e0e0e0', margin: '40px 0' }} />
 
             {/* Ventes List */}
-            <div style={{ marginTop: '40px' }}>
+            <div style={{ marginTop: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <h3 style={{ margin: 0 }}>Détails des Ventes</h3>
                     <input
@@ -796,9 +826,21 @@ const VenteEcartPage = () => {
                                     <td>{vente.poidsTotal?.toFixed(2)}</td>
                                     <td>{vente.montantTotal?.toFixed(2)}</td>
                                     <td style={{ textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                            <button onClick={() => handleDeleteVente(vente.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Supprimer</button>
-                                            <button onClick={() => handleViewVente(vente.id)} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Voir</button>
+                                        <div className="action-buttons">
+                                            <button
+                                                className="action-btn edit-btn"
+                                                onClick={() => handleEditVente(vente.id)}
+                                                title="Modifier"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                className="action-btn delete-btn"
+                                                onClick={() => handleDeleteVente(vente.id)}
+                                                title="Supprimer"
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -811,39 +853,42 @@ const VenteEcartPage = () => {
                 {totalItems > 0 && (
                     <div className="pagination-container">
                         <div className="pagination-info">
-                            Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                            Affichage {startIndex + 1}-{Math.min(endIndex, totalItems)} sur {totalItems} résultats
                         </div>
-                        <div className="pagination-controls">
+
+                        <div className="pagination">
                             <button
+                                className="pagination-nav"
                                 onClick={handlePrevPage}
                                 disabled={currentPage === 1}
-                                className="pagination-btn"
                             >
-                                Previous
+                                <span className="nav-arrow">‹</span>
+                                Précédent
                             </button>
 
                             <div className="pagination-numbers">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                                    if (pageNum > totalPages) return null;
-                                    return (
+                                {renderPageNumbers().map((pageNumber, index) => (
+                                    pageNumber === '...' ? (
+                                        <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                                    ) : (
                                         <button
-                                            key={pageNum}
-                                            onClick={() => handlePageChange(pageNum)}
-                                            className={currentPage === pageNum ? 'pagination-number active' : 'pagination-number'}
+                                            key={pageNumber}
+                                            className={`pagination-number ${currentPage === pageNumber ? 'active' : ''}`}
+                                            onClick={() => handlePageChange(pageNumber)}
                                         >
-                                            {pageNum}
+                                            {pageNumber}
                                         </button>
-                                    );
-                                })}
+                                    )
+                                ))}
                             </div>
 
                             <button
+                                className="pagination-nav"
                                 onClick={handleNextPage}
                                 disabled={currentPage === totalPages}
-                                className="pagination-btn"
                             >
-                                Next
+                                Suivant
+                                <span className="nav-arrow">›</span>
                             </button>
                         </div>
                     </div>

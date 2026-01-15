@@ -3,7 +3,7 @@
 
 /* General page styling */
 .page-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
     min-height: 100vh;
@@ -16,41 +16,34 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-    border-bottom: 2px solid #eee;
     padding-bottom: 1rem;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    /* Removed card styling for header to match Daily Checks simple header */
 }
 
 .page-header h1 {
     margin: 0;
-    font-size: 2.5rem;
-    color: #333;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #2c3e50;
 }
-
-
 
 .error-message {
+    background: #f8d7da;
     color: #721c24;
     padding: 1rem;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 10px;
+    border-radius: 4px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #f5c6cb;
 }
 
-/* Form Styles */
+/* Form Styles - Matching Daily Checks .create-section & .form-section */
 .form-container {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
-    border: 1px solid #e9ecef;
-    position: relative;
+    border: none;
 }
 
 .form-container h3 {
@@ -61,109 +54,411 @@
     font-weight: 600;
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: end;
-    margin-bottom: 1rem;
-}
-
-.form-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    padding-top: 0.5rem;
-}
-
+/* Form Inputs - Matching Daily Checks .input-group */
 .input-group {
-  margin-bottom: 1.5rem;
+    /* flex property handled in inline styles in JSX currently */
+    display: flex;
+    flex-direction: column;
 }
 
 .input-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #34495e;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.input-group input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 2px solid #e9ecef;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  background-color: #ffffff;
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    /* Softer corners */
+    font-size: 1rem;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+    height: 48px;
+    /* Taller inputs */
+    box-sizing: border-box;
 }
 
-.input-group input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.input-group input:hover {
-  border-color: #adb5bd;
+.input-group input:focus,
+.input-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(52, 152, 219, 0.1);
 }
 
 .input-group input[readonly] {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  cursor: not-allowed;
+    background-color: #f1f3f5;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #dee2e6;
 }
 
-/* Filter Section */
-.filter-section {
-  background-color: #fff;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  margin-bottom: 2rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  align-items: end;
+/* Adjust React Select to match input height/style */
+.css-13cymwt-control,
+.css-t3ipsp-control {
+    border-radius: 8px !important;
+    border-color: #e0e6ed !important;
+    background-color: #f8f9fa !important;
+    min-height: 48px !important;
 }
 
-.filter-item {
-  display: flex;
-  flex-direction: column;
+/* Detail Entry Section - Using Daily Checks .form-section feel */
+.detail-entry {
+    background: #f4f6f8;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    border: 1px solid #e1e8ed;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
 }
 
-.filter-item label {
-  margin-bottom: 0.6rem;
-  font-weight: 600;
-  color: #34495e;
+.detail-entry h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #dcdfe6;
+    padding-bottom: 1rem;
+    margin-top: 0;
 }
 
-/* Button Styles */
+/* Buttons */
+button {
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.ve-add-btn {
+    background: #007bff !important;
+    color: white !important;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    height: 48px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ve-add-btn:hover {
+    background: #0056b3 !important;
+}
+
 .save-btn {
-  padding: 0.7rem 1.4rem;
-  border: none;
-  border-radius: 25px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  background-color: #28a745;
-  color: white;
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
 }
 
-.save-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+.save-btn:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+}
 
-/* Responsive design */
-@media (max-width: 768px) {
-    .form-row {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 
-    .form-actions {
-        justify-content: flex-end;
-        padding-top: 1rem;
-    }
+.cancel-btn:hover {
+    background: #5a6268;
+}
 
-    .filter-section {
-        grid-template-columns: 1fr;
-    }
+.ve-create-btn {
+    background: #007bff !important;
+    color: white !important;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.ve-create-btn:hover {
+    background: #0056b3 !important;
+}
+
+/* Form Section Card styling like Daily Checks */
+.form-section {
+    background: #f4f6f8;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    border: 1px solid #e1e8ed;
+    margin-bottom: 2rem;
+}
+
+.form-section h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #dcdfe6;
+    padding-bottom: 1rem;
+}
+
+.daily-check-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.create-section-outer {
+    width: 100%;
+    margin: 0 auto 30px auto;
+}
+
+/* Table overrides to match clean look */
+.rdt_TableHeadRow {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #e9ecef !important;
+}
+
+.rdt_TableHeadRow div {
+    font-weight: 700 !important;
+    color: #2c3e50 !important;
+    text-transform: uppercase !important;
+    font-size: 0.85rem !important;
+}
+
+/* Specific styles for the manual details table */
+/* Specific styles for the manual details table - Premium Look */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    /* Allows border-radius on table */
+    border-spacing: 0;
+    margin-top: 1.5rem;
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.data-table thead {
+    background: #f8fafc;
+}
+
+.data-table th {
+    padding: 1rem 1.5rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 1rem 1.5rem;
+    font-size: 0.95rem;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    z-index: 10;
+    position: relative;
+}
+
+/* Action Buttons with Icons - Copied from EcartDirectPage */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: #f3f4f6;
+    color: #6b7280;
+    font-size: 1.2rem;
+    /* Slightly larger for emoji visibility */
+}
+
+.action-btn:hover {
+    background-color: #e5e7eb;
+    color: #374151;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.edit-btn:hover {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.delete-btn:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+/* Pagination Styles - Exact Match */
+.pagination-container {
+    display: flex;
+    flex-direction: column;
+    /* Stack info and controls */
+    align-items: center;
+    /* Center everything */
+    gap: 1.5rem;
+    /* Space between info and buttons */
+    margin-top: 2rem;
+    padding: 1.5rem 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    border-top: none;
+    /* Removed border as per image */
+}
+
+.pagination-info {
+    font-size: 1rem;
+    color: #6b7280;
+    font-weight: 600;
+    text-align: center;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    /* Taller buttons */
+    padding: 0 1.2rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    color: #007bff;
+    /* Blue text for active links */
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.pagination-nav:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #007bff;
+    color: #0056b3;
+}
+
+.pagination-nav:disabled {
+    opacity: 0.5;
+    background: #f9fafb;
+    color: #9ca3af;
+    /* Grey text for disabled */
+    cursor: not-allowed;
+    border-color: #e5e7eb;
+}
+
+.nav-arrow {
+    font-size: 1.2rem;
+    font-weight: bold;
+    line-height: 1;
+    margin: 0 4px;
+    display: inline-block;
+    transform: translateY(-1px);
+}
+
+.pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0.5rem;
+}
+
+.pagination-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    /* Larger square */
+    height: 48px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    color: #374151;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-number:hover {
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.pagination-number.active {
+    background: #007bff;
+    /* Solid Blue Background */
+    border-color: #007bff;
+    color: white;
+    /* White text */
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 48px;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    padding-bottom: 8px;
 }
