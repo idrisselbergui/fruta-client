@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF } from '../utils/pdfGenerator';
+import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
@@ -41,6 +41,7 @@ const DashboardPage = () => {
   const [salesByDestinationChartData, setSalesByDestinationChartData] = useState({ data: [], keys: [] });
   const [ecartDetails, setEcartDetails] = useState({ data: [], totalPdsfru: 0 });
   const [ecartGroupDetails, setEcartGroupDetails] = useState({ data: [], totalPdsfru: 0 });
+  const [venteEcartData, setVenteEcartData] = useState([]);
   const [periodicTrendData, setPeriodicTrendData] = useState([]);
 
   // Dropdown options states
@@ -61,6 +62,7 @@ const DashboardPage = () => {
     exportByClient: false,
     dataDetails: false,
     ecartDetails: false,
+    venteEcartDetails: false,
   });
 
   // Time period selection for Export by Client card
@@ -154,13 +156,19 @@ const DashboardPage = () => {
         const salesChartParams = { ...baseParams };
         promises.push(selectedVerger ? apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams) : Promise.resolve({ data: [], keys: [] }));
 
-        const [mainData, ecartData, ecartGroupData, destChartData, salesChartData] = await Promise.all(promises);
+        // Vente Ecart Data (Global list)
+        // Note: The endpoint returns all sales; we filter locally or should update backend to accept params.
+        // For now, fetching all and we will filter in UI render or memo
+        promises.push(apiGet('/api/vente-ecart'));
+
+        const [mainData, ecartData, ecartGroupData, destChartData, salesChartData, ventesData] = await Promise.all(promises);
 
         setDashboardData(mainData);
         setEcartDetails({ data: ecartData.data, totalPdsfru: ecartData.totalPdsfru });
         setEcartGroupDetails({ data: ecartGroupData.data, totalPdsfru: ecartGroupData.totalPdsfru });
         setDestinationChartData(destChartData);
         setSalesByDestinationChartData(salesChartData);
+        setVenteEcartData(ventesData);
 
       } catch (err) {
         setError("Failed to load dashboard data.");
@@ -794,6 +802,77 @@ const DashboardPage = () => {
     }
   };
 
+  // Filter and Aggregate Vente Ecart Data
+  const aggregatedVenteEcartData = useMemo(() => {
+    if (!venteEcartData) return [];
+
+    const start = filters.startDate ? new Date(filters.startDate) : null;
+    const end = filters.endDate ? new Date(filters.endDate) : null;
+
+    if (end) {
+      end.setHours(23, 59, 59, 999);
+    }
+
+    const filteredVentes = venteEcartData.filter(v => {
+      const vDate = new Date(v.date);
+      if (start && vDate < start) return false;
+      if (end && vDate > end) return false;
+      return true;
+    });
+
+    // Aggregation Logic
+    const aggregationMap = {};
+
+    filteredVentes.forEach(vente => {
+      if (vente.vecartDs && Array.isArray(vente.vecartDs)) {
+        vente.vecartDs.forEach(detail => {
+          // Key: VergerId_GroupVarId_TypeEcartId
+          const key = `${detail.refver || '0'}_${detail.codgrv || '0'}_${vente.codtype || '0'}`;
+
+          if (!aggregationMap[key]) {
+            const verger = vergerOptions.find(v => v.value === detail.refver);
+            const groupVar = grpVarOptions.find(g => g.value === detail.codgrv);
+            const typeEcart = ecartTypeOptions.find(t => t.value === vente.codtype);
+
+            aggregationMap[key] = {
+              key,
+              vergerName: verger ? verger.label : (detail.refver || 'N/A'),
+              groupVarName: groupVar ? groupVar.label : (detail.codgrv || 'N/A'),
+              typeEcartName: typeEcart ? typeEcart.label : (vente.codtype || 'N/A'),
+              poidsTotal: 0,
+              montantTotal: 0
+            };
+          }
+
+          const poids = parseFloat(detail.pds) || 0;
+          const price = parseFloat(vente.price) || 0;
+          aggregationMap[key].poidsTotal += poids;
+          aggregationMap[key].montantTotal += (poids * price);
+        });
+      }
+    });
+
+    return Object.values(aggregationMap).sort((a, b) => {
+      // Sort by Verger, then GroupVar, then TypeEcart
+      if (a.vergerName < b.vergerName) return -1;
+      if (a.vergerName > b.vergerName) return 1;
+      return 0;
+    });
+  }, [venteEcartData, filters.startDate, filters.endDate, vergerOptions, grpVarOptions, ecartTypeOptions]);
+
+  const handleExportGlobalVenteEcart = () => {
+    if (!aggregatedVenteEcartData || aggregatedVenteEcartData.length === 0) {
+      alert('Aucune donnée de vente à exporter pour cette période.');
+      return;
+    }
+    try {
+      generateGlobalVenteEcartPDF(aggregatedVenteEcartData, filters);
+    } catch (error) {
+      console.error("Error generating global vente ecart PDF", error);
+      alert("Erreur lors de la génération du PDF.");
+    }
+  };
+
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="dashboard-container"><p style={{ color: 'red' }}>Error: {error}</p></div>;
 
@@ -1367,6 +1446,68 @@ const DashboardPage = () => {
                 </table>
               </div>
             )}
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Détails Ventes Écarts" open={cardStates.venteEcartDetails} onToggle={(isOpen) => handleCardToggle('venteEcartDetails', isOpen)}>
+            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleExportGlobalVenteEcart}
+                className="btn btn-secondary"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                📄 Export Rapport Global
+              </button>
+            </div>
+
+            <div className="dashboard-table-container">
+              {aggregatedVenteEcartData.length > 0 ? (
+                <table className="details-table">
+                  <thead>
+                    <tr>
+                      <th>Verger</th>
+                      <th>Groupe Variété</th>
+                      <th>Type d'Écart</th>
+                      <th style={{ textAlign: 'right' }}>Poids (kg)</th>
+                      <th style={{ textAlign: 'right' }}>Montant (DH)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {aggregatedVenteEcartData.map((row, index) => (
+                      <tr key={row.key || index}>
+                        <td>{row.vergerName}</td>
+                        <td>{row.groupVarName}</td>
+                        <td>{row.typeEcartName}</td>
+                        <td style={{ textAlign: 'right' }}>{formatNumberWithSpaces(row.poidsTotal)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatNumberWithSpaces(row.montantTotal)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ backgroundColor: '#f8f9fa', fontWeight: 'bold' }}>
+                      <td colSpan="3" style={{ textAlign: 'right' }}>TOTAL</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {formatNumberWithSpaces(aggregatedVenteEcartData.reduce((sum, v) => sum + (v.poidsTotal || 0), 0))}
+                      </td>
+                      <td style={{ textAlign: 'right', color: '#28a745' }}>
+                        {formatNumberWithSpaces(aggregatedVenteEcartData.reduce((sum, v) => sum + (v.montantTotal || 0), 0))}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ padding: '1rem', textAlign: 'center', color: '#6c757d' }}>Aucune donnée de vente groupée trouvée pour cette période.</p>
+              )}
+            </div>
           </CollapsibleCard>
         </>
       )}
