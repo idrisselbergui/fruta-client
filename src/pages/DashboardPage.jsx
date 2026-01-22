@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF } from '../utils/pdfGenerator';
+import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF, generateVenteEcartDetailsPDF } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
@@ -30,6 +30,7 @@ const DashboardPage = () => {
     selectedVariete: null,
     selectedDestination: null,
     selectedEcartType: null,
+    selectedVenteEcartType: null,
   });
 
   const debouncedFilters = useDebounce(filters, 500);
@@ -817,6 +818,8 @@ const DashboardPage = () => {
       const vDate = new Date(v.date);
       if (start && vDate < start) return false;
       if (end && vDate > end) return false;
+      // Filter by selected type ecart
+      if (filters.selectedVenteEcartType && v.codtype !== filters.selectedVenteEcartType.value) return false;
       return true;
     });
 
@@ -858,7 +861,14 @@ const DashboardPage = () => {
       if (a.vergerName > b.vergerName) return 1;
       return 0;
     });
-  }, [venteEcartData, filters.startDate, filters.endDate, vergerOptions, grpVarOptions, ecartTypeOptions]);
+  }, [venteEcartData, filters.startDate, filters.endDate, filters.selectedVenteEcartType, vergerOptions, grpVarOptions, ecartTypeOptions]);
+
+  // Totals for Vente Ecart Summary Cards
+  const venteEcartTotals = useMemo(() => {
+    const totalPoids = aggregatedVenteEcartData.reduce((sum, v) => sum + (v.poidsTotal || 0), 0);
+    const totalMontant = aggregatedVenteEcartData.reduce((sum, v) => sum + (v.montantTotal || 0), 0);
+    return { totalPoids, totalMontant };
+  }, [aggregatedVenteEcartData]);
 
   const handleExportGlobalVenteEcart = () => {
     if (!aggregatedVenteEcartData || aggregatedVenteEcartData.length === 0) {
@@ -869,6 +879,19 @@ const DashboardPage = () => {
       generateGlobalVenteEcartPDF(aggregatedVenteEcartData, filters);
     } catch (error) {
       console.error("Error generating global vente ecart PDF", error);
+      alert("Erreur lors de la génération du PDF.");
+    }
+  };
+
+  const handleExportVenteEcartDetails = () => {
+    if (!aggregatedVenteEcartData || aggregatedVenteEcartData.length === 0) {
+      alert('Aucune donnée de vente à exporter pour cette période.');
+      return;
+    }
+    try {
+      generateVenteEcartDetailsPDF(aggregatedVenteEcartData, filters, venteEcartTotals);
+    } catch (error) {
+      console.error("Error generating vente ecart details PDF", error);
       alert("Erreur lors de la génération du PDF.");
     }
   };
@@ -1449,26 +1472,72 @@ const DashboardPage = () => {
           </CollapsibleCard>
 
           <CollapsibleCard title="Détails Ventes Écarts" open={cardStates.venteEcartDetails} onToggle={(isOpen) => handleCardToggle('venteEcartDetails', isOpen)}>
-            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={handleExportGlobalVenteEcart}
-                className="btn btn-secondary"
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                📄 Export Rapport Global
-              </button>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+              {/* Left side: Filter and Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="filter-item" style={{ minWidth: '250px' }}>
+                  <label>Filtrer par Type d'Écart</label>
+                  <Select
+                    options={ecartTypeOptions}
+                    value={filters.selectedVenteEcartType}
+                    onChange={val => handleFilterChange('selectedVenteEcartType', val)}
+                    isClearable
+                    placeholder="Tous les Types d'Écart..."
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem' }}>
+                  <button
+                    onClick={handleExportGlobalVenteEcart}
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    📄 Récapitulatif Global
+                  </button>
+                  <button
+                    onClick={handleExportVenteEcartDetails}
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    📄 Imprimer Détails
+                  </button>
+                </div>
+              </div>
+
+              {/* Right side: Summary Cards */}
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div className="stat-card ecart-card" style={{ minWidth: '280px' }}>
+                  <h3>Total Poids (kg)</h3>
+                  <p className="stat-value">{formatNumberWithSpaces(venteEcartTotals.totalPoids)}</p>
+                </div>
+                <div className="stat-card export-card" style={{ minWidth: '280px' }}>
+                  <h3>Total Montant (DH)</h3>
+                  <p className="stat-value" style={{ color: '#28a745' }}>{formatNumberWithSpaces(venteEcartTotals.totalMontant)}</p>
+                </div>
+              </div>
             </div>
 
             <div className="dashboard-table-container">

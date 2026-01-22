@@ -1983,6 +1983,107 @@ const generateGlobalVenteEcartRecapPDF = (aggregatedData, filters) => {
   doc.save(fileName);
 };
 
+// Function to generate detailed Vente Ecart PDF with full table
+const generateVenteEcartDetailsPDF = (aggregatedData, filters, totals) => {
+  console.log('Starting Vente Ecart Details PDF generation', { aggregatedData, totals });
+
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Add Logo
+  try {
+    const logoPath = '/diaf.png';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
+  } catch (error) {
+    console.log('Logo not found');
+  }
+
+  // Header
+  doc.setFontSize(18);
+  doc.setTextColor(44, 62, 80);
+  doc.text('Détails Ventes Écarts', 20, 20);
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 28);
+
+  if (filters && filters.startDate && filters.endDate) {
+    doc.text(`Période: ${new Date(filters.startDate).toLocaleDateString('fr-FR')} au ${new Date(filters.endDate).toLocaleDateString('fr-FR')}`, 20, 35);
+  }
+
+  if (filters && filters.selectedVenteEcartType) {
+    doc.text(`Type d'Écart: ${filters.selectedVenteEcartType.label}`, 20, 42);
+  }
+
+  // Summary section
+  doc.setFontSize(11);
+  doc.setTextColor(44, 62, 80);
+  doc.text(`Total Poids: ${formatNumberWithSpaces(totals?.totalPoids || 0)} kg`, 150, 28);
+  doc.setTextColor(40, 167, 69);
+  doc.text(`Total Montant: ${formatNumberWithSpaces(totals?.totalMontant || 0)} DH`, 150, 35);
+
+  // Prepare table data
+  const tableData = aggregatedData.map(row => [
+    row.vergerName || 'N/A',
+    row.groupVarName || 'N/A',
+    row.typeEcartName || 'N/A',
+    formatNumberWithSpaces(row.poidsTotal || 0),
+    formatNumberWithSpaces(row.montantTotal || 0)
+  ]);
+
+  // Add total row
+  tableData.push([
+    'TOTAL',
+    '',
+    '',
+    formatNumberWithSpaces(totals?.totalPoids || 0),
+    formatNumberWithSpaces(totals?.totalMontant || 0)
+  ]);
+
+  const headerRow = ['Verger', 'Groupe Variété', 'Type Écart', 'Poids (kg)', 'Montant (DH)'];
+
+  autoTable(doc, {
+    startY: 50,
+    head: [headerRow],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+      lineColor: [220, 220, 220]
+    },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { cellWidth: 60 },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 50 },
+      3: { cellWidth: 40, halign: 'right' },
+      4: { cellWidth: 50, halign: 'right', fontStyle: 'bold' }
+    },
+    didParseCell: (data) => {
+      if (data.row.index === tableData.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    },
+    margin: { left: 15, right: 15 },
+    alternateRowStyles: { fillColor: [248, 250, 252] }
+  });
+
+  // Save
+  const fileName = `Details_Ventes_Ecarts_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+};
+
 export {
   generateDetailedExportPDF,
   generateVarietesPDF,
@@ -1994,5 +2095,6 @@ export {
   generateSampleTestReportPDF,
   calculateDateRangeFromTableRows,
   generateVenteEcartPDF,
-  generateGlobalVenteEcartRecapPDF as generateGlobalVenteEcartPDF
+  generateGlobalVenteEcartRecapPDF as generateGlobalVenteEcartPDF,
+  generateVenteEcartDetailsPDF
 };
