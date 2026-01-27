@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getReceptions, createSampleTest, getActiveSamples, getAllSamples, getDestinations, getVarietes, updateSampleStatus } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatDateForDisplay } from '../utils/dateUtils';
 import './SampleTestManagementPage.css';
 
 const SampleTestManagementPage = () => {
@@ -330,7 +331,7 @@ const SampleTestManagementPage = () => {
                       <option value="">Sélectionner Palette...</option>
                       {receptions.map(palette => (
                         <option key={palette.numpal} value={palette.numpal}>
-                          #{palette.numpal} (#{palette.numrec}) - {palette.dterec ? new Date(palette.dterec).toLocaleDateString() : 'No Date'}
+                          #{palette.numpal} (#{palette.numrec}) - {formatDateForDisplay(palette.dterec) || 'No Date'}
                         </option>
                       ))}
                     </select>

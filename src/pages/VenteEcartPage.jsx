@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
 import { generateVenteEcartPDF } from '../utils/pdfGenerator';
+import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
@@ -72,7 +73,7 @@ const VenteEcartPage = () => {
             vente.id?.toString().toLowerCase().includes(searchTerm) ||
             (vente.numbonvente || '').toString().toLowerCase().includes(searchTerm) ||
             (vente.numlot || '').toString().toLowerCase().includes(searchTerm) ||
-            new Date(vente.date).toLocaleDateString().toLowerCase().includes(searchTerm) ||
+            formatDateForDisplay(vente.date).toLowerCase().includes(searchTerm) ||
             vente.price?.toString().toLowerCase().includes(searchTerm) ||
             vente.poidsTotal?.toString().toLowerCase().includes(searchTerm) ||
             vente.montantTotal?.toString().toLowerCase().includes(searchTerm)
@@ -254,7 +255,7 @@ const VenteEcartPage = () => {
 
             setFormData({
                 numbonvente: vente.numbonvente || '',
-                date: new Date(vente.date).toISOString().split('T')[0],
+                date: formatDateForInput(vente.date),
                 price: vente.price,
                 poidsTotal: vente.poidsTotal || '0',
                 montantTotal: vente.montantTotal || '0',
@@ -309,7 +310,7 @@ const VenteEcartPage = () => {
             doc.setFontSize(20);
             doc.text('BON DE VENTE', 105, 20, { align: 'center' });
             doc.setFontSize(10);
-            doc.text(`${new Date().toLocaleDateString('fr-FR')}`, 170, 40);
+            doc.text(`${formatDateForDisplay(new Date().toISOString())}`, 170, 40);
 
             // Vente details
             doc.setFontSize(10);
@@ -317,7 +318,7 @@ const VenteEcartPage = () => {
             let y = 60;
             doc.text(`N° Bon: ${vente.numbonvente || 'N/A'}`, 20, y);
             doc.text(`N° Lot: ${vente.numlot || 'N/A'}`, 75, y);
-            doc.text(`Date de Vente: ${new Date(vente.date).toLocaleDateString('fr-FR')}`, 130, y);
+            doc.text(`Date de Vente: ${formatDateForDisplay(vente.date)}`, 130, y);
             y += 10;
             doc.text(`Prix : ${parseFloat(vente.price).toLocaleString('fr-MA')} DH`, 20, y);
             doc.text(`Poids Total: ${parseFloat(vente.poidsTotal).toFixed(2).toLocaleString('fr-MA')} kg`, 75, y);

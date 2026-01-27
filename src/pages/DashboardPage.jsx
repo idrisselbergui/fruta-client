@@ -808,16 +808,30 @@ const DashboardPage = () => {
     if (!venteEcartData) return [];
 
     const start = filters.startDate ? new Date(filters.startDate) : null;
-    const end = filters.endDate ? new Date(filters.endDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
 
-    if (end) {
-      end.setHours(23, 59, 59, 999);
-    }
+    const end = filters.endDate ? new Date(filters.endDate) : null;
+    if (end) end.setHours(23, 59, 59, 999);
 
     const filteredVentes = venteEcartData.filter(v => {
-      const vDate = new Date(v.date);
-      if (start && vDate < start) return false;
-      if (end && vDate > end) return false;
+      // Create date from ISO string but treat as local date components to avoid timezone shift
+      const dateParts = v.date.split('T')[0].split('-');
+      // new Date(year, monthIndex, day) creates a local date
+      const vDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+      vDate.setHours(12, 0, 0, 0); // Set to noon to be safe from DST shifts when comparing
+
+      if (start) {
+        const startCompare = new Date(start);
+        startCompare.setHours(0, 0, 0, 0); // Reset to start of day
+        if (vDate < startCompare) return false;
+      }
+
+      if (end) {
+        const endCompare = new Date(end);
+        endCompare.setHours(23, 59, 59, 999); // Reset to end of day
+        if (vDate > endCompare) return false;
+      }
+
       // Filter by selected type ecart
       if (filters.selectedVenteEcartType && v.codtype !== filters.selectedVenteEcartType.value) return false;
       return true;

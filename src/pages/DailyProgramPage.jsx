@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import { apiGet, apiPost, apiPut } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
+import { formatDateForInput } from '../utils/dateUtils';
 import './DailyProgram.css';
 
 const initialProgramState = {
@@ -20,7 +21,7 @@ const DailyProgramPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = Boolean(id);
-    
+
     // State for the dropdown options
     const [destinationsOptions, setDestinationsOptions] = useState([]);
     const [partenairesOptions, setPartenairesOptions] = useState([]);
@@ -55,8 +56,8 @@ const DailyProgramPage = () => {
             const fetchProgram = async () => {
                 try {
                     const data = await apiGet(`/api/dailyprogram/${id}`);
-                    data.havday = data.havday ? data.havday.split('T')[0] : '';
-                    data.dteprog = data.dteprog ? data.dteprog.split('T')[0] : '';
+                    data.havday = formatDateForInput(data.havday);
+                    data.dteprog = formatDateForInput(data.dteprog);
                     setProgram(data);
                 } catch (error) {
                     console.error('Failed to fetch program:', error);
@@ -74,7 +75,7 @@ const DailyProgramPage = () => {
         const { name, value } = e.target;
         setProgram(prev => ({ ...prev, [name]: value }));
     };
-    
+
     const handleHeaderSelectChange = (selectedOption, actionMeta) => {
         setProgram(prev => ({ ...prev, [actionMeta.name]: selectedOption.value }));
     };
@@ -128,7 +129,7 @@ const DailyProgramPage = () => {
     return (
         <div className="program-page-container">
             <h1>{isEditing ? 'Edit Daily Program' : 'Create New Program'}</h1>
-            
+
             <section className="form-section">
                 <h2>Program Information</h2>
                 <div className="form-grid">
@@ -178,7 +179,7 @@ const DailyProgramPage = () => {
                                 </td>
                                 <td>
                                     <Select name="codtyp" options={tpalettesOptions} value={tpalettesOptions.find(p => p.value === detail.codtyp)}
-                                     onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
+                                        onChange={(opt, act) => handleDetailSelectChange(index, opt, act)} placeholder="Search..." />
                                 </td>
                                 <td><input type="number" name="nbrpal" value={detail.nbrpal} onChange={(e) => handleDetailChange(index, e)} /></td>
                                 <td><input type="number" name="nbrcoli" value={detail.nbrcoli} onChange={(e) => handleDetailChange(index, e)} /></td>
@@ -189,7 +190,7 @@ const DailyProgramPage = () => {
                     </tbody>
                 </table>
             </section>
-            
+
             <div className="main-actions">
                 <button className="save-btn" onClick={handleSubmit}>Save Program</button>
                 <button className="clear-btn" onClick={() => navigate('/programs')}>Cancel</button>

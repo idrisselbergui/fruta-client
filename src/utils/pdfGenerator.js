@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatDateForDisplay } from './dateUtils';
 
 const formatNumberWithSpaces = (num, decimals = 2) => {
   if (num === null || num === undefined) return '0';
@@ -8,6 +9,7 @@ const formatNumberWithSpaces = (num, decimals = 2) => {
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   return (num < 0 ? '-' : '') + parts.join('.');
 };
+
 
 const generateDetailedExportPDF = (dashboardData, destinationChartData, salesByDestinationChartData, selectedDestination, selectedVerger, filters) => {
   console.log('Starting PDF generation with data:', {
@@ -1807,7 +1809,7 @@ const generateGlobalVenteEcartPDF = (ventes, typeEcarts, filters) => {
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
 
   if (filters.startDate && filters.endDate) {
-    doc.text(`Période: ${new Date(filters.startDate).toLocaleDateString('fr-FR')} au ${new Date(filters.endDate).toLocaleDateString('fr-FR')}`, 20, 37);
+    doc.text(`Période: ${formatDateForDisplay(filters.startDate)} au ${formatDateForDisplay(filters.endDate)}`, 20, 37);
   }
 
   // Prepare table data
@@ -1914,7 +1916,7 @@ const generateGlobalVenteEcartRecapPDF = (aggregatedData, filters) => {
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
 
   if (filters && filters.startDate && filters.endDate) {
-    doc.text(`Période: ${new Date(filters.startDate).toLocaleDateString('fr-FR')} au ${new Date(filters.endDate).toLocaleDateString('fr-FR')}`, 20, 37);
+    doc.text(`Période: ${formatDateForDisplay(filters.startDate)} au ${formatDateForDisplay(filters.endDate)}`, 20, 37);
   }
 
   // Prepare table data
@@ -2012,7 +2014,7 @@ const generateVenteEcartDetailsPDF = (aggregatedData, filters, totals) => {
   doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 28);
 
   if (filters && filters.startDate && filters.endDate) {
-    doc.text(`Période: ${new Date(filters.startDate).toLocaleDateString('fr-FR')} au ${new Date(filters.endDate).toLocaleDateString('fr-FR')}`, 20, 35);
+    doc.text(`Période: ${formatDateForDisplay(filters.startDate)} au ${formatDateForDisplay(filters.endDate)}`, 20, 35);
   }
 
   if (filters && filters.selectedVenteEcartType) {

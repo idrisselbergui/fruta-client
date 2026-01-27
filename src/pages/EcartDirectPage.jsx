@@ -4,6 +4,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import useDebounce from '../hooks/useDebounce';
 import { generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF } from '../utils/pdfGenerator';
+import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import './EcartDirectPage.css';
 
 const EcartDirectPage = () => {
@@ -76,7 +77,7 @@ const EcartDirectPage = () => {
         if (item) {
             setFormData({
                 numbl: item.numbl || '',
-                dtepal: item.dtepal ? new Date(item.dtepal).toISOString().split('T')[0] : '',
+                dtepal: formatDateForInput(item.dtepal),
                 refver: item.refver || '',
                 codvar: item.codvar || '',
                 pdsfru: item.pdsfru || '',
@@ -150,7 +151,7 @@ const EcartDirectPage = () => {
                     item.numpal?.toString().includes(searchTerm.toLowerCase()) ||
                     verger?.nomver?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     variete?.nomvar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    item.dtepal?.includes(searchTerm) ||
+                    formatDateForDisplay(item.dtepal).includes(searchTerm) ||
                     item.numbl?.toString().includes(searchTerm.toLowerCase()) ||
                     item.pdsfru?.toString().includes(searchTerm.toLowerCase()) ||
                     typeEcart?.destype?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -513,7 +514,7 @@ const EcartDirectPage = () => {
                                     <td>{item.numpal}</td>
                                     <td>{verger?.nomver || 'N/A'}</td>
                                     <td>{variete?.nomvar || 'N/A'}</td>
-                                    <td>{item.dtepal ? new Date(item.dtepal).toLocaleDateString() : ''}</td>
+                                    <td>{formatDateForDisplay(item.dtepal)}</td>
                                     <td>{item.numbl}</td>
                                     <td>{item.pdsfru}</td>
                                     <td>{item.typeEcart?.destype || 'N/A'}</td>

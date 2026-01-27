@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { apiGet, apiDelete } from '../apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
+import { formatDateForDisplay } from '../utils/dateUtils';
 import './DailyProgram.css';
 
 const ProgramListPage = () => {
   const [programs, setPrograms] = useState([]);
   const [availableDates, setAvailableDates] = useState([]);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
-  
+
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,22 +63,22 @@ const ProgramListPage = () => {
       setCurrentDateIndex(currentDateIndex - 1);
     }
   };
-  
+
   const handleEdit = (id) => navigate(`/program/edit/${id}`);
-  
+
   const handleDelete = async (id) => {
     // A simple confirmation dialog
     if (window.confirm('Are you sure you want to delete this program?')) {
-        try {
-            await apiDelete(`/api/dailyprogram/${id}`);
-            // Refetch the programs for the current date to update the list
-            const selectedDate = availableDates[currentDateIndex];
-            const data = await apiGet('/api/dailyprogram', { date: selectedDate });
-            setPrograms(data);
-        } catch(err) {
-            console.error("Failed to delete program:", err);
-            setError("Could not delete the program.");
-        }
+      try {
+        await apiDelete(`/api/dailyprogram/${id}`);
+        // Refetch the programs for the current date to update the list
+        const selectedDate = availableDates[currentDateIndex];
+        const data = await apiGet('/api/dailyprogram', { date: selectedDate });
+        setPrograms(data);
+      } catch (err) {
+        console.error("Failed to delete program:", err);
+        setError("Could not delete the program.");
+      }
     }
   };
 
@@ -95,7 +96,7 @@ const ProgramListPage = () => {
           + Add New Program
         </button>
       </div>
-     
+
       {isLoading ? <LoadingSpinner /> : (
         programs.length === 0 && current_date ? (
           <p>No programs found for this date.</p>
@@ -115,7 +116,7 @@ const ProgramListPage = () => {
                     </div>
                     <div className="card-info-item">
                       <strong>Program Date:</strong>
-                      <span>{new Date(prog.dteprog).toLocaleDateString()}</span>
+                      <span>{formatDateForDisplay(prog.dteprog)}</span>
                     </div>
                   </div>
                 </div>
@@ -133,7 +134,7 @@ const ProgramListPage = () => {
           &larr; Newer Day
         </button>
         <span className="pagination-date">
-          {current_date ? new Date(current_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "No Date Selected"}
+          {current_date ? formatDateForDisplay(current_date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "No Date Selected"}
         </span>
         <button onClick={handlePrevDay} disabled={currentDateIndex >= availableDates.length - 1}>
           Older Day &rarr;

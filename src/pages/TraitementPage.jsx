@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiGet, apiPost, apiDelete } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Select from 'react-select';
+import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import './TraitementPage.css';
 
 // This modal is for adding a NEW product directly from this page.
@@ -67,7 +68,7 @@ const TraitementPage = () => {
 
     const fetchLookups = useCallback(async () => {
         try {
-             const [vergerData, traitData, grpVarData, varieteData] = await Promise.all([
+            const [vergerData, traitData, grpVarData, varieteData] = await Promise.all([
                 apiGet('/api/lookup/vergers'),
                 apiGet('/api/trait'),
                 apiGet('/api/lookup/grpvars'),
@@ -77,7 +78,7 @@ const TraitementPage = () => {
             setTraitOptions(traitData.map(t => ({ value: t.ref, label: t.nomcom, dar: t.dar })));
             setGrpVarOptions(grpVarData.map(g => ({ value: g.codgrv, label: g.nomgrv })));
             setVarieteOptions(varieteData.map(v => ({ value: v.codvar, label: v.nomvar, grpVarId: v.codgrv })));
-        } catch(err) {
+        } catch (err) {
             setError('Failed to load form data.');
         }
     }, []);
@@ -98,9 +99,9 @@ const TraitementPage = () => {
             if (selectedTrait && selectedTrait.dar) {
                 const appliDate = new Date(newTraitement.dateappli);
                 appliDate.setDate(appliDate.getDate() + selectedTrait.dar);
-                setDatePrecolte(appliDate.toISOString().split('T')[0]);
+                setDatePrecolte(formatDateForInput(appliDate));
             } else {
-                 setDatePrecolte('');
+                setDatePrecolte('');
             }
         } else {
             setDatePrecolte('');
@@ -164,7 +165,7 @@ const TraitementPage = () => {
             await apiPost('/api/trait', traitData);
             setIsModalOpen(false);
             fetchLookups();
-        } catch(err) {
+        } catch (err) {
             setError(`Failed to save new trait product: ${err.message}`);
         }
     };
@@ -191,7 +192,7 @@ const TraitementPage = () => {
             <div className="table-container">
                 <h2>Applied Treatments</h2>
                 <table className="data-table">
-                     <thead>
+                    <thead>
                         <tr>
                             <th>Orchard</th>
                             <th>Variety Group</th>
@@ -209,8 +210,8 @@ const TraitementPage = () => {
                                 <td>{t.grpVarName}</td>
                                 <td>{t.varieteName}</td>
                                 <td>{t.traitName}</td>
-                                <td>{new Date(t.dateappli).toLocaleDateString()}</td>
-                                <td>{new Date(t.dateprecolte).toLocaleDateString()}</td>
+                                <td>{formatDateForDisplay(t.dateappli)}</td>
+                                <td>{formatDateForDisplay(t.dateprecolte)}</td>
                                 <td><button className="delete-btn" onClick={() => handleDeleteTraitement(t.numtrait)}>Delete</button></td>
                             </tr>
                         ))}
