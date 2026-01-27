@@ -21,9 +21,9 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
     if (label === 'Quality Defects' && !hasPagePermission(user, "qualite-defaut")) hasPermission = false;
     if (label === 'Vente Ecart' && !hasPagePermission(user, "vente-ecart")) hasPermission = false;
     if (label === 'Marque Management' && !hasPagePermission(user, "marque-management")) hasPermission = false;
-    if (label === 'Sample Dashboard' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
-    if (label === 'Sample Management' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
-    if (label === 'Daily Checks' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Tableau de Bord Contrôle Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Gestion Shelf Life' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Contrôles Quotidiens Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Admin' && !hasPagePermission(user, "admin")) hasPermission = false;
 
     if (!hasPermission) return null;
@@ -52,7 +52,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
         <div className="sidebar-overlay" onClick={closeMobileMenu}></div>
       )}
       <div className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
- 
+
         {/* Brand section */}
         <div className="sidebar-header">
           {!isCollapsed && (
@@ -155,7 +155,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
           )}
           {renderNavItem(
             '/sample-dashboard',
-            'Sample Dashboard',
+            'Tableau de Bord Contrôle Qualité',
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
               <path d="M13 19v-6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
@@ -165,7 +165,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
           )}
           {renderNavItem(
             '/sample-management',
-            'Sample Management',
+            'Gestion Shelf Life',
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14,2 14,8 20,8"></polyline>
@@ -175,7 +175,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
           )}
           {renderNavItem(
             '/daily-checks',
-            'Daily Checks',
+            'Contrôles Quotidiens Qualité',
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2v20m8-8H4"></path>
             </svg>

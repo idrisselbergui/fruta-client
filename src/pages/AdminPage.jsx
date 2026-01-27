@@ -28,7 +28,7 @@ const AdminPage = () => {
     { id: 'qualite-defaut', name: 'Quality Defects' },
     { id: 'vente-ecart', name: 'Vente Ecart' },
     { id: 'marque-management', name: 'Marque Management' },
-    { id: 'sample-dashboard', name: 'Sample Dashboard' },
+    { id: 'sample-dashboard', name: 'Tableau de Bord Contrôle Qualité' },
     { id: 'admin', name: 'Admin Panel' }
   ];
 
@@ -254,7 +254,7 @@ const AdminPage = () => {
                         <input
                           type="text"
                           value={editForm.username}
-                          onChange={(e) => setEditForm({...editForm, username: e.target.value})}
+                          onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
                           style={{
                             padding: '10px',
                             border: '1px solid #ced4da',
@@ -273,7 +273,7 @@ const AdminPage = () => {
                         <input
                           type="password"
                           value={editForm.password}
-                          onChange={(e) => setEditForm({...editForm, password: e.target.value})}
+                          onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                           style={{
                             padding: '10px',
                             border: '1px solid #ced4da',
