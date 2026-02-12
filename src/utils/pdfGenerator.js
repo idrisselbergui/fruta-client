@@ -313,8 +313,8 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
     body: tableData.slice(1),
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: 3
+      fontSize: 7,
+      cellPadding: 1.5
     },
     headStyles: {
       fillColor: [66, 139, 202],
@@ -440,8 +440,8 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
     body: tableData.slice(1),
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: 3
+      fontSize: 7,
+      cellPadding: 1.5
     },
     headStyles: {
       fillColor: [66, 139, 202],
@@ -1099,6 +1099,9 @@ const generateDefectChart = (dailyChecks, availableDefects) => {
 
         defect.data.forEach((val, groupIndex) => {
           if (val > 0) {
+            // Reset color for bar (crucial fix: was staying black after text draw)
+            ctx.fillStyle = defect.color;
+
             const barHeight = (val / maxY) * chartHeight;
             // Calculate x position for this specific bar
             // Start of group + spacing + (this series * bar width)
