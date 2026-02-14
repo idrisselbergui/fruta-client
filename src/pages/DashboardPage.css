@@ -1,6 +1,7 @@
 /* General Page Styling */
 .dashboard-container {
-  padding: 1rem; /* Reduced padding for mobile */
+  padding: 1rem;
+  /* Reduced padding for mobile */
 }
 
 .dashboard-filters {
@@ -34,19 +35,21 @@
 }
 
 .chart-placeholder {
-  min-height: 88px; /* Matches the height of the filter area in the adjacent chart */
+  min-height: 88px;
+  /* Matches the height of the filter area in the adjacent chart */
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-  gap: 1.5rem; /* Reduced gap for mobile */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  /* Reduced gap for mobile */
   margin-bottom: 2rem;
 }
 
 .stat-card {
   background-color: #ffffff;
-  padding: 1rem 1.5rem; 
+  padding: 1rem 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -80,20 +83,33 @@
   color: #28a745;
 }
 
-.reception-card { border-left: 5px solid #007bff; }
-.export-card { border-left: 5px solid #28a745; }
-.ecart-card { border-left: 5px solid #ffc107; }
-.ecart-percentage { color: #ffc107; }
+.reception-card {
+  border-left: 5px solid #007bff;
+}
+
+.export-card {
+  border-left: 5px solid #28a745;
+}
+
+.ecart-card {
+  border-left: 5px solid #ffc107;
+}
+
+.ecart-percentage {
+  color: #ffc107;
+}
 
 /* --- RESPONSIVE TABLE CONTAINER --- */
 .dashboard-table-container {
-  overflow-x: auto; /* This allows the table to be scrolled horizontally on small screens */
+  overflow-x: auto;
+  /* This allows the table to be scrolled horizontally on small screens */
 }
 
 .details-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px; /* Ensures table has a minimum width before scrolling */
+  min-width: 600px;
+  /* Ensures table has a minimum width before scrolling */
 }
 
 .details-table th,
@@ -102,7 +118,8 @@
   padding: 1rem;
   text-align: left;
   vertical-align: middle;
-  white-space: nowrap; /* Prevents text from wrapping */
+  white-space: nowrap;
+  /* Prevents text from wrapping */
 }
 
 .details-table th {
@@ -130,13 +147,14 @@
   font-size: 0.8em;
   color: #007bff;
 }
+
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
 }
 
- 
+
 .chart-container {
   background-color: #fff;
   padding: 1.5rem;
@@ -204,7 +222,7 @@
 }
 
 .collapsible-card-header.closed .collapsible-card-toggle {
-    transform: rotate(45deg);
+  transform: rotate(45deg);
 }
 
 .collapsible-card-content {
@@ -220,21 +238,23 @@
 }
 
 .collapsible-card .charts-grid {
-    margin-top: 0;
-    margin-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 
 /* --- MEDIA QUERIES FOR LARGER SCREENS --- */
 @media (min-width: 768px) {
   .dashboard-container {
-    padding: 1rem 2rem; /* Restore padding on larger screens */
+    padding: 1rem 2rem;
+    /* Restore padding on larger screens */
   }
 }
 
 @media (min-width: 992px) {
   .charts-grid {
-    grid-template-columns: 1fr 1fr; /* Two columns for charts on desktop */
+    grid-template-columns: 1fr 1fr;
+    /* Two columns for charts on desktop */
   }
 }
 
@@ -245,9 +265,11 @@
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
+
 .ecart-filter-container .filter-item {
   min-width: 400px;
 }
+
 .ecart-total-card {
   min-width: 250px;
   margin-bottom: 0;
@@ -348,6 +370,8 @@
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease-out;
+  overflow-y: auto;
+  /* Allow scrolling for tall charts */
 }
 
 .chart-modal-close {
@@ -372,11 +396,23 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

@@ -1617,7 +1617,7 @@ const DashboardPage = () => {
                 bottomMargin={180}
                 xAxisHeight={120}
                 legendPadding={50}
-                height="100%"
+                height={1000}
               />
             </div>
           </div>
