@@ -66,6 +66,9 @@ const DashboardPage = () => {
     venteEcartDetails: false,
   });
 
+  // Modal states
+  const [isExportByClientModalOpen, setIsExportByClientModalOpen] = useState(false);
+
   // Time period selection for Export by Client card
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('monthly');
 
@@ -155,7 +158,8 @@ const DashboardPage = () => {
         promises.push(selectedDestination ? apiGet('/api/dashboard/destination-chart', destChartParams) : Promise.resolve({ data: [], keys: [] }));
         // Sales by Dest Chart
         const salesChartParams = { ...baseParams };
-        promises.push(selectedVerger ? apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams) : Promise.resolve({ data: [], keys: [] }));
+        // Always fetch, vergerId is optional now
+        promises.push(apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams));
 
         // Vente Ecart Data (Global list)
         // Note: The endpoint returns all sales; we filter locally or should update backend to accept params.
@@ -1012,20 +1016,22 @@ const DashboardPage = () => {
                   <p>Veuillez sélectionner un client pour voir le graphique.</p>
                 )}
               </div>
-              <div className="chart-container">
-                <h3>Export par Client (Groupé par Variété)</h3>
+              <div className="chart-container clickable-chart-container" onClick={() => setIsExportByClientModalOpen(true)} title="Click to expand">
+                <h3>Export par Client (Groupé par Variété) 🔍</h3>
                 <div className="chart-placeholder"></div>
-                {!filters.selectedVerger ? (
-                  <p>Veuillez sélectionner un verger pour voir ce graphique.</p>
-                ) : salesByDestinationChartData.data.length > 0 ? (
+                {salesByDestinationChartData.data && salesByDestinationChartData.data.length > 0 ? (
                   <StackedBarChart
                     data={salesByDestinationChartData.data}
                     keys={salesByDestinationChartData.keys}
-                    title={`Sales for ${filters.selectedVerger.label}`}
+                    title={filters.selectedVerger ? `Sales for ${filters.selectedVerger.label}` : 'Global Sales'}
                     xAxisDataKey="name"
+                    bottomMargin={180}
+                    xAxisHeight={120}
+                    legendPadding={50}
+                    height={700}
                   />
                 ) : (
-                  <p>Aucune donnée d'export disponible pour ce verger.</p>
+                  <p>Aucune donnée d'export disponible.</p>
                 )}
               </div>
             </div>
@@ -1593,6 +1599,29 @@ const DashboardPage = () => {
             </div>
           </CollapsibleCard>
         </>
+      )}
+
+      {isExportByClientModalOpen && (
+        <div className="chart-modal-overlay" onClick={() => setIsExportByClientModalOpen(false)}>
+          <div className="chart-modal-content" onClick={e => e.stopPropagation()}>
+            <button className="chart-modal-close" onClick={() => setIsExportByClientModalOpen(false)}>×</button>
+            <h2 style={{ textAlign: 'center', color: '#34495e', marginBottom: '1rem' }}>
+              Export par Client (Groupé par Variété) - {filters.selectedVerger ? filters.selectedVerger.label : 'Global'}
+            </h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <StackedBarChart
+                data={salesByDestinationChartData.data}
+                keys={salesByDestinationChartData.keys}
+                title=""
+                xAxisDataKey="name"
+                bottomMargin={180}
+                xAxisHeight={120}
+                legendPadding={50}
+                height="100%"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

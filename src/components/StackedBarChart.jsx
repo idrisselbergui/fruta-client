@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { formatNumberWithSpaces } from '../utils/numberUtils';
 import './StackedBarChart.css';
- 
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19AF', '#FF4560', '#775DD0'];
 
@@ -34,7 +34,18 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = '', showSummary = true }) => {
+const StackedBarChart = ({
+  data,
+  keys,
+  title,
+  xAxisDataKey = 'refver',
+  unit = '',
+  showSummary = true,
+  bottomMargin = 100, // Default to original smaller valid
+  xAxisHeight = 100,  // Default to original smaller value
+  legendPadding = 20,  // Default to original smaller value
+  height = 400        // Default height
+}) => {
   if (!data || data.length === 0) {
     return (
       <div className="chart-container empty">
@@ -65,10 +76,10 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
           </p>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={height}>
         <BarChart
           data={dataWithTotals}
-          margin={{ top: 20, right: 30, left: 40, bottom: 100 }}
+          margin={{ top: 20, right: 30, left: 40, bottom: bottomMargin }}
           className="stacked-bar-chart"
         >
           <CartesianGrid
@@ -83,7 +94,7 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
             tick={{ fontSize: '0.875rem', fill: '#4a5568', fontWeight: '500' }}
             angle={-45}
             textAnchor="end"
-            height={100}
+            height={xAxisHeight}
           />
           <YAxis
             tickLine={false}
@@ -92,29 +103,29 @@ const StackedBarChart = ({ data, keys, title, xAxisDataKey = 'refver', unit = ''
             unit={unit}
             width={40}
           />
-          <Tooltip 
-            content={<CustomTooltip />} 
+          <Tooltip
+            content={<CustomTooltip />}
             cursor={{ fill: 'rgba(0, 123, 255, 0.05)' }}
           />
-          <Legend 
-            wrapperStyle={{ paddingTop: '10px' }}
+          <Legend
+            wrapperStyle={{ paddingTop: `${legendPadding}px` }}
             iconType="circle"
             iconSize={10}
           />
           {keys.map((key, index) => (
-            <Bar 
-              key={key} 
-              dataKey={key} 
-              stackId="a" 
-              fill={COLORS[index % COLORS.length]} 
+            <Bar
+              key={key}
+              dataKey={key}
+              stackId="a"
+              fill={COLORS[index % COLORS.length]}
               radius={[4, 4, 0, 0]}
               className="bar-stack"
             >
               {index === keys.length - 1 && (
-                <LabelList 
-                  dataKey="total" 
-                  position="top" 
-                  formatter={(value) => formatNumberWithSpaces(value, 0)} 
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  formatter={(value) => formatNumberWithSpaces(value, 0)}
                   style={{ fill: '#4a5568', fontSize: '0.8rem', fontWeight: '500' }}
                 />
               )}
