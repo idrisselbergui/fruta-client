@@ -161,10 +161,12 @@ const DashboardPage = () => {
         // Always fetch, vergerId is optional now
         promises.push(apiGet('/api/dashboard/destination-by-variety-chart', salesChartParams));
 
-        // Vente Ecart Data (Global list)
-        // Note: The endpoint returns all sales; we filter locally or should update backend to accept params.
-        // For now, fetching all and we will filter in UI render or memo
-        promises.push(apiGet('/api/vente-ecart'));
+        // Vente Ecart Data — pass all active filters to backend
+        const venteParams = { startDate, endDate };
+        if (selectedVerger) venteParams.vergerId = selectedVerger.value;
+        if (selectedGrpVar) venteParams.grpVarId = selectedGrpVar.value;
+        if (selectedVariete) venteParams.varieteId = selectedVariete.value;
+        promises.push(apiGet('/api/vente-ecart', venteParams));
 
         const [mainData, ecartData, ecartGroupData, destChartData, salesChartData, ventesData] = await Promise.all(promises);
 
@@ -836,8 +838,21 @@ const DashboardPage = () => {
         if (vDate > endCompare) return false;
       }
 
-      // Filter by selected type ecart
+      // Filter by selected type ecart (local-only dropdown inside the card)
       if (filters.selectedVenteEcartType && v.codtype !== filters.selectedVenteEcartType.value) return false;
+
+      // Filter by upper Verger filter
+      if (filters.selectedVerger) {
+        const hasMatchingDetail = v.vecartDs?.some(d => d.refver === filters.selectedVerger.value);
+        if (!hasMatchingDetail) return false;
+      }
+
+      // Filter by upper Groupe Variété filter
+      if (filters.selectedGrpVar) {
+        const hasMatchingDetail = v.vecartDs?.some(d => d.codgrv === filters.selectedGrpVar.value);
+        if (!hasMatchingDetail) return false;
+      }
+
       return true;
     });
 
@@ -846,7 +861,14 @@ const DashboardPage = () => {
 
     filteredVentes.forEach(vente => {
       if (vente.vecartDs && Array.isArray(vente.vecartDs)) {
-        vente.vecartDs.forEach(detail => {
+        // Filter detail rows to only those matching the active upper filters
+        const matchingDetails = vente.vecartDs.filter(detail => {
+          if (filters.selectedVerger && detail.refver !== filters.selectedVerger.value) return false;
+          if (filters.selectedGrpVar && detail.codgrv !== filters.selectedGrpVar.value) return false;
+          return true;
+        });
+
+        matchingDetails.forEach(detail => {
           // Key: VergerId_GroupVarId_TypeEcartId
           const key = `${detail.refver || '0'}_${detail.codgrv || '0'}_${vente.codtype || '0'}`;
 
@@ -879,7 +901,7 @@ const DashboardPage = () => {
       if (a.vergerName > b.vergerName) return 1;
       return 0;
     });
-  }, [venteEcartData, filters.startDate, filters.endDate, filters.selectedVenteEcartType, vergerOptions, grpVarOptions, ecartTypeOptions]);
+  }, [venteEcartData, filters.startDate, filters.endDate, filters.selectedVenteEcartType, filters.selectedVerger, filters.selectedGrpVar, vergerOptions, grpVarOptions, ecartTypeOptions]);
 
   // Totals for Vente Ecart Summary Cards
   const venteEcartTotals = useMemo(() => {
