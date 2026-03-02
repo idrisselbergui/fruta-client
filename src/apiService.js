@@ -271,3 +271,20 @@ export const getDailyCheck = (sampleId, date, databaseName = null) => {
 export const getSampleHistory = (sampleId, databaseName = null) => {
   return apiGet(`/api/Sample/${sampleId}/history`, null, databaseName);
 };
+
+// Adherent Charges Management
+export const getAdherentCharges = (refadh, date, databaseName = null) => {
+  return apiGet('/api/AdherentCharges', { refadh, date }, databaseName);
+};
+
+export const createAdherentCharge = (chargeData, databaseName = null) => {
+  return apiPost('/api/AdherentCharges', chargeData, databaseName);
+};
+
+export const deleteAdherentCharge = (id, databaseName = null) => {
+  return apiDelete(`/api/AdherentCharges/${id}`, databaseName);
+};
+
+export const getChargeSum = (refadh, annee, mois, databaseName = null) => {
+  return apiGet('/api/AdherentCharges/sum', { refadh, annee, mois }, databaseName);
+};

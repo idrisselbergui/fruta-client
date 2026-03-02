@@ -24,6 +24,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
     if (label === 'Tableau de Bord Contrôle Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Gestion Shelf Life' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Contrôles Quotidiens Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Gestion Decompte' && !hasPagePermission(user, "gestion-avance")) hasPermission = false;
     if (label === 'Admin' && !hasPagePermission(user, "admin")) hasPermission = false;
 
     if (!hasPermission) return null;
@@ -178,6 +179,22 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
             'Contrôles Quotidiens Qualité',
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2v20m8-8H4"></path>
+            </svg>
+          )}
+          {renderNavItem(
+            '/gestion-avance',
+            'Gestion Decompte',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          )}
+          {renderNavItem(
+            '/saisie-charges',
+            'Saisie des Charges',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="12" y1="9" x2="12" y2="17"></line>
             </svg>
           )}
 

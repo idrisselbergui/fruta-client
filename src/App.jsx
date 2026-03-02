@@ -17,10 +17,8 @@ import DailyChecksPage from './pages/DailyChecksPage';
 import MarqueManagementPage from './pages/MarqueManagementPage';
 import SampleDashboardPage from './pages/SampleDashboardPage';
 import SampleTestManagementPage from './pages/SampleTestManagementPage';
-
-
-
-
+import GestionAvancePage from './pages/GestionAvancePage';
+import SaisieChargesPage from './pages/SaisieChargesPage';
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
     <Outlet />
@@ -114,6 +112,16 @@ function App() {
         <Route path="/daily-checks" element={
           <PageProtectedRoute user={user} pageName="sample-dashboard">
             <DailyChecksPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/gestion-avance" element={
+          <PageProtectedRoute user={user} pageName="gestion-avance">
+            <GestionAvancePage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/saisie-charges" element={
+          <PageProtectedRoute user={user} pageName="gestion-avance">
+            <SaisieChargesPage />
           </PageProtectedRoute>
         } />
 

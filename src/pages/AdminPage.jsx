@@ -29,6 +29,7 @@ const AdminPage = () => {
     { id: 'vente-ecart', name: 'Vente Ecart' },
     { id: 'marque-management', name: 'Marque Management' },
     { id: 'sample-dashboard', name: 'Tableau de Bord Contrôle Qualité' },
+    { id: 'gestion-avance', name: 'Gestion Decompte' },
     { id: 'admin', name: 'Admin Panel' }
   ];
 
