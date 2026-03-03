@@ -19,6 +19,7 @@ import SampleDashboardPage from './pages/SampleDashboardPage';
 import SampleTestManagementPage from './pages/SampleTestManagementPage';
 import GestionAvancePage from './pages/GestionAvancePage';
 import SaisieChargesPage from './pages/SaisieChargesPage';
+import GestionAvanceYearlyPrint from './pages/GestionAvanceYearlyPrint';
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
     <Outlet />
@@ -122,6 +123,11 @@ function App() {
         <Route path="/saisie-charges" element={
           <PageProtectedRoute user={user} pageName="gestion-avance">
             <SaisieChargesPage />
+          </PageProtectedRoute>
+        } />
+        <Route path="/rapport-annuel" element={
+          <PageProtectedRoute user={user} pageName="gestion-avance">
+            <GestionAvanceYearlyPrint />
           </PageProtectedRoute>
         } />
 

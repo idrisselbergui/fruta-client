@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import { apiGet, apiPost, apiPut, apiDelete, getChargeSum } from '../apiService';
 import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
@@ -6,6 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import './GestionAvancePage.css';
 
 const GestionAvancePage = () => {
+    const navigate = useNavigate();
     // Lookups
     const [adherents, setAdherents] = useState([]);
 
@@ -52,20 +54,12 @@ const GestionAvancePage = () => {
     // Total Charges Fetched from Server
     const [totalCharges, setTotalCharges] = useState(0);
 
-    // Real (manually entered) row state
-    const emptyRealRow = { ts1: '', ts2: '', ts3: '', ts4: '', ts5: '', decs1: '', decs2: '', decs3: '', decs4: '', decs5: '' };
-    const [realRow, setRealRow] = useState(emptyRealRow);
+    // Editable rows — one per variety group, pre-filled from wizardDetails
+    const [editableRows, setEditableRows] = useState([]);
 
-    const handleRealRowChange = (field, value) => {
-        setRealRow(prev => ({ ...prev, [field]: value }));
+    const handleEditableRowChange = (idx, field, value) => {
+        setEditableRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
     };
-
-    // Auto-calculated Prix par KG for the real row
-    const realPrixParKg = (() => {
-        const totalT = ['ts1', 'ts2', 'ts3', 'ts4', 'ts5'].reduce((s, k) => s + (parseFloat(realRow[k]) || 0), 0);
-        const totalDec = ['decs1', 'decs2', 'decs3', 'decs4', 'decs5'].reduce((s, k) => s + (parseFloat(realRow[k]) || 0), 0);
-        return totalT > 0 ? totalDec / totalT : 0;
-    })();
 
     // Fetch master lookups
     useEffect(() => {
@@ -119,37 +113,29 @@ const GestionAvancePage = () => {
         fetchCharges();
     }, [formData.adherent, formData.annee, formData.mois]);
 
-    // Wizard Totals Calculations
+    // Wizard Totals — computed from editable rows
     const wizardTotals = useMemo(() => {
-        let tTonnageS1 = 0, tTonnageS2 = 0, tTonnageS3 = 0, tTonnageS4 = 0, tTonnageS5 = 0;
+        const n = (v) => parseFloat(v) || 0;
         let tDecS1 = 0, tDecS2 = 0, tDecS3 = 0, tDecS4 = 0, tDecS5 = 0;
+        let tTonnageS1 = 0, tTonnageS2 = 0, tTonnageS3 = 0, tTonnageS4 = 0, tTonnageS5 = 0;
 
-        wizardDetails.forEach(row => {
-            tTonnageS1 += row.tonnageS1;
-            tTonnageS2 += row.tonnageS2;
-            tTonnageS3 += row.tonnageS3;
-            tTonnageS4 += row.tonnageS4;
-            tTonnageS5 += (row.tonnageS5 || 0);
-
-            tDecS1 += (row.tonnageS1 * row.prixEstime);
-            tDecS2 += (row.tonnageS2 * row.prixEstime);
-            tDecS3 += (row.tonnageS3 * row.prixEstime);
-            tDecS4 += (row.tonnageS4 * row.prixEstime);
-            tDecS5 += ((row.tonnageS5 || 0) * row.prixEstime);
+        editableRows.forEach(row => {
+            tTonnageS1 += n(row.ts1); tTonnageS2 += n(row.ts2); tTonnageS3 += n(row.ts3);
+            tTonnageS4 += n(row.ts4); tTonnageS5 += n(row.ts5);
+            tDecS1 += n(row.decs1); tDecS2 += n(row.decs2); tDecS3 += n(row.decs3);
+            tDecS4 += n(row.decs4); tDecS5 += n(row.decs5);
         });
 
         const totalTonnage = tTonnageS1 + tTonnageS2 + tTonnageS3 + tTonnageS4 + tTonnageS5;
         const totalDec = tDecS1 + tDecS2 + tDecS3 + tDecS4 + tDecS5;
-        const totalAvanceOrTotal = totalDec;
-
-        let calculatedSolde = totalDec - totalCharges;
+        const calculatedSolde = totalDec - totalCharges;
 
         return {
             tTonnageS1, tTonnageS2, tTonnageS3, tTonnageS4, tTonnageS5, totalTonnage,
             tDecS1, tDecS2, tDecS3, tDecS4, tDecS5, totalDec,
             calculatedSolde
         };
-    }, [wizardDetails, totalCharges, isEditing, formData]);
+    }, [editableRows, totalCharges]);
 
     // Format numbers
     const formatNumber = (num) => {
@@ -244,20 +230,22 @@ const GestionAvancePage = () => {
 
             setWizardDetails(data || []);
 
-            // Pre-populate the real row with estimated values (only for new records, not editing)
-            if (!isEditing && data && data.length > 0) {
-                const sum = (field) => data.reduce((s, r) => s + (r[field] || 0), 0);
-                const fmt = (v) => v > 0 ? parseFloat(v.toFixed(2)) : '';
-                setRealRow({
-                    ts1: fmt(sum('tonnageS1')), ts2: fmt(sum('tonnageS2')),
-                    ts3: fmt(sum('tonnageS3')), ts4: fmt(sum('tonnageS4')),
-                    ts5: fmt(sum('tonnageS5')),
-                    decs1: fmt(data.reduce((s, r) => s + r.tonnageS1 * r.prixEstime, 0)),
-                    decs2: fmt(data.reduce((s, r) => s + r.tonnageS2 * r.prixEstime, 0)),
-                    decs3: fmt(data.reduce((s, r) => s + r.tonnageS3 * r.prixEstime, 0)),
-                    decs4: fmt(data.reduce((s, r) => s + r.tonnageS4 * r.prixEstime, 0)),
-                    decs5: fmt(data.reduce((s, r) => s + (r.tonnageS5 || 0) * r.prixEstime, 0)),
-                });
+            // Pre-populate editable rows from wizardDetails (one row per variety group)
+            if (data && data.length > 0) {
+                const fmt = (v) => v > 0 ? parseFloat(v.toFixed(4)) : 0;
+                setEditableRows(data.map(row => ({
+                    nomGrv: row.nomGrv,
+                    ts1: fmt(row.tonnageS1), ts2: fmt(row.tonnageS2),
+                    ts3: fmt(row.tonnageS3), ts4: fmt(row.tonnageS4),
+                    ts5: fmt(row.tonnageS5 || 0),
+                    decs1: fmt(row.tonnageS1 * row.prixEstime),
+                    decs2: fmt(row.tonnageS2 * row.prixEstime),
+                    decs3: fmt(row.tonnageS3 * row.prixEstime),
+                    decs4: fmt(row.tonnageS4 * row.prixEstime),
+                    decs5: fmt((row.tonnageS5 || 0) * row.prixEstime),
+                })));
+            } else {
+                setEditableRows([]);
             }
 
             setCurrentStep(2);
@@ -287,23 +275,25 @@ const GestionAvancePage = () => {
                 ttdecompte: wizardTotals.calculatedSolde,
                 ttcharges: parseFloat(totalCharges) || 0,
                 tgExport: wizardTotals.totalTonnage,
-                prixEstemeMois: 0, // It varies by variety now, so we save 0
+                prixEstemeMois: wizardTotals.totalTonnage > 0
+                    ? wizardTotals.totalDec / wizardTotals.totalTonnage
+                    : 0,
                 decaompteEsteme: wizardTotals.totalDec,
                 s1: wizardTotals.tTonnageS1,
                 s2: wizardTotals.tTonnageS2,
                 s3: wizardTotals.tTonnageS3,
                 s4: wizardTotals.tTonnageS4,
                 s5: wizardTotals.tTonnageS5,
-                realTS1: parseFloat(realRow.ts1) || 0,
-                realTS2: parseFloat(realRow.ts2) || 0,
-                realTS3: parseFloat(realRow.ts3) || 0,
-                realTS4: parseFloat(realRow.ts4) || 0,
-                realTS5: parseFloat(realRow.ts5) || 0,
-                realDecS1: parseFloat(realRow.decs1) || 0,
-                realDecS2: parseFloat(realRow.decs2) || 0,
-                realDecS3: parseFloat(realRow.decs3) || 0,
-                realDecS4: parseFloat(realRow.decs4) || 0,
-                realDecS5: parseFloat(realRow.decs5) || 0,
+                realTS1: wizardTotals.tTonnageS1,
+                realTS2: wizardTotals.tTonnageS2,
+                realTS3: wizardTotals.tTonnageS3,
+                realTS4: wizardTotals.tTonnageS4,
+                realTS5: wizardTotals.tTonnageS5,
+                realDecS1: wizardTotals.tDecS1,
+                realDecS2: wizardTotals.tDecS2,
+                realDecS3: wizardTotals.tDecS3,
+                realDecS4: wizardTotals.tDecS4,
+                realDecS5: wizardTotals.tDecS5,
                 montant: wizardTotals.totalDec
             };
 
@@ -351,13 +341,7 @@ const GestionAvancePage = () => {
             setIsViewing(false);
             setCurrentStep(1);
             setShowForm(true);
-            // Restore real row values if they were previously saved
-            setRealRow({
-                ts1: avance.realTS1 || '', ts2: avance.realTS2 || '', ts3: avance.realTS3 || '',
-                ts4: avance.realTS4 || '', ts5: avance.realTS5 || '',
-                decs1: avance.realDecS1 || '', decs2: avance.realDecS2 || '', decs3: avance.realDecS3 || '',
-                decs4: avance.realDecS4 || '', decs5: avance.realDecS5 || ''
-            });
+            // editableRows will be re-populated when the user clicks 'Suivant' in edit mode
 
         } catch (err) {
             setError(err.message);
@@ -387,7 +371,7 @@ const GestionAvancePage = () => {
         setIsViewing(false);
         setCurrentStep(1);
         setWizardDetails([]);
-        setRealRow(emptyRealRow);
+        setEditableRows([]);
         setFormData({
             adherent: null,
             date: new Date().toISOString().split('T')[0],
@@ -433,9 +417,32 @@ const GestionAvancePage = () => {
 
                     {!showForm ? (
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <button type="button" className="ve-create-btn" onClick={() => setShowForm(true)}>
-                                + Créer un Décompte
-                            </button>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button type="button" className="ve-create-btn" onClick={() => setShowForm(true)}>
+                                    + Créer un Décompte
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/rapport-annuel')}
+                                    style={{
+                                        padding: '0.5rem 1.2rem',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        backgroundColor: '#6f42c1',
+                                        color: '#fff',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#5a32a3'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#6f42c1'}
+                                >
+                                    🖨️ Rapport Annuel
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Rechercher..."
@@ -542,69 +549,51 @@ const GestionAvancePage = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {wizardDetails.map((row, idx) => (
-                                                            <tr key={idx} style={{ borderBottom: '1px solid #e9ecef' }}>
-                                                                <td style={{ padding: '8px' }}>{row.nomGrv}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS1)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS2)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS3)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS4)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS5 || 0)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600', color: '#17a2b8' }}>{formatNumber(row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS1 * row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS2 * row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS3 * row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber(row.tonnageS4 * row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right' }}>{formatNumber((row.tonnageS5 || 0) * row.prixEstime)}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>
-                                                                    {formatNumber((row.tonnageS1 + row.tonnageS2 + row.tonnageS3 + row.tonnageS4 + (row.tonnageS5 || 0)) * row.prixEstime)}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                        {wizardDetails.length === 0 && (
+                                                        {editableRows.length === 0 && (
                                                             <tr>
                                                                 <td colSpan="13" style={{ textAlign: 'center', padding: '20px', color: '#6c757d' }}>
                                                                     Aucune donnée d'export trouvée pour ce mois/année.
                                                                 </td>
                                                             </tr>
                                                         )}
-
-                                                        {/* ── Real (manually entered) row ── */}
-                                                        <tr style={{ backgroundColor: '#fff8e1', borderTop: '2px solid #ffc107' }}>
-                                                            <td style={{ padding: '6px 8px', fontWeight: 'bold', color: '#856404', whiteSpace: 'nowrap' }}>
-                                                                ✏️ Réel (Saisi)
-                                                            </td>
-                                                            {['ts1', 'ts2', 'ts3', 'ts4', 'ts5'].map(field => (
-                                                                <td key={field} style={{ padding: '4px' }}>
-                                                                    <input
-                                                                        type="number" step="0.01" min="0"
-                                                                        value={realRow[field]}
-                                                                        onChange={e => handleRealRowChange(field, e.target.value)}
-                                                                        style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ffc107', textAlign: 'right', backgroundColor: '#fffdf0' }}
-                                                                        placeholder="0.00"
-                                                                    />
-                                                                </td>
-                                                            ))}
-                                                            {/* Prix par KG auto-calculated */}
-                                                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '700', color: '#e67e22' }}>
-                                                                {formatNumber(realPrixParKg)}
-                                                            </td>
-                                                            {['decs1', 'decs2', 'decs3', 'decs4', 'decs5'].map(field => (
-                                                                <td key={field} style={{ padding: '4px' }}>
-                                                                    <input
-                                                                        type="number" step="0.01" min="0"
-                                                                        value={realRow[field]}
-                                                                        onChange={e => handleRealRowChange(field, e.target.value)}
-                                                                        style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ffc107', textAlign: 'right', backgroundColor: '#fffdf0' }}
-                                                                        placeholder="0.00"
-                                                                    />
-                                                                </td>
-                                                            ))}
-                                                            {/* Total Déc. real */}
-                                                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold', color: '#856404' }}>
-                                                                {formatNumber(['decs1', 'decs2', 'decs3', 'decs4', 'decs5'].reduce((s, k) => s + (parseFloat(realRow[k]) || 0), 0))}
-                                                            </td>
-                                                        </tr>
+                                                        {editableRows.map((row, idx) => {
+                                                            const rowTonnage = (parseFloat(row.ts1) || 0) + (parseFloat(row.ts2) || 0) + (parseFloat(row.ts3) || 0) + (parseFloat(row.ts4) || 0) + (parseFloat(row.ts5) || 0);
+                                                            const rowDec = (parseFloat(row.decs1) || 0) + (parseFloat(row.decs2) || 0) + (parseFloat(row.decs3) || 0) + (parseFloat(row.decs4) || 0) + (parseFloat(row.decs5) || 0);
+                                                            const rowPrix = rowTonnage > 0 ? rowDec / rowTonnage : 0;
+                                                            return (
+                                                                <tr key={idx} style={{ borderBottom: '1px solid #e9ecef', backgroundColor: idx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
+                                                                    <td style={{ padding: '6px 8px', fontWeight: '600', color: '#2c3e50', whiteSpace: 'nowrap' }}>
+                                                                        {row.nomGrv}
+                                                                    </td>
+                                                                    {['ts1', 'ts2', 'ts3', 'ts4', 'ts5'].map(field => (
+                                                                        <td key={field} style={{ padding: '3px' }}>
+                                                                            <input
+                                                                                type="number" step="0.01" min="0"
+                                                                                value={row[field]}
+                                                                                onChange={e => handleEditableRowChange(idx, field, e.target.value)}
+                                                                                style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ced4da', textAlign: 'right', backgroundColor: '#fff' }}
+                                                                            />
+                                                                        </td>
+                                                                    ))}
+                                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '600', color: '#17a2b8' }}>
+                                                                        {formatNumber(rowPrix)}
+                                                                    </td>
+                                                                    {['decs1', 'decs2', 'decs3', 'decs4', 'decs5'].map(field => (
+                                                                        <td key={field} style={{ padding: '3px' }}>
+                                                                            <input
+                                                                                type="number" step="0.01" min="0"
+                                                                                value={row[field]}
+                                                                                onChange={e => handleEditableRowChange(idx, field, e.target.value)}
+                                                                                style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ced4da', textAlign: 'right', backgroundColor: '#fff' }}
+                                                                            />
+                                                                        </td>
+                                                                    ))}
+                                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>
+                                                                        {formatNumber(rowDec)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
