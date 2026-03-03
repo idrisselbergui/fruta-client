@@ -3,6 +3,8 @@ import Select from 'react-select';
 import { apiGet, apiPost, deleteAdherentCharge, createAdherentCharge, getAdherentCharges } from '../apiService';
 import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './GestionAvancePage.css'; // Reusing the matched styling
 
 const SaisieChargesPage = () => {
@@ -134,6 +136,114 @@ const SaisieChargesPage = () => {
         }
     };
 
+    const [isPrinting, setIsPrinting] = useState(false);
+
+    const handlePrintAllCharges = async () => {
+        if (!formData.adherent) {
+            alert('Veuillez sélectionner un adhérent pour imprimer ses charges.');
+            return;
+        }
+
+        try {
+            setIsPrinting(true);
+            const refadh = formData.adherent.value;
+            // passing null as date fetches all charges for this adherent
+            const charges = await getAdherentCharges(refadh, null);
+
+            if (!charges || charges.length === 0) {
+                alert("Aucune charge trouvée pour cet adhérent.");
+                return;
+            }
+
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Add logo if possible
+            try {
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.addImage('/diaf.png', 'PNG', pageWidth - 35, 10, 25, 25);
+            } catch (error) {
+                console.log('Logo not found, continuing without logo');
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.text('RELEVÉ DES CHARGES', 105, 20, { align: 'center' });
+
+            doc.setFontSize(12);
+            doc.text(`Adhérent : ${formData.adherent.label}`, 20, 35);
+            doc.setFontSize(10);
+            doc.text(`Édité le : ${formatDateForDisplay(new Date().toISOString())}`, 140, 35);
+
+            let y = 45;
+
+            // Prepare Table Data
+            const tableData = [];
+            let totalCharges = 0;
+
+            const headerRow = ['Date', 'Charge (Label)', 'Type', 'Montant (DH)'];
+            tableData.push(headerRow);
+
+            // Sort charges generally by date ascending
+            charges.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            charges.forEach(item => {
+                const chargeLabel = chargesOptions.find(c => c.value === item.idcharge)?.label || 'Inconnu';
+                const type = chargeLabel.includes('-') ? chargeLabel.split('-')[1].trim() : '-';
+                const label = chargeLabel.includes('-') ? chargeLabel.split('-')[0].trim() : chargeLabel;
+                const montant = parseFloat(item.montant) || 0;
+                totalCharges += montant;
+
+                tableData.push([
+                    formatDateForDisplay(item.date),
+                    label,
+                    type,
+                    montant.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                ]);
+            });
+
+            autoTable(doc, {
+                startY: y,
+                head: [headerRow],
+                body: tableData.slice(1),
+                theme: 'grid',
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [66, 139, 202],
+                    textColor: 255,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 35 },
+                    3: { halign: 'right', cellWidth: 40 }
+                },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 20, right: 20 }
+            });
+
+            // Footer / Total
+            const finalY = doc.lastAutoTable.finalY || y;
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Total des Charges : ${totalCharges.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DH`, 190, finalY + 10, { align: 'right' });
+
+            const fileName = `releve-charges-${formData.adherent.label.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+        } catch (err) {
+            console.error("Erreur génération PDF:", err);
+            alert("Erreur lors de l'impression des charges.");
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
     return (
         <div className="vente-ecart-page">
             <header className="page-header">
@@ -177,6 +287,34 @@ const SaisieChargesPage = () => {
                                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                                 onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                             />
+                        </div>
+                        <div className="input-group" style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={handlePrintAllCharges}
+                                disabled={!formData.adherent || isPrinting}
+                                style={{
+                                    boxSizing: 'border-box',
+                                    height: '40px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '0 1rem',
+                                    backgroundColor: (!formData.adherent || isPrinting) ? '#9ca3af' : '#4f46e5',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.375rem',
+                                    fontWeight: '500',
+                                    cursor: (!formData.adherent || isPrinting) ? 'not-allowed' : 'pointer',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.backgroundColor = '#4338ca'; }}
+                                onMouseLeave={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.backgroundColor = '#4f46e5'; }}
+                                title="Imprimer toutes les charges de cet adhérent"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                {isPrinting ? 'Impression...' : 'Imprimer Tout'}
+                            </button>
                         </div>
                     </div>
 
