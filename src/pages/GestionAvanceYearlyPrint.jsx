@@ -287,9 +287,9 @@ const GestionAvanceYearlyPrint = () => {
                                 <tr>
                                     <td style={labelStyle('#e8f5e9')}>ACCOMPT ESTIMÉ</td>
                                     {reportData.months.map((m, i) => (
-                                        <td key={i} style={cellStyle('#e8f5e9')}>{fmt(m.accomtEstime || m.accomptEstime)}</td>
+                                        <td key={i} style={cellStyle('#e8f5e9')}>{fmt(m.accomptEstime)}</td>
                                     ))}
-                                    <td style={totalStyle('#c8e6c9')}>{fmt(monthTotal('accomtEstime') || monthTotal('accomptEstime'))}</td>
+                                    <td style={totalStyle('#c8e6c9')}>{fmt(monthTotal('accomptEstime'))}</td>
                                 </tr>
                             </tbody>
                         </table>
