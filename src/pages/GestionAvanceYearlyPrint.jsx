@@ -270,6 +270,19 @@ const GestionAvanceYearlyPrint = () => {
                                     <td style={totalStyle('#c8e6c9')}>{fmt(monthTotal('tgExport'))}</td>
                                 </tr>
 
+                                {/* ── PRIX ESTIMÉ GRPVAR ── */}
+                                {(reportData.exportedGrvs || []).map((grv) => (
+                                    <tr key={`est_${grv.codgrv}`}>
+                                        <td style={labelStyle('#eaf2f8')}>P. EST. {grv.nomgrv}</td>
+                                        {reportData.months.map((m, i) => (
+                                            <td key={i} style={cellStyle('#eaf2f8')}>
+                                                {fmt(m.pricesByGrpVar?.[grv.codgrv])}
+                                            </td>
+                                        ))}
+                                        <td style={totalStyle('#d4e6f1')}>-</td>
+                                    </tr>
+                                ))}
+
                                 {/* ── ACCOMPT ESTIMÉ ── */}
                                 <tr>
                                     <td style={labelStyle('#e8f5e9')}>ACCOMPT ESTIMÉ</td>
