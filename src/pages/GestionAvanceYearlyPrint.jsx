@@ -57,7 +57,47 @@ const GestionAvanceYearlyPrint = () => {
         }
     };
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const content = printRef.current;
+        if (!content) return;
+        const win = window.open('', '_blank', 'width=1200,height=800');
+        win.document.write(`
+            <html>
+            <head>
+                <title>Rapport Annuel - ${reportData?.adherentName || ''}</title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body { margin: 0; padding: 8px; font-family: Arial, sans-serif; }
+                    .no-print { display: none !important; }
+                    colgroup { display: none !important; }
+                    table {
+                        border-collapse: collapse !important;
+                        table-layout: auto !important;
+                        width: 100% !important;
+                        font-size: 8pt !important;
+                    }
+                    table th, table td {
+                        padding: 3px 5px !important;
+                        white-space: nowrap !important;
+                    }
+                    div[style*="overflow"] {
+                        overflow: visible !important;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        @page { size: A4 landscape; margin: 6mm; }
+                        table { font-size: 7pt !important; }
+                        table th, table td { padding: 2px 3px !important; }
+                    }
+                </style>
+            </head>
+            <body>${content.innerHTML}</body>
+            </html>
+        `);
+        win.document.close();
+        win.focus();
+        setTimeout(() => { win.print(); win.close(); }, 400);
+    };
 
     // Total per row across all months
     const monthTotal = (field) =>
@@ -92,10 +132,26 @@ const GestionAvanceYearlyPrint = () => {
             {/* Print CSS */}
             <style>{`
                 @media print {
-                    body { margin: 0; }
+                    body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     .no-print { display: none !important; }
-                    .print-area { width: 100%; }
-                    @page { size: A4 landscape; margin: 8mm; }
+                    .print-area {
+                        width: 100% !important;
+                        padding: 0 !important;
+                        overflow: visible !important;
+                    }
+                    .print-area > div { overflow: visible !important; }
+                    .print-area table {
+                        table-layout: auto !important;
+                        width: 100% !important;
+                        font-size: 7pt !important;
+                    }
+                    .print-area table th,
+                    .print-area table td {
+                        padding: 3px 4px !important;
+                        white-space: nowrap !important;
+                    }
+                    .print-area colgroup { display: none !important; }
+                    @page { size: A4 landscape; margin: 6mm; }
                 }
             `}</style>
 
@@ -204,7 +260,7 @@ const GestionAvanceYearlyPrint = () => {
                                 </tr>
 
                                 {/* Spacer */}
-                                <tr><td colSpan={14} style={{ height: '4px', backgroundColor: '#ccc', border: 'none' }} /></tr>
+                                <tr><td colSpan={(reportData.months?.length || 0) + 2} style={{ height: '4px', backgroundColor: '#ccc', border: 'none' }} /></tr>
 
                                 {/* ── DÉCOMPTE DE MOIS ── */}
                                 <tr>
@@ -239,7 +295,7 @@ const GestionAvanceYearlyPrint = () => {
                                 })}
 
                                 {/* Spacer */}
-                                <tr><td colSpan={14} style={{ height: '4px', backgroundColor: '#ccc', border: 'none' }} /></tr>
+                                <tr><td colSpan={(reportData.months?.length || 0) + 2} style={{ height: '4px', backgroundColor: '#ccc', border: 'none' }} /></tr>
 
                                 {/* ── RÉSULTAT ── */}
                                 <tr>
