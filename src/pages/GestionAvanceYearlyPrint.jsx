@@ -102,8 +102,8 @@ const GestionAvanceYearlyPrint = () => {
     // Total per row across all months
     const monthTotal = (field) =>
         (reportData?.months || []).reduce((s, m) => s + (m[field] || 0), 0);
-    const chargeTotal = (type) =>
-        (reportData?.months || []).reduce((s, m) => s + (m.chargesByType?.[type] || 0), 0);
+    const chargeTotal = (label) =>
+        (reportData?.months || []).reduce((s, m) => s + (m.chargesByLabel?.[label] || 0), 0);
 
     const selectStyle = {
         control: (b) => ({ ...b, minHeight: '36px', height: '36px', fontSize: '0.875rem', borderColor: '#d1d5db' }),
@@ -233,19 +233,19 @@ const GestionAvanceYearlyPrint = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* ── CHARGES BY TYPE ── */}
-                                {(reportData.chargeTypes || []).map((type) => (
-                                    <tr key={type}>
-                                        <td style={labelStyle(type.toLowerCase().includes('avance') ? ROW_COLORS.chargeAvance : ROW_COLORS.chargeOther)}>
-                                            {type.toUpperCase()}
+                                {/* ── CHARGES BY LABEL ── */}
+                                {(reportData.chargeLabels || []).map((label) => (
+                                    <tr key={label}>
+                                        <td style={labelStyle(label.toLowerCase().includes('avance') ? ROW_COLORS.chargeAvance : ROW_COLORS.chargeOther)}>
+                                            {label.toUpperCase()}
                                         </td>
                                         {reportData.months.map((m, i) => (
-                                            <td key={i} style={cellStyle(type.toLowerCase().includes('avance') ? ROW_COLORS.chargeAvance : ROW_COLORS.chargeOther)}>
-                                                {fmt(m.chargesByType?.[type])}
+                                            <td key={i} style={cellStyle(label.toLowerCase().includes('avance') ? ROW_COLORS.chargeAvance : ROW_COLORS.chargeOther)}>
+                                                {fmt(m.chargesByLabel?.[label])}
                                             </td>
                                         ))}
-                                        <td style={totalStyle(type.toLowerCase().includes('avance') ? '#b8d4e8' : '#c6dfc0')}>
-                                            {fmt(chargeTotal(type))}
+                                        <td style={totalStyle(label.toLowerCase().includes('avance') ? '#b8d4e8' : '#c6dfc0')}>
+                                            {fmt(chargeTotal(label))}
                                         </td>
                                     </tr>
                                 ))}
