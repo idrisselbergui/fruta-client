@@ -21,6 +21,8 @@ const GestionAvancePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editingAvanceId, setEditingAvanceId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
+    const [loadingEditId, setLoadingEditId] = useState(null);
+    const [savedRealValues, setSavedRealValues] = useState(null);
 
     // Wizard State
     const [currentStep, setCurrentStep] = useState(1);
@@ -233,17 +235,34 @@ const GestionAvancePage = () => {
             // Pre-populate editable rows from wizardDetails (one row per variety group)
             if (data && data.length > 0) {
                 const fmt = (v) => v > 0 ? parseFloat(v.toFixed(4)) : 0;
-                setEditableRows(data.map(row => ({
-                    nomGrv: row.nomGrv,
-                    ts1: fmt(row.tonnageS1), ts2: fmt(row.tonnageS2),
-                    ts3: fmt(row.tonnageS3), ts4: fmt(row.tonnageS4),
-                    ts5: fmt(row.tonnageS5 || 0),
-                    decs1: fmt(row.tonnageS1 * row.prixEstime),
-                    decs2: fmt(row.tonnageS2 * row.prixEstime),
-                    decs3: fmt(row.tonnageS3 * row.prixEstime),
-                    decs4: fmt(row.tonnageS4 * row.prixEstime),
-                    decs5: fmt((row.tonnageS5 || 0) * row.prixEstime),
-                })));
+                if (isEditing && savedRealValues) {
+                    // Merge saved real values back into editable rows
+                    setEditableRows(data.map(row => ({
+                        nomGrv: row.nomGrv,
+                        ts1: fmt(savedRealValues.realTS1 != null ? savedRealValues.realTS1 / data.length : row.tonnageS1),
+                        ts2: fmt(savedRealValues.realTS2 != null ? savedRealValues.realTS2 / data.length : row.tonnageS2),
+                        ts3: fmt(savedRealValues.realTS3 != null ? savedRealValues.realTS3 / data.length : row.tonnageS3),
+                        ts4: fmt(savedRealValues.realTS4 != null ? savedRealValues.realTS4 / data.length : row.tonnageS4),
+                        ts5: fmt(savedRealValues.realTS5 != null ? savedRealValues.realTS5 / data.length : (row.tonnageS5 || 0)),
+                        decs1: fmt(savedRealValues.realDecS1 != null ? savedRealValues.realDecS1 / data.length : row.tonnageS1 * row.prixEstime),
+                        decs2: fmt(savedRealValues.realDecS2 != null ? savedRealValues.realDecS2 / data.length : row.tonnageS2 * row.prixEstime),
+                        decs3: fmt(savedRealValues.realDecS3 != null ? savedRealValues.realDecS3 / data.length : row.tonnageS3 * row.prixEstime),
+                        decs4: fmt(savedRealValues.realDecS4 != null ? savedRealValues.realDecS4 / data.length : row.tonnageS4 * row.prixEstime),
+                        decs5: fmt(savedRealValues.realDecS5 != null ? savedRealValues.realDecS5 / data.length : (row.tonnageS5 || 0) * row.prixEstime),
+                    })));
+                } else {
+                    setEditableRows(data.map(row => ({
+                        nomGrv: row.nomGrv,
+                        ts1: fmt(row.tonnageS1), ts2: fmt(row.tonnageS2),
+                        ts3: fmt(row.tonnageS3), ts4: fmt(row.tonnageS4),
+                        ts5: fmt(row.tonnageS5 || 0),
+                        decs1: fmt(row.tonnageS1 * row.prixEstime),
+                        decs2: fmt(row.tonnageS2 * row.prixEstime),
+                        decs3: fmt(row.tonnageS3 * row.prixEstime),
+                        decs4: fmt(row.tonnageS4 * row.prixEstime),
+                        decs5: fmt((row.tonnageS5 || 0) * row.prixEstime),
+                    })));
+                }
             } else {
                 setEditableRows([]);
             }
@@ -314,12 +333,17 @@ const GestionAvancePage = () => {
     };
 
     const handleEditAvance = async (id) => {
+        setLoadingEditId(id);
         try {
             const data = await apiGet(`/api/gestionavances/${id}`);
-            const { avance } = data; // details is not here
+            const { avance } = data;
+
+            // Fix Issue 3: fallback if adherent not found in options
+            const matchedAdherent = adherentOptions.find(a => a.value === avance.refadh)
+                || (avance.refadh ? { value: avance.refadh, label: `Adhérent #${avance.refadh}` } : null);
 
             setFormData({
-                adherent: adherentOptions.find(a => a.value === avance.refadh) || null,
+                adherent: matchedAdherent,
                 date: formatDateForInput(avance.date),
                 annee: avance.annee || new Date().getFullYear(),
                 mois: avance.mois || '',
@@ -336,15 +360,24 @@ const GestionAvancePage = () => {
                 totalDecompte: avance.ttdecompte || ''
             });
 
+            // Fix Issue 1: store saved real per-week values for merge in Step 2
+            setSavedRealValues({
+                realTS1: avance.realTS1, realTS2: avance.realTS2,
+                realTS3: avance.realTS3, realTS4: avance.realTS4, realTS5: avance.realTS5,
+                realDecS1: avance.realDecS1, realDecS2: avance.realDecS2,
+                realDecS3: avance.realDecS3, realDecS4: avance.realDecS4, realDecS5: avance.realDecS5,
+            });
+
             setIsEditing(true);
             setEditingAvanceId(id);
             setIsViewing(false);
             setCurrentStep(1);
             setShowForm(true);
-            // editableRows will be re-populated when the user clicks 'Suivant' in edit mode
 
         } catch (err) {
             setError(err.message);
+        } finally {
+            setLoadingEditId(null);
         }
     };
 
@@ -384,18 +417,27 @@ const GestionAvancePage = () => {
             montantAvance: '', totalCharges: '', totalDecompte: ''
         });
         setTotalCharges(0);
+        setSavedRealValues(null);
     };
 
     // Filter and Pagination
     const filteredAvances = useMemo(() => {
         if (!searchAvances.trim()) return avances;
         const searchTerm = searchAvances.toLowerCase();
-        return avances.filter(a =>
-            a.id?.toString().toLowerCase().includes(searchTerm) ||
-            formatDateForDisplay(a.date).toLowerCase().includes(searchTerm) ||
-            a.montant?.toString().toLowerCase().includes(searchTerm)
-        );
-    }, [avances, searchAvances]);
+        return avances.filter(a => {
+            const adherentName = adherents.find(ad => ad.refadh === a.refadh)?.nomadh || '';
+            const moisAnnee = a.mois != null && a.annee != null
+                ? `${String(a.mois).padStart(2, '0')}/${a.annee}`
+                : '';
+            return (
+                a.id?.toString().toLowerCase().includes(searchTerm) ||
+                formatDateForDisplay(a.date).toLowerCase().includes(searchTerm) ||
+                adherentName.toLowerCase().includes(searchTerm) ||
+                moisAnnee.includes(searchTerm) ||
+                a.montant?.toString().toLowerCase().includes(searchTerm)
+            );
+        });
+    }, [avances, searchAvances, adherents]);
 
     const totalItems = filteredAvances.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -447,7 +489,7 @@ const GestionAvancePage = () => {
                                 type="text"
                                 placeholder="Rechercher..."
                                 value={searchAvances}
-                                onChange={(e) => setSearchAvances(e.target.value)}
+                                onChange={(e) => { setSearchAvances(e.target.value); setCurrentPage(1); }}
                                 style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #ccc', minWidth: '250px' }}
                             />
                         </div>
@@ -700,7 +742,9 @@ const GestionAvancePage = () => {
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <div className="action-buttons">
-                                                    <button onClick={() => handleEditAvance(avance.id)} className="action-btn edit-btn" title="Modifier">✏️</button>
+                                                    <button onClick={() => handleEditAvance(avance.id)} className="action-btn edit-btn" title="Modifier" disabled={loadingEditId === avance.id}>
+                                                        {loadingEditId === avance.id ? '⏳' : '✏️'}
+                                                    </button>
                                                     <button onClick={() => handleDeleteAvance(avance.id)} className="action-btn delete-btn" title="Supprimer">🗑️</button>
                                                 </div>
                                             </td>
