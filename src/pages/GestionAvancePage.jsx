@@ -36,7 +36,7 @@ const GestionAvancePage = () => {
     // Pagination/Search
     const [searchAvances, setSearchAvances] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 5;
 
     // Form Data Structure
     const [formData, setFormData] = useState({
@@ -673,6 +673,7 @@ const GestionAvancePage = () => {
                                 <tr>
                                     <th>ID</th>
                                     <th>Date</th>
+                                    <th>Mois/Année</th>
                                     <th>Adhérent</th>
                                     <th>Total Décomptes</th>
                                     <th>Total Charges</th>
@@ -686,6 +687,11 @@ const GestionAvancePage = () => {
                                         <tr key={avance.id}>
                                             <td>#{avance.id}</td>
                                             <td>{formatDateForDisplay(avance.date)}</td>
+                                            <td style={{ textAlign: 'center', fontWeight: '600' }}>
+                                                {avance.mois != null && avance.annee != null
+                                                    ? `${String(avance.mois).padStart(2, '0')}/${avance.annee}`
+                                                    : '-'}
+                                            </td>
                                             <td>{adherents.find(a => a.refadh === avance.refadh)?.nomadh || avance.refadh}</td>
                                             <td style={{ fontWeight: 'bold' }}>{avance.decaompteEsteme?.toFixed(2) || '0.00'} DH</td>
                                             <td style={{ color: '#dc3545' }}>{avance.ttcharges?.toFixed(2) || '0.00'} DH</td>
@@ -710,7 +716,7 @@ const GestionAvancePage = () => {
                     </div>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {totalItems > 0 && (
                         <div className="pagination-container">
                             <span className="pagination-info">Page {currentPage} sur {totalPages} ({totalItems} éléments)</span>
                             <div className="pagination">
