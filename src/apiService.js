@@ -294,3 +294,95 @@ export const deleteAdherentCharge = (id, databaseName = null) => {
 export const getChargeSum = (refadh, annee, mois, databaseName = null) => {
   return apiGet('/api/AdherentCharges/sum', { refadh, annee, mois }, databaseName);
 };
+
+// ═══════════════════════════════════════════════════════════
+// SESSION TRACKING API HELPERS
+// These use minimal headers — no X-Database-Name, X-User-Id, X-Username
+// ═══════════════════════════════════════════════════════════
+
+const getSessionHeaders = () => {
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  headers.append('ngrok-skip-browser-warning', 'true');
+  return headers;
+};
+
+/**
+ * Record a failed login attempt (in-memory counter, no DB write).
+ */
+export const postSessionFailed = async (data) => {
+  try {
+    await fetch(`${API_BASE_URL}/api/sessions/failed`, {
+      method: 'POST',
+      headers: getSessionHeaders(),
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Silent — failed attempt tracking should never block login
+  }
+};
+
+/**
+ * Create a new session on successful login.
+ * Returns { sessionId } on success, null on failure.
+ */
+export const postSessionStart = async (data) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sessions/start`, {
+      method: 'POST',
+      headers: getSessionHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch {
+    // Silent — session creation failure should never block login
+  }
+  return null;
+};
+
+/**
+ * Track a page navigation during an active session.
+ * Fire-and-forget — no return value needed.
+ */
+export const postSessionPage = async (data) => {
+  try {
+    await fetch(`${API_BASE_URL}/api/sessions/page`, {
+      method: 'POST',
+      headers: getSessionHeaders(),
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Silent — page tracking failure should never affect navigation
+  }
+};
+
+/**
+ * Close a session on explicit logout (regular fetch).
+ */
+export const postSessionEnd = async (data) => {
+  try {
+    await fetch(`${API_BASE_URL}/api/sessions/end`, {
+      method: 'POST',
+      headers: getSessionHeaders(),
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Silent — session close failure should never block logout
+  }
+};
+
+/**
+ * Close a session on tab close using navigator.sendBeacon.
+ * sendBeacon is required because regular fetch does not reliably
+ * complete during the beforeunload event.
+ */
+export const sendBeaconSessionEnd = (data) => {
+  try {
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    navigator.sendBeacon(`${API_BASE_URL}/api/sessions/end`, blob);
+  } catch {
+    // Silent — best-effort on tab close
+  }
+};

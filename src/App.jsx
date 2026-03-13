@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, Outlet, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Outlet, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/AdminPage';
 import LoginForm from './LoginForm';
@@ -8,8 +8,8 @@ import Layout from './components/Layout';
 import DailyProgramPage from './pages/DailyProgramPage';
 import ProgramListPage from './pages/ProgramListPage';
 import DashboardPage from './pages/DashboardPage';
-import TraitPage from './pages/TraitPage'; // --- 1. IMPORT THE NEW PAGE ---
-import TraitementPage from './pages/TraitementPage'; // --- 1. IMPORT THE NEW PAGE ---
+import TraitPage from './pages/TraitPage';
+import TraitementPage from './pages/TraitementPage';
 import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
 import VenteEcartPage from './pages/VenteEcartPage';
@@ -20,6 +20,8 @@ import SampleTestManagementPage from './pages/SampleTestManagementPage';
 import GestionAvancePage from './pages/GestionAvancePage';
 import SaisieChargesPage from './pages/SaisieChargesPage';
 import GestionAvanceYearlyPrint from './pages/GestionAvanceYearlyPrint';
+import { postSessionPage, postSessionEnd, sendBeaconSessionEnd } from './apiService';
+
 const AppLayout = ({ user, onLogout }) => (
   <Layout user={user} onLogout={onLogout}>
     <Outlet />
@@ -33,6 +35,37 @@ function App() {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- SESSION-008: Page tracking on every route change ---
+  useEffect(() => {
+    const sessionId = sessionStorage.getItem('sessionId');
+    // Strict guard: skip silently if sessionId is null, undefined, or empty
+    if (!sessionId) return;
+
+    const userObj = sessionStorage.getItem('user');
+    const parsed = userObj ? JSON.parse(userObj) : null;
+
+    postSessionPage({
+      sessionId: Number(sessionId),
+      pagePath: location.pathname,
+      userId: parsed?.userId ?? null,
+      username: parsed?.username ?? null,
+      tenantDatabase: parsed?.database ?? null,
+    });
+  }, [location.pathname]);
+
+  // --- SESSION-009: Tab close detection via beforeunload ---
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const sessionId = sessionStorage.getItem('sessionId');
+      if (!sessionId) return;
+      sendBeaconSessionEnd({ sessionId: Number(sessionId), status: 'TAB_CLOSED' });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -40,9 +73,19 @@ function App() {
     navigate('/home');
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    // Close the active session via regular fetch
+    const sessionId = sessionStorage.getItem('sessionId');
+    if (sessionId) {
+      await postSessionEnd({ sessionId: Number(sessionId), status: 'LOGGED_OUT' });
+    }
+
+    // Clean up all session storage keys
     sessionStorage.removeItem('user');
+    sessionStorage.removeItem('machineName');
+    sessionStorage.removeItem('sessionId');
+
+    setUser(null);
     navigate('/');
   };
 

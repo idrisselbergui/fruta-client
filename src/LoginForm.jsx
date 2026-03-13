@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiPost } from './apiService'; // --- 1. IMPORT THE NEW API SERVICE ---
+import { apiPost, postSessionStart, postSessionFailed } from './apiService';
 import './LoginForm.css';
 
 const LoginForm = ({ onLoginSuccess }) => {
@@ -13,25 +13,59 @@ const LoginForm = ({ onLoginSuccess }) => {
     setMessage('');
 
     try {
-      // --- 2. USE the new apiPost function ---
-      // It automatically handles the URL, headers, and stringifying the body.
+      // Login API call
       const data = await apiPost('/api/users/login', {
         database,
         username,
         password,
-        permission: 0 // This can be removed if your backend doesn't use it
+        permission: 0
       });
 
-      onLoginSuccess({ ...data, username });
-
-      // Store machine fingerprint for audit logging
+      // --- Store machine fingerprint FIRST (needed for session start) ---
       const platform = navigator.platform || navigator.userAgentData?.platform || 'Unknown';
       const resolution = `${screen.width}x${screen.height}`;
       const lang = navigator.language || 'unknown';
       sessionStorage.setItem('machineName', `${platform}-${resolution}-${lang}`);
 
+      // --- Parse browser and OS from userAgent ---
+      const ua = navigator.userAgent || '';
+      let browser = 'Other';
+      if (ua.includes('Edg/')) browser = 'Edge';
+      else if (ua.includes('OPR/') || ua.includes('Opera')) browser = 'Opera';
+      else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
+      else if (ua.includes('Firefox/')) browser = 'Firefox';
+      else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+
+      let os = 'Other';
+      if (ua.includes('Windows')) os = 'Windows';
+      else if (ua.includes('Mac OS') || ua.includes('Macintosh')) os = 'macOS';
+      else if (ua.includes('Linux')) os = 'Linux';
+      else if (ua.includes('Android')) os = 'Android';
+      else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+
+      // --- Start session BEFORE onLoginSuccess (sessionId must exist before /home redirect) ---
+      try {
+        const sessionResult = await postSessionStart({
+          userId: data.userId,
+          username,
+          tenantDatabase: database,
+          machineName: `${platform}-${resolution}-${lang}`,
+          browser,
+          os
+        });
+        if (sessionResult?.sessionId) {
+          sessionStorage.setItem('sessionId', String(sessionResult.sessionId));
+        }
+      } catch {
+        // Silent — session tracking failure should never block login
+      }
+
+      // --- NOW trigger the React router redirect ---
+      onLoginSuccess({ ...data, username });
+
     } catch (error) {
-      // The apiService automatically throws an error with a message on failure
+      // Record failed attempt (fire-and-forget, no await)
+      postSessionFailed({ username, tenantDatabase: database });
       setMessage(`Error: ${error.message}`);
     }
   };
