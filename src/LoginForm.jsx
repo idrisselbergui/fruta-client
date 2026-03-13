@@ -5,13 +5,13 @@ import './LoginForm.css';
 const LoginForm = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [database, setDatabase] = useState(''); 
+  const [database, setDatabase] = useState('');
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage('');
-    
+
     try {
       // --- 2. USE the new apiPost function ---
       // It automatically handles the URL, headers, and stringifying the body.
@@ -23,6 +23,12 @@ const LoginForm = ({ onLoginSuccess }) => {
       });
 
       onLoginSuccess({ ...data, username });
+
+      // Store machine fingerprint for audit logging
+      const platform = navigator.platform || navigator.userAgentData?.platform || 'Unknown';
+      const resolution = `${screen.width}x${screen.height}`;
+      const lang = navigator.language || 'unknown';
+      sessionStorage.setItem('machineName', `${platform}-${resolution}-${lang}`);
 
     } catch (error) {
       // The apiService automatically throws an error with a message on failure
@@ -38,7 +44,7 @@ const LoginForm = ({ onLoginSuccess }) => {
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <h2>Welcome Back</h2>
-          
+
           <div className="input-group">
             <label htmlFor="username">Username</label>
             <div className="input-with-icon">
@@ -71,9 +77,9 @@ const LoginForm = ({ onLoginSuccess }) => {
 
           <div className="input-group">
             <label htmlFor="database">Database</label>
-             <div className="input-with-icon">
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-               <input
+            <div className="input-with-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              <input
                 type="text"
                 id="database"
                 value={database}

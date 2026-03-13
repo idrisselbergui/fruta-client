@@ -29,10 +29,16 @@ const getHeaders = (options = {}, databaseName = null) => {
   }
 
   // Use provided database name, or fall back to session database
-  const dbName = databaseName || (getUserSession()?.database);
+  const user = getUserSession();
+  const dbName = databaseName || user?.database;
   if (dbName) {
     headers.append('X-Database-Name', dbName);
   }
+
+  // Audit headers — user identity and machine fingerprint
+  headers.append('X-User-Id', user?.userId != null ? String(user.userId) : '');
+  headers.append('X-Username', user?.username || '');
+  headers.append('X-Machine-Name', sessionStorage.getItem('machineName') || '');
 
   return headers;
 };
