@@ -26,7 +26,8 @@ export const CombinedTrendChart = ({
     displayLabel: formatDateLabel(item.label, timePeriod),
     reception: parseFloat(item.reception || 0),
     export: parseFloat(item.export || 0),
-    ecart: parseFloat(item.ecart || 0)
+    ecart: parseFloat(item.ecart || 0),
+    stock: parseFloat(item.stock || 0)
   }));
 
   return (
@@ -100,6 +101,15 @@ export const CombinedTrendChart = ({
             dot={{ fill: '#ffc107', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6, stroke: '#ffc107', strokeWidth: 2 }}
             name="⚖️ Ecart"
+          />
+          <Line
+            type="monotone"
+            dataKey="stock"
+            stroke="#6f42c1"
+            strokeWidth={3}
+            dot={{ fill: '#6f42c1', strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, stroke: '#6f42c1', strokeWidth: 2 }}
+            name="📦 Stock"
           />
         </LineChart>
       </ResponsiveContainer>

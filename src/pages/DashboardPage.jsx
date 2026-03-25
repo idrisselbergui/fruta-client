@@ -317,7 +317,18 @@ const DashboardPage = () => {
           combinedDataMap.get(key).ecart = parseFloat(item.value) || 0;
         });
 
-        const combinedData = Array.from(combinedDataMap.values());
+        const combinedDataValues = Array.from(combinedDataMap.values());
+        combinedDataValues.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let currentStock = 0;
+        const combinedData = combinedDataValues.map(item => {
+          currentStock = currentStock + (item.reception || 0) - (item.export || 0) - (item.ecart || 0);
+          return {
+            ...item,
+            stock: currentStock
+          };
+        });
+
         console.log('Combined data:', combinedData);
         setCombinedTrendData(combinedData);
 
@@ -613,7 +624,17 @@ const DashboardPage = () => {
               combinedDataMap.get(key).ecart = parseFloat(item.value) || 0;
             });
 
-            trendData = Array.from(combinedDataMap.values());
+            const combinedDataValues = Array.from(combinedDataMap.values());
+            combinedDataValues.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let currentStock = 0;
+            trendData = combinedDataValues.map(item => {
+              currentStock = currentStock + (item.reception || 0) - (item.export || 0) - (item.ecart || 0);
+              return {
+                ...item,
+                stock: currentStock
+              };
+            });
           } else {
             // Fetch data for single chart type
             const response = await apiGet('/api/dashboard/periodic-trends', params);
@@ -1302,6 +1323,7 @@ const DashboardPage = () => {
                         <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Reception</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Export</th>
                         <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Ecart</th>
+                        <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>Stock</th>
                       </>
                     ) : (
                       <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2' }}>{selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)}</th>
@@ -1317,6 +1339,7 @@ const DashboardPage = () => {
                         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.reception || 0)}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.export || 0)}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.ecart || 0)}</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatNumberWithSpaces(item.stock || 0)}</td>
                       </tr>
                     ))
                   ) : periodicTrendData.length > 0 ? (
@@ -1350,6 +1373,9 @@ const DashboardPage = () => {
                           </td>
                           <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
                             {formatNumberWithSpaces(combinedTrendData.reduce((sum, item) => sum + (item.ecart || 0), 0))}
+                          </td>
+                          <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>
+                            {formatNumberWithSpaces(combinedTrendData.length > 0 ? combinedTrendData[combinedTrendData.length - 1].stock : 0)}
                           </td>
                         </>
                       ) : (
