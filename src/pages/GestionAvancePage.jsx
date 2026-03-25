@@ -155,6 +155,13 @@ const GestionAvancePage = () => {
             return;
         }
 
+        // --- In EDIT mode: if we already have saved detail rows, skip recalculation ---
+        // Just go to step 2, preserving DB values exactly as-is.
+        if (isEditing && editableRows.length > 0) {
+            setCurrentStep(2);
+            return;
+        }
+
         // --- Duplicate check: block if a décompte already exists for this adherent + month ---
         if (!isEditing) {
             const duplicate = avances.find(a =>
@@ -322,11 +329,19 @@ const GestionAvancePage = () => {
                         return valid.length > 0 ? valid.reduce((s, w) => s + w.dec / w.ton, 0) / valid.length : 0;
                     })();
                     return {
-                        codGrv: d.codGrv,
-                        nomGrv: d.nomGrv,
-                        ts1: d.tS1, ts2: d.tS2, ts3: d.tS3, ts4: d.tS4, ts5: d.tS5,
+                        codGrv: d.codGrv ?? d.CodGrv,
+                        nomGrv: d.nomGrv ?? d.NomGrv,
+                        ts1: d.ts1 ?? d.tS1 ?? d.TS1 ?? 0, 
+                        ts2: d.ts2 ?? d.tS2 ?? d.TS2 ?? 0, 
+                        ts3: d.ts3 ?? d.tS3 ?? d.TS3 ?? 0, 
+                        ts4: d.ts4 ?? d.tS4 ?? d.TS4 ?? 0, 
+                        ts5: d.ts5 ?? d.tS5 ?? d.TS5 ?? 0,
                         prixEstime: computedPrix,
-                        decs1: d.decS1, decs2: d.decS2, decs3: d.decS3, decs4: d.decS4, decs5: d.decS5,
+                        decs1: d.decs1 ?? d.decS1 ?? d.DecS1 ?? 0,
+                        decs2: d.decs2 ?? d.decS2 ?? d.DecS2 ?? 0,
+                        decs3: d.decs3 ?? d.decS3 ?? d.DecS3 ?? 0,
+                        decs4: d.decs4 ?? d.decS4 ?? d.DecS4 ?? 0,
+                        decs5: d.decs5 ?? d.decS5 ?? d.DecS5 ?? 0,
                     };
                 }));
                 // Jump straight to Step 2 since we already have the detail data
