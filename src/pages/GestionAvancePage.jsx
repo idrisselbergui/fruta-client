@@ -29,12 +29,6 @@ const GestionAvancePage = () => {
     const [wizardDetails, setWizardDetails] = useState([]);
     const [isCalculating, setIsCalculating] = useState(false);
 
-    // Prix Estimatifs Modal State
-    const [showPrixModal, setShowPrixModal] = useState(false);
-    const [grpVars, setGrpVars] = useState([]);
-    const [prixEstimatifsData, setPrixEstimatifsData] = useState({}); // { codgrv: prix }
-    const [isSavingPrix, setIsSavingPrix] = useState(false);
-
     // Pagination/Search
     const [searchAvances, setSearchAvances] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -60,7 +54,25 @@ const GestionAvancePage = () => {
     const [editableRows, setEditableRows] = useState([]);
 
     const handleEditableRowChange = (idx, field, value) => {
-        setEditableRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+        setEditableRows(prev => prev.map((r, i) => {
+            if (i !== idx) return r;
+            const newRow = { ...r, [field]: value };
+            
+            // Recalculate prixEstime as average of per-week prices: Σ(decSx / tonnageSx) / count of weeks with tonnage
+            const weeks = [
+                { dec: parseFloat(newRow.decs1) || 0, ton: parseFloat(newRow.ts1) || 0 },
+                { dec: parseFloat(newRow.decs2) || 0, ton: parseFloat(newRow.ts2) || 0 },
+                { dec: parseFloat(newRow.decs3) || 0, ton: parseFloat(newRow.ts3) || 0 },
+                { dec: parseFloat(newRow.decs4) || 0, ton: parseFloat(newRow.ts4) || 0 },
+                { dec: parseFloat(newRow.decs5) || 0, ton: parseFloat(newRow.ts5) || 0 },
+            ];
+            const validWeeks = weeks.filter(w => w.ton > 0);
+            newRow.prixEstime = validWeeks.length > 0
+                ? validWeeks.reduce((sum, w) => sum + (w.dec / w.ton), 0) / validWeeks.length
+                : 0;
+            
+            return newRow;
+        }));
     };
 
     // Fetch master lookups
@@ -82,19 +94,6 @@ const GestionAvancePage = () => {
         fetchLookups();
     }, []);
 
-    // Fetch Variety Groups once for the Modal
-    useEffect(() => {
-        const fetchGrpVars = async () => {
-            try {
-                const groups = await apiGet('/api/lookup/grpvars');
-                setGrpVars(groups);
-            } catch (err) {
-                console.error("Failed to fetch grpvars", err);
-            }
-        };
-        fetchGrpVars();
-    }, []);
-
     const adherentOptions = adherents.map(a => ({ value: a.refadh, label: a.nomadh }));
 
     // Effect to fetch total charges when adherent, annee, or mois changes
@@ -104,13 +103,13 @@ const GestionAvancePage = () => {
                 setTotalCharges(0);
                 return;
             }
-            try {
-                const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
-                setTotalCharges(sum || 0);
-            } catch (err) {
-                console.error("Failed to fetch charge sum", err);
-                setTotalCharges(0);
-            }
+                try {
+                    const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
+                    setTotalCharges(sum || 0);
+                } catch (err) {
+                    console.error("Failed to fetch charge sum", err);
+                    setTotalCharges(0);
+                }
         };
         fetchCharges();
     }, [formData.adherent, formData.annee, formData.mois]);
@@ -149,54 +148,6 @@ const GestionAvancePage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Prix Estimatifs Handlers
-    const handleOpenPrixModal = async () => {
-        if (!formData.annee || !formData.mois) {
-            alert('Veuillez sélectionner une Année et un Mois avant de saisir les prix.');
-            return;
-        }
-        setShowPrixModal(true);
-        // Load existing prices for this month/year
-        try {
-            const data = await apiGet(`/api/PrixEstimatifs/by-month?annee=${formData.annee}&mois=${formData.mois}`);
-            const mapping = {};
-            data.forEach(p => { mapping[p.codGrv] = p.prixEstime; });
-            setPrixEstimatifsData(mapping);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const handlePrixChange = (codgrv, value) => {
-        setPrixEstimatifsData(prev => ({
-            ...prev,
-            [codgrv]: value
-        }));
-    };
-
-    const handleSavePrixEstimatifs = async (e) => {
-        e.preventDefault();
-        setIsSavingPrix(true);
-        try {
-            const promises = grpVars.map(g => {
-                const prix = parseFloat(prixEstimatifsData[g.codgrv]) || 0;
-                return apiPost('/api/PrixEstimatifs/upsert', {
-                    Annee: parseInt(formData.annee),
-                    Mois: parseInt(formData.mois),
-                    CodGrv: g.codgrv,
-                    PrixEstime: prix
-                });
-            });
-            await Promise.all(promises);
-            setShowPrixModal(false);
-            alert('Prix estimatifs enregistrés avec succès !');
-        } catch (err) {
-            alert('Erreur lors de la sauvegarde: ' + err.message);
-        } finally {
-            setIsSavingPrix(false);
-        }
-    };
-
     // Go to Step 2
     const handleNextStep = async () => {
         if (!formData.adherent) {
@@ -222,47 +173,25 @@ const GestionAvancePage = () => {
         try {
             const data = await apiGet(`/api/gestionavances/wizard-details?refadh=${formData.adherent.value}&annee=${formData.annee}&mois=${formData.mois}`);
 
-            if (data && data.length > 0) {
-                const hasMissingPrices = data.some(row => !row.prixEstime || row.prixEstime === 0);
-                if (hasMissingPrices) {
-                    alert("Impossible de continuer : Il manque des prix estimatifs pour les groupes de variétés exportés ce mois. Veuillez cliquer sur '💰 Saisir Prix Estimatifs' pour les définir.");
-                    return;
-                }
-            }
-
             setWizardDetails(data || []);
 
-            // Pre-populate editable rows from wizardDetails (one row per variety group)
+            // Pre-populate editable rows from wizardDetails — always use fresh export data
+            // codGrv is now carried so we can save it in the details array
             if (data && data.length > 0) {
                 const fmt = (v) => v > 0 ? parseFloat(v.toFixed(4)) : 0;
-                if (isEditing && savedRealValues) {
-                    // Merge saved real values back into editable rows
-                    setEditableRows(data.map(row => ({
-                        nomGrv: row.nomGrv,
-                        ts1: fmt(savedRealValues.realTS1 != null ? savedRealValues.realTS1 / data.length : row.tonnageS1),
-                        ts2: fmt(savedRealValues.realTS2 != null ? savedRealValues.realTS2 / data.length : row.tonnageS2),
-                        ts3: fmt(savedRealValues.realTS3 != null ? savedRealValues.realTS3 / data.length : row.tonnageS3),
-                        ts4: fmt(savedRealValues.realTS4 != null ? savedRealValues.realTS4 / data.length : row.tonnageS4),
-                        ts5: fmt(savedRealValues.realTS5 != null ? savedRealValues.realTS5 / data.length : (row.tonnageS5 || 0)),
-                        decs1: fmt(savedRealValues.realDecS1 != null ? savedRealValues.realDecS1 / data.length : row.tonnageS1 * row.prixEstime),
-                        decs2: fmt(savedRealValues.realDecS2 != null ? savedRealValues.realDecS2 / data.length : row.tonnageS2 * row.prixEstime),
-                        decs3: fmt(savedRealValues.realDecS3 != null ? savedRealValues.realDecS3 / data.length : row.tonnageS3 * row.prixEstime),
-                        decs4: fmt(savedRealValues.realDecS4 != null ? savedRealValues.realDecS4 / data.length : row.tonnageS4 * row.prixEstime),
-                        decs5: fmt(savedRealValues.realDecS5 != null ? savedRealValues.realDecS5 / data.length : (row.tonnageS5 || 0) * row.prixEstime),
-                    })));
-                } else {
-                    setEditableRows(data.map(row => ({
-                        nomGrv: row.nomGrv,
-                        ts1: fmt(row.tonnageS1), ts2: fmt(row.tonnageS2),
-                        ts3: fmt(row.tonnageS3), ts4: fmt(row.tonnageS4),
-                        ts5: fmt(row.tonnageS5 || 0),
-                        decs1: fmt(row.tonnageS1 * row.prixEstime),
-                        decs2: fmt(row.tonnageS2 * row.prixEstime),
-                        decs3: fmt(row.tonnageS3 * row.prixEstime),
-                        decs4: fmt(row.tonnageS4 * row.prixEstime),
-                        decs5: fmt((row.tonnageS5 || 0) * row.prixEstime),
-                    })));
-                }
+                setEditableRows(data.map(row => ({
+                    codGrv: row.codGrv,
+                    nomGrv: row.nomGrv,
+                    ts1: fmt(row.tonnageS1), ts2: fmt(row.tonnageS2),
+                    ts3: fmt(row.tonnageS3), ts4: fmt(row.tonnageS4),
+                    ts5: fmt(row.tonnageS5 || 0),
+                    prixEstime: fmt(row.prixEstime || 0),
+                    decs1: fmt(row.tonnageS1 * row.prixEstime),
+                    decs2: fmt(row.tonnageS2 * row.prixEstime),
+                    decs3: fmt(row.tonnageS3 * row.prixEstime),
+                    decs4: fmt(row.tonnageS4 * row.prixEstime),
+                    decs5: fmt((row.tonnageS5 || 0) * row.prixEstime),
+                })));
             } else {
                 setEditableRows([]);
             }
@@ -313,7 +242,23 @@ const GestionAvancePage = () => {
                 realDecS3: wizardTotals.tDecS3,
                 realDecS4: wizardTotals.tDecS4,
                 realDecS5: wizardTotals.tDecS5,
-                montant: wizardTotals.totalDec
+                montant: wizardTotals.totalDec,
+                // Save per-variety detail rows so Edit can load them accurately
+                details: editableRows.map(row => ({
+                    codGrv: row.codGrv || 0,
+                    nomGrv: row.nomGrv || '',
+                    prixEstime: parseFloat(row.prixEstime) || 0,
+                    tS1: parseFloat(row.ts1) || 0,
+                    tS2: parseFloat(row.ts2) || 0,
+                    tS3: parseFloat(row.ts3) || 0,
+                    tS4: parseFloat(row.ts4) || 0,
+                    tS5: parseFloat(row.ts5) || 0,
+                    decS1: parseFloat(row.decs1) || 0,
+                    decS2: parseFloat(row.decs2) || 0,
+                    decS3: parseFloat(row.decs3) || 0,
+                    decS4: parseFloat(row.decs4) || 0,
+                    decS5: parseFloat(row.decs5) || 0,
+                }))
             };
 
             if (isEditing && editingAvanceId) {
@@ -338,7 +283,6 @@ const GestionAvancePage = () => {
             const data = await apiGet(`/api/gestionavances/${id}`);
             const { avance } = data;
 
-            // Fix Issue 3: fallback if adherent not found in options
             const matchedAdherent = adherentOptions.find(a => a.value === avance.refadh)
                 || (avance.refadh ? { value: avance.refadh, label: `Adhérent #${avance.refadh}` } : null);
 
@@ -360,18 +304,47 @@ const GestionAvancePage = () => {
                 totalDecompte: avance.ttdecompte || ''
             });
 
-            // Fix Issue 1: store saved real per-week values for merge in Step 2
-            setSavedRealValues({
-                realTS1: avance.realTS1, realTS2: avance.realTS2,
-                realTS3: avance.realTS3, realTS4: avance.realTS4, realTS5: avance.realTS5,
-                realDecS1: avance.realDecS1, realDecS2: avance.realDecS2,
-                realDecS3: avance.realDecS3, realDecS4: avance.realDecS4, realDecS5: avance.realDecS5,
-            });
+            // Preserve the saved total charges snapshot
+            setTotalCharges(avance.ttcharges || 0);
+
+            // If detail rows were saved, load them directly — no averaging needed
+            if (avance.details && avance.details.length > 0) {
+                setEditableRows(avance.details.map(d => {
+                    // Use saved price if present; for old records (prix_estime=0), compute from the correct formula
+                    const computedPrix = (() => {
+                        if (d.prixEstime > 0) return d.prixEstime;
+                        const weeks = [
+                            { dec: d.decS1, ton: d.tS1 }, { dec: d.decS2, ton: d.tS2 },
+                            { dec: d.decS3, ton: d.tS3 }, { dec: d.decS4, ton: d.tS4 },
+                            { dec: d.decS5, ton: d.tS5 },
+                        ];
+                        const valid = weeks.filter(w => w.ton > 0);
+                        return valid.length > 0 ? valid.reduce((s, w) => s + w.dec / w.ton, 0) / valid.length : 0;
+                    })();
+                    return {
+                        codGrv: d.codGrv,
+                        nomGrv: d.nomGrv,
+                        ts1: d.tS1, ts2: d.tS2, ts3: d.tS3, ts4: d.tS4, ts5: d.tS5,
+                        prixEstime: computedPrix,
+                        decs1: d.decS1, decs2: d.decS2, decs3: d.decS3, decs4: d.decS4, decs5: d.decS5,
+                    };
+                }));
+                // Jump straight to Step 2 since we already have the detail data
+                setCurrentStep(2);
+            } else {
+                // Legacy records without details — fall back to wizard (Step 1)
+                setSavedRealValues({
+                    realTS1: avance.realTS1, realTS2: avance.realTS2,
+                    realTS3: avance.realTS3, realTS4: avance.realTS4, realTS5: avance.realTS5,
+                    realDecS1: avance.realDecS1, realDecS2: avance.realDecS2,
+                    realDecS3: avance.realDecS3, realDecS4: avance.realDecS4, realDecS5: avance.realDecS5,
+                });
+                setCurrentStep(1);
+            }
 
             setIsEditing(true);
             setEditingAvanceId(id);
             setIsViewing(false);
-            setCurrentStep(1);
             setShowForm(true);
 
         } catch (err) {
@@ -531,11 +504,6 @@ const GestionAvancePage = () => {
                                                 <label>Mois</label>
                                                 <input type="number" name="mois" value={formData.mois} onChange={handleFormChange} min="1" max="12" style={{ height: '38px', padding: '0 8px', borderRadius: '4px', border: '1px solid #e0e6ed', backgroundColor: '#f8f9fa' }} />
                                             </div>
-                                            <div className="input-group" style={{ flex: '1 1 150px', display: 'flex', alignItems: 'flex-end' }}>
-                                                <button type="button" onClick={handleOpenPrixModal} style={{ height: '38px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', padding: '0 15px', cursor: 'pointer', width: '100%', fontWeight: '500' }}>
-                                                    💰 Saisir Prix Estimatifs
-                                                </button>
-                                            </div>
                                         </div>
 
                                         {isEditing && (
@@ -599,9 +567,7 @@ const GestionAvancePage = () => {
                                                             </tr>
                                                         )}
                                                         {editableRows.map((row, idx) => {
-                                                            const rowTonnage = (parseFloat(row.ts1) || 0) + (parseFloat(row.ts2) || 0) + (parseFloat(row.ts3) || 0) + (parseFloat(row.ts4) || 0) + (parseFloat(row.ts5) || 0);
                                                             const rowDec = (parseFloat(row.decs1) || 0) + (parseFloat(row.decs2) || 0) + (parseFloat(row.decs3) || 0) + (parseFloat(row.decs4) || 0) + (parseFloat(row.decs5) || 0);
-                                                            const rowPrix = rowTonnage > 0 ? rowDec / rowTonnage : 0;
                                                             return (
                                                                 <tr key={idx} style={{ borderBottom: '1px solid #e9ecef', backgroundColor: idx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
                                                                     <td style={{ padding: '6px 8px', fontWeight: '600', color: '#2c3e50', whiteSpace: 'nowrap' }}>
@@ -617,14 +583,19 @@ const GestionAvancePage = () => {
                                                                             />
                                                                         </td>
                                                                     ))}
-                                                                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '600', color: '#17a2b8' }}>
-                                                                        {formatNumber(rowPrix)}
+                                                                    <td style={{ padding: '3px' }}>
+                                                                        <input
+                                                                            type="number" step="0.01" min="0"
+                                                                            value={row.prixEstime ? Number(row.prixEstime).toFixed(4) : ''}
+                                                                            readOnly
+                                                                            style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ced4da', textAlign: 'right', backgroundColor: '#e9ecef', color: '#6c757d' }}
+                                                                        />
                                                                     </td>
                                                                     {['decs1', 'decs2', 'decs3', 'decs4', 'decs5'].map(field => (
                                                                         <td key={field} style={{ padding: '3px' }}>
                                                                             <input
                                                                                 type="number" step="0.01" min="0"
-                                                                                value={row[field]}
+                                                                                value={row[field] ?? ''}
                                                                                 onChange={e => handleEditableRowChange(idx, field, e.target.value)}
                                                                                 style={{ width: '80px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #ced4da', textAlign: 'right', backgroundColor: '#fff' }}
                                                                             />
@@ -670,41 +641,6 @@ const GestionAvancePage = () => {
                     )}
                 </div>
             </div>
-
-            {/* PRIX ESTIMATIF MODAL */}
-            {showPrixModal && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1050 }}>
-                    <div className="modal-content" style={{ background: '#fff', padding: '20px', borderRadius: '8px', minWidth: '400px', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <h3 style={{ marginTop: 0 }}>Prix Estimatifs ({formData.mois}/{formData.annee})</h3>
-                        <p style={{ fontSize: '14px', color: '#666' }}>Saisissez le prix de chaque variété par KG.</p>
-                        <form onSubmit={handleSavePrixEstimatifs}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
-                                {grpVars.map(grp => (
-                                    <div key={grp.codgrv} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                                        <label style={{ margin: 0, fontWeight: '500' }}>{grp.nomgrv}</label>
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                style={{ width: '100px', padding: '5px', borderRadius: '4px', border: '1px solid #ced4da', textAlign: 'right' }}
-                                                value={prixEstimatifsData[grp.codgrv] !== undefined ? prixEstimatifsData[grp.codgrv] : ''}
-                                                onChange={(e) => handlePrixChange(grp.codgrv, e.target.value)}
-                                            />
-                                            <span style={{ marginLeft: '10px', color: '#6c757d' }}>DH</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                                <button type="button" onClick={() => setShowPrixModal(false)} style={{ padding: '8px 15px', border: 'none', background: '#6c757d', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>Annuler</button>
-                                <button type="submit" disabled={isSavingPrix} style={{ padding: '8px 15px', border: 'none', background: '#28a745', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                    {isSavingPrix ? 'Enregistrement...' : 'Enregistrer'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* DATA TABLE (Liste) */}
             {!showForm && (
