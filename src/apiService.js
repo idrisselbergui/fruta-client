@@ -1,5 +1,7 @@
-// The base URL of your deployed API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:44374';
+// The base URL of your deployed API.
+// Uses ?? (not ||) so that an empty string from VITE_API_BASE_URL is kept,
+// enabling relative /api/* calls when the frontend is served by the API itself (local mode).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:44374';
 
 /**
  * A helper function to get the current user's session data.
