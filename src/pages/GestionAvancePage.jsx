@@ -58,18 +58,14 @@ const GestionAvancePage = () => {
             if (i !== idx) return r;
             const newRow = { ...r, [field]: value };
             
-            // Recalculate prixEstime as average of per-week prices: Σ(decSx / tonnageSx) / count of weeks with tonnage
-            const weeks = [
-                { dec: parseFloat(newRow.decs1) || 0, ton: parseFloat(newRow.ts1) || 0 },
-                { dec: parseFloat(newRow.decs2) || 0, ton: parseFloat(newRow.ts2) || 0 },
-                { dec: parseFloat(newRow.decs3) || 0, ton: parseFloat(newRow.ts3) || 0 },
-                { dec: parseFloat(newRow.decs4) || 0, ton: parseFloat(newRow.ts4) || 0 },
-                { dec: parseFloat(newRow.decs5) || 0, ton: parseFloat(newRow.ts5) || 0 },
-            ];
-            const validWeeks = weeks.filter(w => w.ton > 0);
-            newRow.prixEstime = validWeeks.length > 0
-                ? validWeeks.reduce((sum, w) => sum + (w.dec / w.ton), 0) / validWeeks.length
-                : 0;
+            // Recalculate prixEstime as weighted average: total Déc / total Tonnage
+            const totalDec = (parseFloat(newRow.decs1) || 0) + (parseFloat(newRow.decs2) || 0) +
+                             (parseFloat(newRow.decs3) || 0) + (parseFloat(newRow.decs4) || 0) +
+                             (parseFloat(newRow.decs5) || 0);
+            const totalTon = (parseFloat(newRow.ts1) || 0) + (parseFloat(newRow.ts2) || 0) +
+                             (parseFloat(newRow.ts3) || 0) + (parseFloat(newRow.ts4) || 0) +
+                             (parseFloat(newRow.ts5) || 0);
+            newRow.prixEstime = totalTon > 0 ? totalDec / totalTon : 0;
             
             return newRow;
         }));
@@ -320,13 +316,10 @@ const GestionAvancePage = () => {
                     // Use saved price if present; for old records (prix_estime=0), compute from the correct formula
                     const computedPrix = (() => {
                         if (d.prixEstime > 0) return d.prixEstime;
-                        const weeks = [
-                            { dec: d.decS1, ton: d.tS1 }, { dec: d.decS2, ton: d.tS2 },
-                            { dec: d.decS3, ton: d.tS3 }, { dec: d.decS4, ton: d.tS4 },
-                            { dec: d.decS5, ton: d.tS5 },
-                        ];
-                        const valid = weeks.filter(w => w.ton > 0);
-                        return valid.length > 0 ? valid.reduce((s, w) => s + w.dec / w.ton, 0) / valid.length : 0;
+                        // Weighted average: total Déc / total Tonnage
+                        const totalDec = (d.decS1 || 0) + (d.decS2 || 0) + (d.decS3 || 0) + (d.decS4 || 0) + (d.decS5 || 0);
+                        const totalTon = (d.tS1 || 0) + (d.tS2 || 0) + (d.tS3 || 0) + (d.tS4 || 0) + (d.tS5 || 0);
+                        return totalTon > 0 ? totalDec / totalTon : 0;
                     })();
                     return {
                         codGrv: d.codGrv ?? d.CodGrv,

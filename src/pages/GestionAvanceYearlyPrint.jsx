@@ -18,7 +18,7 @@ const ROW_COLORS = {
     export: '#e2efda',   // pale green
     section_header: '#2c3e50',
 };
-
+ 
 const GestionAvanceYearlyPrint = () => {
     const [adherents, setAdherents] = useState([]);
     const [selectedAdherent, setSelectedAdherent] = useState(null);
@@ -27,7 +27,7 @@ const GestionAvanceYearlyPrint = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const printRef = useRef();
-
+ 
     useEffect(() => {
         Promise.all([
             apiGet('/api/lookup/adherents'),
@@ -36,8 +36,8 @@ const GestionAvanceYearlyPrint = () => {
             setAdherents((adherentData || []).map(a => ({ value: a.refadh, label: a.nomadh })));
             if (campData?.startDate) setCampagneDates(campData);
         }).catch(() => { });
-    }, []);
-
+    }, []);          
+ 
     const loadReport = async () => {
         if (!selectedAdherent) { setError('Veuillez sélectionner un adhérent.'); return; }
         if (!campagneDates) { setError('Dates de campagne non disponibles.'); return; }
@@ -339,9 +339,9 @@ const GestionAvanceYearlyPrint = () => {
                                     </tr>
                                 ))}
 
-                                {/* ── ACCOMPT ESTIMÉ ── */}
+                                {/* ── Décompte ESTIMÉ ── */}
                                 <tr>
-                                    <td style={labelStyle('#e8f5e9')}>ACCOMPT ESTIMÉ</td>
+                                    <td style={labelStyle('#e8f5e9')}>Décompte ESTIMÉ</td>
                                     {reportData.months.map((m, i) => (
                                         <td key={i} style={cellStyle('#e8f5e9')}>{fmt(m.accomptEstime)}</td>
                                     ))}
