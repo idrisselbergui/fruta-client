@@ -7,7 +7,7 @@ import TrendChart, { CombinedTrendChart } from '../components/TrendChart';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
-import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF, generateVenteEcartDetailsPDF } from '../utils/pdfGenerator';
+import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF, generateVenteEcartDetailsPDF, calculateDateRangeFromTableRows } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
 import './DashboardPage.css';
 
