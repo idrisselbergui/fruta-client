@@ -104,10 +104,19 @@ const EcartDirectPage = () => {
         e.preventDefault();
         setError(null);
         try {
+            const payload = {
+                numbl: formData.numbl ? parseInt(formData.numbl, 10) : null,
+                dtepal: formData.dtepal || null,
+                refver: formData.refver ? parseInt(formData.refver, 10) : null,
+                codvar: formData.codvar ? parseInt(formData.codvar, 10) : null,
+                pdsfru: formData.pdsfru ? parseFloat(formData.pdsfru) : null,
+                codtype: formData.codtype ? parseInt(formData.codtype, 10) : null,
+            };
             if (editingItem) {
-                await apiPut(`/api/ecartdirect/${editingItem.numpal}`, formData);
+                payload.numpal = editingItem.numpal;
+                await apiPut(`/api/ecartdirect/${editingItem.numpal}`, payload);
             } else {
-                await apiPost('/api/ecartdirect', formData);
+                await apiPost('/api/ecartdirect', payload);
             }
             handleHideForm();
             fetchData();

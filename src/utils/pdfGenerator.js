@@ -271,38 +271,57 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
   const tableData = [];
 
   // Add header - same as in the DashboardPage table
-  const headerRow = ['Verger', 'Variété', 'Réception', 'Export', 'Écart'];
+  const headerRow = ['Verger', 'Variété', 'Réception', 'Export', 'Écart', 'Frient'];
   tableData.push(headerRow);
 
   // Add data rows - same data as displayed in the UI table
   let grandTotalPdsfru = 0;
   let grandTotalPdscom = 0;
   let grandTotalEcart = 0;
+  let grandTotalFrient = 0;
+
+  // Store percentages per row for didDrawCell rendering
+  const rowPercentages = [];
 
   sortedTableRows.forEach(row => {
+    const pdsfru = parseFloat(row.totalPdsfru) || 0;
+    const pdscom = parseFloat(row.totalPdscom) || 0;
+    const ecart = parseFloat(row.totalEcart) || 0;
+    const frient = pdsfru - pdscom - ecart;
+    const exportPct = pdsfru > 0 ? ((pdscom / pdsfru) * 100).toFixed(1) : '0.0';
+    const ecartPct = pdsfru > 0 ? ((ecart / pdsfru) * 100).toFixed(1) : '0.0';
+    const frientPct = pdsfru > 0 ? ((frient / pdsfru) * 100).toFixed(1) : '0.0';
     const rowData = [
       (row.vergerName || '').toUpperCase(),
       (row.varieteName || '').toUpperCase(),
-      formatNumberWithSpaces(parseFloat(row.totalPdsfru) || 0, 0),
-      formatNumberWithSpaces(parseFloat(row.totalPdscom) || 0, 0),
-      formatNumberWithSpaces(parseFloat(row.totalEcart) || 0, 0)
+      formatNumberWithSpaces(pdsfru, 0),
+      formatNumberWithSpaces(pdscom, 0),
+      formatNumberWithSpaces(ecart, 0),
+      formatNumberWithSpaces(frient, 0)
     ];
     tableData.push(rowData);
+    rowPercentages.push({ exportPct, ecartPct, frientPct });
 
-    grandTotalPdsfru += parseFloat(row.totalPdsfru) || 0;
-    grandTotalPdscom += parseFloat(row.totalPdscom) || 0;
-    grandTotalEcart += parseFloat(row.totalEcart) || 0;
+    grandTotalPdsfru += pdsfru;
+    grandTotalPdscom += pdscom;
+    grandTotalEcart += ecart;
+    grandTotalFrient += frient;
   });
 
   // Add total row
+  const totalExportPct = grandTotalPdsfru > 0 ? ((grandTotalPdscom / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
+  const totalEcartPct = grandTotalPdsfru > 0 ? ((grandTotalEcart / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
+  const totalFrientPct = grandTotalPdsfru > 0 ? ((grandTotalFrient / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
   const totalRow = [
     'TOTAL',
     '',
     formatNumberWithSpaces(grandTotalPdsfru, 0),
     formatNumberWithSpaces(grandTotalPdscom, 0),
-    formatNumberWithSpaces(grandTotalEcart, 0)
+    formatNumberWithSpaces(grandTotalEcart, 0),
+    formatNumberWithSpaces(grandTotalFrient, 0)
   ];
   tableData.push(totalRow);
+  rowPercentages.push({ exportPct: totalExportPct, ecartPct: totalEcartPct, frientPct: totalFrientPct });
 
   console.log('Final table data for varietes (raw data):', tableData);
 
@@ -323,14 +342,33 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
       fontSize: 9
     },
     columnStyles: {
-      0: { cellWidth: 90, fontStyle: 'bold' },
+      0: { cellWidth: 55, fontStyle: 'bold' },
       1: { cellWidth: 40 },
-      2: { cellWidth: 22, halign: 'right' },
-      3: { cellWidth: 20, halign: 'right' },
-      4: { cellWidth: 20, halign: 'right' }
+      2: { cellWidth: 22, halign: 'left' },
+      3: { cellWidth: 22, halign: 'left' },
+      4: { cellWidth: 22, halign: 'left' },
+      5: { cellWidth: 22, halign: 'left' }
     },
     margin: { left: 10, right: 10 },
-    alternateRowStyles: { fillColor: [245, 245, 245] }
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && (data.column.index === 3 || data.column.index === 4 || data.column.index === 5)) {
+        const pctData = rowPercentages[data.row.index];
+        if (pctData) {
+          let pctText;
+          if (data.column.index === 3) pctText = `(${pctData.exportPct}%)`;
+          else if (data.column.index === 4) pctText = `(${pctData.ecartPct}%)`;
+          else pctText = `(${pctData.frientPct}%)`;
+          doc.setFontSize(5);
+          doc.setTextColor(136, 136, 136);
+          const x = data.cell.x + data.cell.width - 1.5;
+          const y = data.cell.y + data.cell.height - 0.8;
+          doc.text(pctText, x, y, { align: 'right' });
+          doc.setFontSize(7);
+          doc.setTextColor(0, 0, 0);
+        }
+      }
+    }
   });
 
   // Save the PDF
@@ -398,38 +436,57 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
   const tableData = [];
 
   // Add header - same as in the DashboardPage table
-  const headerRow = ['Verger', 'Groupe Variété', 'Réception', 'Export', 'Écart'];
+  const headerRow = ['Verger', 'Groupe Variété', 'Réception', 'Export', 'Écart', 'Frient'];
   tableData.push(headerRow);
 
   // Add data rows - using the pre-grouped data from backend
   let grandTotalPdsfru = 0;
   let grandTotalPdscom = 0;
   let grandTotalEcart = 0;
+  let grandTotalFrient = 0;
+
+  // Store percentages per row for didDrawCell rendering
+  const rowPercentages = [];
 
   sortedTableRows.forEach(row => {
+    const pdsfru = parseFloat(row.totalPdsfru) || 0;
+    const pdscom = parseFloat(row.totalPdscom) || 0;
+    const ecart = parseFloat(row.totalEcart) || 0;
+    const frient = pdsfru - pdscom - ecart;
+    const exportPct = pdsfru > 0 ? ((pdscom / pdsfru) * 100).toFixed(1) : '0.0';
+    const ecartPct = pdsfru > 0 ? ((ecart / pdsfru) * 100).toFixed(1) : '0.0';
+    const frientPct = pdsfru > 0 ? ((frient / pdsfru) * 100).toFixed(1) : '0.0';
     const rowData = [
       (row.vergerName || '').toUpperCase(),
       (row.groupVarieteName || '').toUpperCase(),
-      formatNumberWithSpaces(parseFloat(row.totalPdsfru) || 0, 0),
-      formatNumberWithSpaces(parseFloat(row.totalPdscom) || 0, 0),
-      formatNumberWithSpaces(parseFloat(row.totalEcart) || 0, 0)
+      formatNumberWithSpaces(pdsfru, 0),
+      formatNumberWithSpaces(pdscom, 0),
+      formatNumberWithSpaces(ecart, 0),
+      formatNumberWithSpaces(frient, 0)
     ];
     tableData.push(rowData);
+    rowPercentages.push({ exportPct, ecartPct, frientPct });
 
-    grandTotalPdsfru += parseFloat(row.totalPdsfru) || 0;
-    grandTotalPdscom += parseFloat(row.totalPdscom) || 0;
-    grandTotalEcart += parseFloat(row.totalEcart) || 0;
+    grandTotalPdsfru += pdsfru;
+    grandTotalPdscom += pdscom;
+    grandTotalEcart += ecart;
+    grandTotalFrient += frient;
   });
 
   // Add total row
+  const totalExportPct = grandTotalPdsfru > 0 ? ((grandTotalPdscom / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
+  const totalEcartPct = grandTotalPdsfru > 0 ? ((grandTotalEcart / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
+  const totalFrientPct = grandTotalPdsfru > 0 ? ((grandTotalFrient / grandTotalPdsfru) * 100).toFixed(1) : '0.0';
   const totalRow = [
     'TOTAL',
     '',
     formatNumberWithSpaces(grandTotalPdsfru, 0),
     formatNumberWithSpaces(grandTotalPdscom, 0),
-    formatNumberWithSpaces(grandTotalEcart, 0)
+    formatNumberWithSpaces(grandTotalEcart, 0),
+    formatNumberWithSpaces(grandTotalFrient, 0)
   ];
   tableData.push(totalRow);
+  rowPercentages.push({ exportPct: totalExportPct, ecartPct: totalEcartPct, frientPct: totalFrientPct });
 
   console.log('Final table data for group variete (raw data):', tableData);
 
@@ -450,14 +507,30 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
       fontSize: 9
     },
     columnStyles: {
-      0: { cellWidth: 80, fontStyle: 'bold' },
+      0: { cellWidth: 50, fontStyle: 'bold' },
       1: { cellWidth: 40 },
-      2: { cellWidth: 20, halign: 'right' },
-      3: { cellWidth: 25, halign: 'right' },
-      4: { cellWidth: 25, halign: 'right' }
+      2: { cellWidth: 22, halign: 'left' },
+      3: { cellWidth: 22, halign: 'left' },
+      4: { cellWidth: 22, halign: 'left' },
+      5: { cellWidth: 22, halign: 'left' }
     },
     margin: { left: 10, right: 10 },
-    alternateRowStyles: { fillColor: [245, 245, 245] }
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && (data.column.index === 3 || data.column.index === 4)) {
+        const pctData = rowPercentages[data.row.index];
+        if (pctData) {
+          const pctText = data.column.index === 3 ? `(${pctData.exportPct}%)` : `(${pctData.ecartPct}%)`;
+          doc.setFontSize(5);
+          doc.setTextColor(136, 136, 136);
+          const x = data.cell.x + data.cell.width - 1.5;
+          const y = data.cell.y + data.cell.height - 0.8;
+          doc.text(pctText, x, y, { align: 'right' });
+          doc.setFontSize(7);
+          doc.setTextColor(0, 0, 0);
+        }
+      }
+    }
   });
 
   // Save the PDF
