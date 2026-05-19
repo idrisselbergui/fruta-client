@@ -297,7 +297,7 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
       formatNumberWithSpaces(pdsfru, 0),
       formatNumberWithSpaces(pdscom, 0),
       formatNumberWithSpaces(ecart, 0),
-      formatNumberWithSpaces(frient, 0)
+      `${frientPct}%`
     ];
     tableData.push(rowData);
     rowPercentages.push({ exportPct, ecartPct, frientPct });
@@ -318,7 +318,7 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
     formatNumberWithSpaces(grandTotalPdsfru, 0),
     formatNumberWithSpaces(grandTotalPdscom, 0),
     formatNumberWithSpaces(grandTotalEcart, 0),
-    formatNumberWithSpaces(grandTotalFrient, 0)
+    `${totalFrientPct}%`
   ];
   tableData.push(totalRow);
   rowPercentages.push({ exportPct: totalExportPct, ecartPct: totalEcartPct, frientPct: totalFrientPct });
@@ -352,13 +352,12 @@ const generateVarietesPDF = (tableRows, grpVarOptions, varieteOptions, filters) 
     margin: { left: 10, right: 10 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
     didDrawCell: (data) => {
-      if (data.section === 'body' && (data.column.index === 3 || data.column.index === 4 || data.column.index === 5)) {
+      if (data.section === 'body' && (data.column.index === 3 || data.column.index === 4)) {
         const pctData = rowPercentages[data.row.index];
         if (pctData) {
           let pctText;
           if (data.column.index === 3) pctText = `(${pctData.exportPct}%)`;
-          else if (data.column.index === 4) pctText = `(${pctData.ecartPct}%)`;
-          else pctText = `(${pctData.frientPct}%)`;
+          else pctText = `(${pctData.ecartPct}%)`;
           doc.setFontSize(5);
           doc.setTextColor(136, 136, 136);
           const x = data.cell.x + data.cell.width - 1.5;
@@ -462,7 +461,7 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
       formatNumberWithSpaces(pdsfru, 0),
       formatNumberWithSpaces(pdscom, 0),
       formatNumberWithSpaces(ecart, 0),
-      formatNumberWithSpaces(frient, 0)
+      `${frientPct}%`
     ];
     tableData.push(rowData);
     rowPercentages.push({ exportPct, ecartPct, frientPct });
@@ -483,7 +482,7 @@ const generateGroupVarietePDF = (tableRows, grpVarOptions, varieteOptions, filte
     formatNumberWithSpaces(grandTotalPdsfru, 0),
     formatNumberWithSpaces(grandTotalPdscom, 0),
     formatNumberWithSpaces(grandTotalEcart, 0),
-    formatNumberWithSpaces(grandTotalFrient, 0)
+    `${totalFrientPct}%`
   ];
   tableData.push(totalRow);
   rowPercentages.push({ exportPct: totalExportPct, ecartPct: totalEcartPct, frientPct: totalFrientPct });
