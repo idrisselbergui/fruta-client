@@ -350,7 +350,10 @@ button {
   align-items: center;
   justify-content: center;
   height: 48px;
-  padding: 0 1.2rem;
+  padding: 0 1.5rem !important; /* Force padding to prevent text truncation */
+  width: auto !important; /* Override any global 48px square constraints */
+  min-width: fit-content !important;
+  max-width: none !important;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -360,6 +363,7 @@ button {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  box-sizing: border-box; /* Force padding inside dimensions */
 }
 
 .pagination-nav:hover:not(:disabled) {
@@ -374,6 +378,18 @@ button {
   color: #9ca3af;
   cursor: not-allowed;
   border-color: #e5e7eb;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #6b7280;
+  font-size: 1.1rem;
+  font-weight: bold;
+  user-select: none;
 }
 
 .nav-arrow {

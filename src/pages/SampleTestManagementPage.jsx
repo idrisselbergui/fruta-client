@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getReceptions, createSampleTest, getActiveSamples, getAllSamples, getDestinations, getVarietes, updateSampleStatus } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDateForDisplay } from '../utils/dateUtils';
@@ -219,46 +219,49 @@ const SampleTestManagementPage = () => {
     setCurrentPage(pageNumber);
   };
 
-  const renderPageNumbers = () => {
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
+  const pageNumbers = useMemo(() => {
+    const pages = [];
+    const maxVisible = 5; // Max page buttons to display
 
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total pages are less than max visible
+    if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
+        pages.push(i);
       }
     } else {
-      // Always show first page
-      pageNumbers.push(1);
+      // Always show page 1
+      pages.push(1);
 
-      // Calculate start and end of the middle section
-      let startPage = Math.max(2, currentPage - 1);
-      let endPage = Math.min(totalPages - 1, currentPage + 1);
+      // Calculate start and end for middle block centered on currentPage
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
 
-      // Add ellipsis before middle section if needed
-      if (startPage > 2) {
-        pageNumbers.push('...');
+      // Adjust if we are close to boundaries
+      if (currentPage <= 3) {
+        end = 4;
+      } else if (currentPage >= totalPages - 2) {
+        start = totalPages - 3;
       }
 
-      // Add middle pages
-      for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
+      // Add left ellipsis before middle block if needed
+      if (start > 2) {
+        pages.push('...');
       }
 
-      // Add ellipsis after middle section if needed
-      if (endPage < totalPages - 1) {
-        pageNumbers.push('...');
+      // Add middle block page numbers
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
       }
 
-      // Always show last page if more than 1 page
-      if (totalPages > 1) {
-        pageNumbers.push(totalPages);
+      // Add right ellipsis after middle block if needed
+      if (end < totalPages - 1) {
+        pages.push('...');
       }
+
+      // Always show last page
+      pages.push(totalPages);
     }
-
-    return pageNumbers;
-  };
+    return pages;
+  }, [currentPage, totalPages]);
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -553,10 +556,10 @@ const SampleTestManagementPage = () => {
                   </button>
 
                   <div className="pagination-numbers">
-                    {renderPageNumbers().map((pageNumber, index) => (
+                    {pageNumbers.map((pageNumber, index) => (
                       pageNumber === '...' ? (
                         <span key={`ellipsis-${index}`} className="pagination-ellipsis">
-                          …
+                          ...
                         </span>
                       ) : (
                         <button

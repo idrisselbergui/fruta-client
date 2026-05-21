@@ -17,22 +17,28 @@
 }
 
 .traitement-form {
+    width: 100%;
+}
+
+.traitement-form .form-row {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    align-items: end;
+    margin-bottom: 1.25rem;
+    width: 100%;
 }
 
 @media (min-width: 768px) {
-    .traitement-form {
-        grid-template-columns: repeat(2, 1fr);
-        align-items: flex-end;
+    .traitement-form .form-row {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for Orchard, Variety Group, Variety next to each other */
     }
 }
 
 .input-with-button {
     display: flex;
     gap: 0.5rem;
-    align-items: flex-end; /* This aligns items to the bottom */
+    align-items: center; /* Center vertically for perfect alignment */
 }
 
 .input-with-button > div[class*="-container"] { /* Targets react-select wrapper */
@@ -57,8 +63,26 @@
     line-height: 1; /* Ensure icon is centered vertically */
 }
 
-.traitement-form .save-btn {
-    grid-column: 1 / -1; /* Span full width on larger screens */
-    justify-self: start;
+.traitement-form .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    width: 100%;
+}
+
+.traitement-form .form-actions .clear-btn,
+.traitement-form .form-actions .save-btn {
+    width: auto !important;
+    min-width: 140px;
+    padding: 0.65rem 1.5rem;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 

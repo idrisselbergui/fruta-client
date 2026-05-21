@@ -407,40 +407,41 @@ const VenteEcartPage = () => {
         }
     };
 
-    const renderPageNumbers = () => {
+    const pageNumbers = useMemo(() => {
         const pages = [];
-        const maxVisible = 5;
+        const maxVisible = 5; // Max page buttons to display
 
         if (totalPages <= maxVisible) {
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
             }
         } else {
-            // Always show first page
+            // Always show page 1
             pages.push(1);
 
-            if (currentPage > 3) {
-                pages.push('...');
-            }
-
-            // Show pages around current
+            // Calculate start and end for middle block centered on currentPage
             let start = Math.max(2, currentPage - 1);
             let end = Math.min(totalPages - 1, currentPage + 1);
 
-            // Adjust window if near start
+            // Adjust if we are close to boundaries
             if (currentPage <= 3) {
-                end = Math.min(totalPages - 1, 4);
-            }
-            // Adjust window if near end
-            if (currentPage >= totalPages - 2) {
-                start = Math.max(2, totalPages - 3);
+                end = 4;
+            } else if (currentPage >= totalPages - 2) {
+                start = totalPages - 3;
             }
 
+            // Add left ellipsis before middle block if needed
+            if (start > 2) {
+                pages.push('...');
+            }
+
+            // Add middle block page numbers
             for (let i = start; i <= end; i++) {
                 pages.push(i);
             }
 
-            if (currentPage < totalPages - 2) {
+            // Add right ellipsis after middle block if needed
+            if (end < totalPages - 1) {
                 pages.push('...');
             }
 
@@ -448,7 +449,7 @@ const VenteEcartPage = () => {
             pages.push(totalPages);
         }
         return pages;
-    };
+    }, [currentPage, totalPages]);
 
     if (isLoading) return <LoadingSpinner />;
 
@@ -903,7 +904,7 @@ const VenteEcartPage = () => {
                             </button>
 
                             <div className="pagination-numbers">
-                                {renderPageNumbers().map((pageNumber, index) => (
+                                {pageNumbers.map((pageNumber, index) => (
                                     pageNumber === '...' ? (
                                         <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
                                     ) : (

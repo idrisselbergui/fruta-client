@@ -55,6 +55,41 @@ const TraitementPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalItems = traitements.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedTraitements = traitements.slice(startIndex, endIndex);
+
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        const maxVisible = 5;
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+            if (currentPage <= 3) end = 4;
+            else if (currentPage >= totalPages - 2) start = totalPages - 3;
+            if (start > 2) pages.push('...');
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (end < totalPages - 1) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
+    }, [currentPage, totalPages]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(1);
+        }
+    }, [traitements, totalPages, currentPage]);
 
     const fetchTraitements = useCallback(async () => {
         try {
@@ -138,6 +173,7 @@ const TraitementPage = () => {
         try {
             await apiPost('/api/traitement', newTraitement);
             setNewTraitement({ refver: null, codgrp: null, codvar: null, ref: null, dateappli: '' });
+            setShowForm(false);
             await fetchTraitements(); // Re-fetch data after adding
         } catch (err) {
             setError(`Failed to add treatment: ${err.message}`);
@@ -170,27 +206,104 @@ const TraitementPage = () => {
         }
     };
 
+    const handleShowForm = () => {
+        setError(null);
+        setNewTraitement({ refver: null, codgrp: null, codvar: null, ref: null, dateappli: '' });
+        setShowForm(prev => !prev);
+    };
+
+    const handleHideForm = () => {
+        setShowForm(false);
+        setNewTraitement({ refver: null, codgrp: null, codvar: null, ref: null, dateappli: '' });
+    };
+
     if (isLoading) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
-            {error && <p className="error-message">{error}</p>}
-
-            <div className="form-card">
-                <h2>Add New Treatment Application</h2>
-                <form onSubmit={handleAddTraitement} className="traitement-form">
-                    <div className="input-group"><label>Orchard</label><Select options={vergerOptions} onChange={option => handleFormChange('refver', option ? option.value : null)} value={vergerOptions.find(o => o.value === newTraitement.refver) || null} isClearable /></div>
-                    <div className="input-group"><label>Variety Group</label><Select options={grpVarOptions} onChange={handleGrpVarChange} value={grpVarOptions.find(o => o.value === newTraitement.codgrp) || null} isClearable /></div>
-                    <div className="input-group"><label>Variety</label><Select key={newTraitement.codgrp || 'empty'} options={filteredVarieteOptions} onChange={option => handleFormChange('codvar', option ? option.value : null)} value={filteredVarieteOptions.find(o => o.value === newTraitement.codvar) || null} isDisabled={!newTraitement.codgrp} isClearable /></div>
-                    <div className="input-group"><label>Treatment Product</label><div className="input-with-button"><Select options={traitOptions} onChange={option => handleFormChange('ref', option ? option.value : null)} value={traitOptions.find(o => o.value === newTraitement.ref) || null} isClearable /><button type="button" className="add-btn-inline" onClick={() => setIsModalOpen(true)}>+</button></div></div>
-                    <div className="input-group"><label>Application Date</label><input type="date" value={newTraitement.dateappli} onChange={e => handleFormChange('dateappli', e.target.value)} /></div>
-                    <div className="input-group"><label>Pre-Harvest Date (Auto-calculated)</label><input type="date" value={datePrecolte} disabled readOnly /></div>
-                    <button type="submit" className="save-btn">Save Treatment</button>
-                </form>
+            <div className="page-header">
+                <h1>Applied Treatments</h1>
+                <button className="add-btn" onClick={handleShowForm}>
+                    {showForm ? 'Hide Form' : '+ Add New Treatment'}
+                </button>
             </div>
 
+            {error && <p className="error-message">{error}</p>}
+
+            {/* Inline Form */}
+            {showForm && (
+                <div className="form-container">
+                    <h3>Add New Treatment Application</h3>
+                    <form onSubmit={handleAddTraitement} className="traitement-form">
+                        <div className="form-row">
+                            <div className="input-group">
+                                <label>Orchard</label>
+                                <Select
+                                    options={vergerOptions}
+                                    onChange={option => handleFormChange('refver', option ? option.value : null)}
+                                    value={vergerOptions.find(o => o.value === newTraitement.refver) || null}
+                                    isClearable
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Variety Group</label>
+                                <Select
+                                    options={grpVarOptions}
+                                    onChange={handleGrpVarChange}
+                                    value={grpVarOptions.find(o => o.value === newTraitement.codgrp) || null}
+                                    isClearable
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Variety</label>
+                                <Select
+                                    key={newTraitement.codgrp || 'empty'}
+                                    options={filteredVarieteOptions}
+                                    onChange={option => handleFormChange('codvar', option ? option.value : null)}
+                                    value={filteredVarieteOptions.find(o => o.value === newTraitement.codvar) || null}
+                                    isDisabled={!newTraitement.codgrp}
+                                    isClearable
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Treatment Product</label>
+                                <div className="input-with-button">
+                                    <Select
+                                        options={traitOptions}
+                                        onChange={option => handleFormChange('ref', option ? option.value : null)}
+                                        value={traitOptions.find(o => o.value === newTraitement.ref) || null}
+                                        isClearable
+                                    />
+                                    <button type="button" className="add-btn-inline" onClick={() => setIsModalOpen(true)}>+</button>
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Application Date</label>
+                                <input
+                                    type="date"
+                                    value={newTraitement.dateappli}
+                                    onChange={e => handleFormChange('dateappli', e.target.value)}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Pre-Harvest Date (Auto-calculated)</label>
+                                <input
+                                    type="date"
+                                    value={datePrecolte}
+                                    disabled
+                                    readOnly
+                                />
+                            </div>
+                            <div className="form-actions">
+                                <button type="button" className="clear-btn" onClick={handleHideForm}>Cancel</button>
+                                <button type="submit" className="save-btn">Save Treatment</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             <div className="table-container">
-                <h2>Applied Treatments</h2>
                 <table className="data-table">
                     <thead>
                         <tr>
@@ -204,7 +317,7 @@ const TraitementPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {traitements.map(t => (
+                        {paginatedTraitements.map(t => (
                             <tr key={t.numtrait}>
                                 <td>{t.vergerName}</td>
                                 <td>{t.grpVarName}</td>
@@ -218,6 +331,48 @@ const TraitementPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="pagination-container">
+                    <div className="pagination-info">
+                        Affichage {startIndex + 1}-{Math.min(endIndex, totalItems)} sur {totalItems} résultats
+                    </div>
+                    <div className="pagination">
+                        <button
+                            onClick={() => setCurrentPage(c => Math.max(1, c - 1))}
+                            disabled={currentPage === 1}
+                            className="pagination-nav"
+                            aria-label="Previous page"
+                        >
+                            <span className="nav-arrow">‹</span> Précédent
+                        </button>
+                        <div className="pagination-numbers">
+                            {pageNumbers.map((pageNum, index) => (
+                                pageNum === '...' ? (
+                                    <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                                ) : (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={currentPage === pageNum ? 'pagination-number active' : 'pagination-number'}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                )
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(c => Math.min(totalPages, c + 1))}
+                            disabled={currentPage === totalPages}
+                            className="pagination-nav"
+                            aria-label="Next page"
+                        >
+                            Suivant <span className="nav-arrow">›</span>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (<TraitModal onClose={() => setIsModalOpen(false)} onSave={handleSaveNewTrait} />)}
         </div>

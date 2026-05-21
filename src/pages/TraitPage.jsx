@@ -1,67 +1,77 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './TraitPage.css';
-
-// Modal component for Add/Edit form
-const TraitModal = ({ trait, onClose, onSave }) => {
-    const [formData, setFormData] = useState(
-        trait || { nomcom: '', matieractive: '', dar: 0, dos: 0, unite: '' }
-    );
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <div className="modal-backdrop">
-            <div className="modal-content">
-                <h2>{trait ? 'Edit Product' : 'Add New Product'}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="input-group">
-                        <label>Commercial Name</label>
-                        <input type="text" name="nomcom" value={formData.nomcom || ''} onChange={handleChange} required />
-                    </div>
-                    <div className="input-group">
-                        <label>Active Ingredient</label>
-                        <input type="text" name="matieractive" value={formData.matieractive || ''} onChange={handleChange} required />
-                    </div>
-                    <div className="input-group">
-                        <label>DAR (Days)</label>
-                        <input type="number" name="dar" value={formData.dar || 0} onChange={handleChange} required />
-                    </div>
-                     <div className="input-group">
-                        <label>Dosage</label>
-                        <input type="number" name="dos" value={formData.dos || 0} onChange={handleChange} />
-                    </div>
-                    <div className="input-group">
-                        <label>Unit</label>
-                        <input type="text" name="unite" value={formData.unite || ''} onChange={handleChange} />
-                    </div>
-                    <div className="modal-actions">
-                        <button type="button" className="clear-btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="save-btn">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
 
 // Main Page Component
 const TraitPage = () => {
     const [traits, setTraits] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showForm, setShowForm] = useState(false);
     const [editingTrait, setEditingTrait] = useState(null);
+    const [formData, setFormData] = useState({ nomcom: '', matieractive: '', dar: 0, dos: 0, unite: '' });
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const totalItems = traits.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedTraits = traits.slice(startIndex, endIndex);
+
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        const maxVisible = 5; // Max page buttons to display
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show page 1
+            pages.push(1);
+
+            // Calculate start and end for middle block centered on currentPage
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+
+            // Adjust if we are close to boundaries
+            if (currentPage <= 3) {
+                end = 4;
+            } else if (currentPage >= totalPages - 2) {
+                start = totalPages - 3;
+            }
+
+            // Add left ellipsis before middle block if needed
+            if (start > 2) {
+                pages.push('...');
+            }
+
+            // Add middle block page numbers
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            // Add right ellipsis after middle block if needed
+            if (end < totalPages - 1) {
+                pages.push('...');
+            }
+
+            // Always show last page
+            pages.push(totalPages);
+        }
+        return pages;
+    }, [currentPage, totalPages]);
+
+    // Bounds safety check
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(1);
+        }
+    }, [traits, totalPages, currentPage]);
 
     const fetchTraits = useCallback(async () => {
         try {
@@ -79,26 +89,44 @@ const TraitPage = () => {
         fetchTraits();
     }, [fetchTraits]);
 
-    const handleOpenModal = (trait = null) => {
-        setError(null); // Clear previous errors when opening modal
+    const handleShowForm = (trait = null) => {
+        setError(null); // Clear previous errors when opening form
         setEditingTrait(trait);
-        setIsModalOpen(true);
+        if (trait) {
+            setFormData({
+                nomcom: trait.nomcom || '',
+                matieractive: trait.matieractive || '',
+                dar: trait.dar || 0,
+                dos: trait.dos || 0,
+                unite: trait.unite || ''
+            });
+        } else {
+            setFormData({ nomcom: '', matieractive: '', dar: 0, dos: 0, unite: '' });
+        }
+        setShowForm(true);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
+    const handleHideForm = () => {
+        setShowForm(false);
         setEditingTrait(null);
+        setFormData({ nomcom: '', matieractive: '', dar: 0, dos: 0, unite: '' });
     };
 
-    const handleSaveTrait = async (traitData) => {
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveTrait = async (e) => {
+        e.preventDefault();
         setError(null); // Clear previous errors
         try {
             if (editingTrait) {
-                await apiPut(`/api/trait/${editingTrait.ref}`, traitData);
+                await apiPut(`/api/trait/${editingTrait.ref}`, formData);
             } else {
-                await apiPost('/api/trait', traitData);
+                await apiPost('/api/trait', formData);
             }
-            handleCloseModal();
+            handleHideForm();
             fetchTraits();
         } catch (err) {
             setError(err.message);
@@ -126,12 +154,79 @@ const TraitPage = () => {
         <div className="page-container">
             <div className="page-header">
                 <h1>Manage Treatment Products</h1>
-                <button className="add-btn" onClick={() => handleOpenModal()}>+ Add New Product</button>
+                <button className="add-btn" onClick={() => handleShowForm()}>+ Add New Product</button>
             </div>
             
             {/* --- ERROR DISPLAY --- */}
             {/* This will now show any error messages from the backend or frontend. */}
             {error && <p className="error-message">{error}</p>}
+
+            {/* Inline Form */}
+            {showForm && (
+                <div className="form-container">
+                    <h3>{editingTrait ? 'Edit Product' : 'Add New Product'}</h3>
+                    <form onSubmit={handleSaveTrait} className="ecart-form">
+                        <div className="form-row">
+                            <div className="input-group">
+                                <label>Commercial Name</label>
+                                <input
+                                    type="text"
+                                    name="nomcom"
+                                    value={formData.nomcom}
+                                    onChange={handleFormChange}
+                                    required
+                                    placeholder="Enter commercial name"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Active Ingredient</label>
+                                <input
+                                    type="text"
+                                    name="matieractive"
+                                    value={formData.matieractive}
+                                    onChange={handleFormChange}
+                                    required
+                                    placeholder="Enter active ingredient"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>DAR (Days)</label>
+                                <input
+                                    type="number"
+                                    name="dar"
+                                    value={formData.dar}
+                                    onChange={handleFormChange}
+                                    required
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Dosage</label>
+                                <input
+                                    type="number"
+                                    name="dos"
+                                    value={formData.dos}
+                                    onChange={handleFormChange}
+                                    placeholder="Enter dosage"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Unit</label>
+                                <input
+                                    type="text"
+                                    name="unite"
+                                    value={formData.unite}
+                                    onChange={handleFormChange}
+                                    placeholder="Enter unit"
+                                />
+                            </div>
+                            <div className="form-actions">
+                                <button type="button" className="clear-btn" onClick={handleHideForm}>Cancel</button>
+                                <button type="submit" className="save-btn">Save</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             <div className="table-container">
                 <table className="data-table">
@@ -146,7 +241,7 @@ const TraitPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {traits.map(trait => (
+                        {paginatedTraits.map(trait => (
                             <tr key={trait.ref}>
                                 <td>{trait.nomcom}</td>
                                 <td>{trait.matieractive}</td>
@@ -154,7 +249,7 @@ const TraitPage = () => {
                                 <td>{trait.dos}</td>
                                 <td>{trait.unite}</td>
                                 <td className="action-buttons">
-                                    <button className="edit-btn" onClick={() => handleOpenModal(trait)}>Edit</button>
+                                    <button className="edit-btn" onClick={() => handleShowForm(trait)}>Edit</button>
                                     <button className="delete-btn" onClick={() => handleDeleteTrait(trait.ref)}>Delete</button>
                                 </td>
                             </tr>
@@ -163,12 +258,46 @@ const TraitPage = () => {
                 </table>
             </div>
 
-            {isModalOpen && (
-                <TraitModal
-                    trait={editingTrait}
-                    onClose={handleCloseModal}
-                    onSave={handleSaveTrait}
-                />
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="pagination-container">
+                    <div className="pagination-info">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                    </div>
+                    <div className="pagination">
+                        <button
+                            onClick={() => setCurrentPage(c => Math.max(1, c - 1))}
+                            disabled={currentPage === 1}
+                            className="pagination-nav"
+                            aria-label="Previous page"
+                        >
+                            <span className="nav-arrow">‹</span> Previous
+                        </button>
+                        <div className="pagination-numbers">
+                            {pageNumbers.map((pageNum, index) => (
+                                pageNum === '...' ? (
+                                    <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                                ) : (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={currentPage === pageNum ? 'pagination-number active' : 'pagination-number'}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                )
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(c => Math.min(totalPages, c + 1))}
+                            disabled={currentPage === totalPages}
+                            className="pagination-nav"
+                            aria-label="Next page"
+                        >
+                            Next <span className="nav-arrow">›</span>
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );

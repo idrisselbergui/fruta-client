@@ -340,19 +340,16 @@ button {
 }
 
 /* Pagination Styles - Exact Match */
+/* Pagination Styles - Exact Match */
 .pagination-container {
     display: flex;
     flex-direction: column;
-    /* Stack info and controls */
     align-items: center;
-    /* Center everything */
     gap: 1.5rem;
-    /* Space between info and buttons */
     margin-top: 2rem;
     padding: 1.5rem 0;
     font-family: system-ui, -apple-system, sans-serif;
     border-top: none;
-    /* Removed border as per image */
 }
 
 .pagination-info {
@@ -375,18 +372,20 @@ button {
     align-items: center;
     justify-content: center;
     height: 48px;
-    /* Taller buttons */
-    padding: 0 1.2rem;
+    padding: 0 1.5rem !important; /* Force padding to prevent text truncation */
+    width: auto !important; /* Override any global 48px constraints */
+    min-width: fit-content !important;
+    max-width: none !important;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     color: #007bff;
-    /* Blue text for active links */
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
+    box-sizing: border-box; /* Force padding inside dimensions */
 }
 
 .pagination-nav:hover:not(:disabled) {
@@ -399,9 +398,20 @@ button {
     opacity: 0.5;
     background: #f9fafb;
     color: #9ca3af;
-    /* Grey text for disabled */
     cursor: not-allowed;
     border-color: #e5e7eb;
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: #6b7280;
+    font-size: 1.1rem;
+    font-weight: bold;
+    user-select: none;
 }
 
 .nav-arrow {
@@ -420,12 +430,12 @@ button {
     margin: 0 0.5rem;
 }
 
-.pagination-number {
+.pagination-number,
+.pagination-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 48px;
-    /* Larger square */
     height: 48px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -437,28 +447,17 @@ button {
     transition: all 0.2s ease;
 }
 
-.pagination-number:hover {
+.pagination-number:hover,
+.pagination-btn:hover:not(:disabled) {
     border-color: #007bff;
     color: #007bff;
 }
 
-.pagination-number.active {
+.pagination-number.active,
+.pagination-btn.active {
     background: #007bff;
-    /* Solid Blue Background */
     border-color: #007bff;
     color: white;
-    /* White text */
     font-weight: 600;
     box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
-}
-
-.pagination-ellipsis {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 48px;
-    color: #9ca3af;
-    font-size: 1.2rem;
-    padding-bottom: 8px;
 }

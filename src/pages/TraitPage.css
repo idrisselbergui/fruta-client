@@ -127,3 +127,185 @@
 .error-message {
     color: #dc3545;
 }
+
+/* Modern Pagination Styles */
+.pagination-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  padding: 1.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.pagination-info {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 1.5rem !important; /* Force padding to prevent text truncation */
+  width: auto !important; /* Override any global 48px constraints */
+  min-width: fit-content !important;
+  max-width: none !important;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #007bff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-sizing: border-box; /* Force padding inside dimensions */
+}
+
+.pagination-nav:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #007bff;
+  color: #0056b3;
+}
+
+.pagination-nav:disabled {
+  opacity: 0.5;
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #6b7280;
+  font-size: 1.1rem;
+  font-weight: bold;
+  user-select: none;
+}
+
+.nav-arrow {
+  font-size: 1.2rem;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0 4px;
+  display: inline-block;
+  transform: translateY(-1px);
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0.5rem;
+}
+
+.pagination-number,
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-number:hover,
+.pagination-btn:hover:not(:disabled) {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.pagination-number.active,
+.pagination-btn.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+}
+
+/* Inline Form Styles - Managed like Ecart Direct */
+.form-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+.form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #007bff 0%, #28a745 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.form-container h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.ecart-form, .traitement-form {
+    width: 100%;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .form-actions {
+        justify-content: flex-end;
+        padding-top: 1rem;
+    }
+}

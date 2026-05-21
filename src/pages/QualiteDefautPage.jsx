@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getDefauts, createDefaut, updateDefaut, deleteDefaut } from '../apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './QualiteDefautPage.css';
@@ -98,6 +98,50 @@ const QualiteDefautPage = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentDefauts = filteredDefauts.slice(startIndex, endIndex);
+
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        const maxVisible = 5; // Max page buttons to display
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show page 1
+            pages.push(1);
+
+            // Calculate start and end for middle block centered on currentPage
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+
+            // Adjust if we are close to boundaries
+            if (currentPage <= 3) {
+                end = 4;
+            } else if (currentPage >= totalPages - 2) {
+                start = totalPages - 3;
+            }
+
+            // Add left ellipsis before middle block if needed
+            if (start > 2) {
+                pages.push('...');
+            }
+
+            // Add middle block page numbers
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            // Add right ellipsis after middle block if needed
+            if (end < totalPages - 1) {
+                pages.push('...');
+            }
+
+            // Always show last page
+            pages.push(totalPages);
+        }
+        return pages;
+    }, [currentPage, totalPages]);
 
     // Handle pagination
     const handlePageChange = (page) => {
@@ -219,20 +263,23 @@ const QualiteDefautPage = () => {
                     <div className="pagination-info">
                         Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
                     </div>
-                    <div className="pagination-controls">
+                    <div className="pagination">
                         <button
                             onClick={handlePrevPage}
                             disabled={currentPage === 1}
-                            className="pagination-btn"
+                            className="pagination-nav"
+                            aria-label="Previous page"
                         >
-                            Previous
+                            <span className="nav-arrow">‹</span> Previous
                         </button>
 
                         <div className="pagination-numbers">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                                if (pageNum > totalPages) return null;
-                                return (
+                            {pageNumbers.map((pageNum, index) => (
+                                pageNum === '...' ? (
+                                    <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                                        ...
+                                    </span>
+                                ) : (
                                     <button
                                         key={pageNum}
                                         onClick={() => handlePageChange(pageNum)}
@@ -240,16 +287,17 @@ const QualiteDefautPage = () => {
                                     >
                                         {pageNum}
                                     </button>
-                                );
-                            })}
+                                )
+                            ))}
                         </div>
 
                         <button
                             onClick={handleNextPage}
                             disabled={currentPage === totalPages}
-                            className="pagination-btn"
+                            className="pagination-nav"
+                            aria-label="Next page"
                         >
-                            Next
+                            Next <span className="nav-arrow">›</span>
                         </button>
                     </div>
                 </div>

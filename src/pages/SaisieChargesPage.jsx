@@ -76,6 +76,73 @@ const SaisieChargesPage = ({ isModal = false, onClose }) => {
         })
     };
 
+    const modalSelectStyles = {
+        control: (base, state) => ({
+            ...base,
+            height: '48px !important',
+            minHeight: '48px !important',
+            borderRadius: '0.375rem',
+            borderColor: state.isFocused ? '#3b82f6 !important' : '#d1d5db !important',
+            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6 !important' : 'none !important',
+            '&:hover': { borderColor: state.isFocused ? '#3b82f6 !important' : '#9ca3af !important' },
+            backgroundColor: 'white',
+            display: 'flex !important',
+            alignItems: 'center !important',
+            flexWrap: 'nowrap !important'
+        }),
+        valueContainer: (base) => ({
+            ...base,
+            padding: '0 12px !important',
+            display: 'flex !important',
+            alignItems: 'center !important',
+            height: '46px !important',
+            overflow: 'hidden !important',
+            marginTop: '0 !important',
+            marginBottom: '0 !important',
+            paddingTop: '0 !important',
+            paddingBottom: '0 !important'
+        }),
+        singleValue: (base) => ({
+            ...base,
+            margin: '0 !important',
+            color: '#111827 !important',
+            fontSize: '0.95rem !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        placeholder: (base) => ({
+            ...base,
+            margin: '0 !important',
+            color: '#9ca3af !important',
+            fontSize: '0.95rem !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        indicatorsContainer: (base) => ({
+            ...base,
+            height: '46px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        dropdownIndicator: (base) => ({
+            ...base,
+            padding: '0 8px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        clearIndicator: (base) => ({
+            ...base,
+            padding: '0 8px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        input: (base) => ({
+            ...base,
+            margin: '0 !important',
+            padding: '0 !important'
+        })
+    };
+
     // Lookups
     const [adherents, setAdherents] = useState([]);
     const [chargesOptions, setChargesOptions] = useState([]);
@@ -97,6 +164,10 @@ const SaisieChargesPage = ({ isModal = false, onClose }) => {
     });
 
     const [isMontantFocused, setIsMontantFocused] = useState(false);
+
+    // New Charge Modal
+    const [showChargeModal, setShowChargeModal] = useState(false);
+    const [newChargeData, setNewChargeData] = useState({ label: '', typecharge: '' });
 
 
     useEffect(() => {
@@ -169,6 +240,35 @@ const SaisieChargesPage = ({ isModal = false, onClose }) => {
         try {
             await deleteAdherentCharge(id);
             setSavedCharges(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            alert("Erreur: " + err.message);
+        }
+    };
+
+    const handleCreateNewChargeType = async (e) => {
+        e.preventDefault();
+
+        if (!newChargeData.typecharge || newChargeData.typecharge.trim() === '') {
+            alert("Veuillez sélectionner un Type de Charge.");
+            return;
+        }
+
+        try {
+            const response = await apiPost('/api/charges', newChargeData);
+            const updatedCharges = await apiGet('/api/charges');
+            setChargesOptions(updatedCharges.map(c => ({
+                value: c.idcharge,
+                label: c.typecharge ? `${c.label} - ${c.typecharge}` : c.label
+            })));
+            setNewDetail(prev => ({
+                ...prev,
+                charge: {
+                    value: response.idcharge,
+                    label: response.typecharge ? `${response.label} - ${response.typecharge}` : response.label
+                }
+            }));
+            setShowChargeModal(false);
+            setNewChargeData({ label: '', typecharge: '' });
         } catch (err) {
             alert("Erreur: " + err.message);
         }
@@ -382,13 +482,43 @@ const SaisieChargesPage = ({ isModal = false, onClose }) => {
                     <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                         <div className="input-group" style={{ flex: '2 1 0%', minWidth: '0' }}>
                             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type de Charge</label>
-                            <Select
-                                options={chargesOptions}
-                                value={newDetail.charge}
-                                onChange={(val) => setNewDetail(p => ({ ...p, charge: val }))}
-                                placeholder="Choisir Charge"
-                                styles={selectStyles}
-                            />
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div style={{ flex: 1 }}>
+                                    <Select
+                                        options={chargesOptions}
+                                        value={newDetail.charge}
+                                        onChange={(val) => setNewDetail(p => ({ ...p, charge: val }))}
+                                        placeholder="Choisir Charge"
+                                        styles={selectStyles}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowChargeModal(true)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '0.375rem',
+                                        border: 'none',
+                                        background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
+                                        color: 'white',
+                                        fontSize: '1.25rem',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                        flexShrink: 0
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                    title="Nouveau Type de Charge"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
                         <div className="input-group" style={{ flex: '1 1 0%', minWidth: '0' }}>
                             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Montant</label>
@@ -538,6 +668,174 @@ const SaisieChargesPage = ({ isModal = false, onClose }) => {
                 </div>
             </div>
 
+            {/* Modal for creating a new Charge type */}
+            {showChargeModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        background: 'white',
+                        padding: '2.5rem 2.25rem',
+                        borderRadius: '0.75rem',
+                        width: '520px',
+                        minHeight: '440px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        border: '1px solid #f3f4f6'
+                    }}>
+                        <div className="modal-header" style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '2rem',
+                            borderBottom: '1px solid #f3f4f6',
+                            paddingBottom: '0.875rem'
+                        }}>
+                            <div>
+                                <h2 style={{ margin: 0, color: '#111827', fontSize: '1.45rem', fontWeight: '750' }}>Nouveau Type de Charge</h2>
+                                <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Ajouter une nouvelle catégorie de charge</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowChargeModal(false)}
+                                style={{
+                                    background: '#f3f4f6',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    fontSize: '1.25rem',
+                                    color: '#6b7280',
+                                    cursor: 'pointer',
+                                    padding: '0',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s',
+                                    flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6'; e.currentTarget.style.color = '#6b7280'; }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateNewChargeType} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div className="form-row" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', marginBottom: '2.25rem' }}>
+                                <div className="input-group" style={{ width: '100%' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Label Charge <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newChargeData.label}
+                                        onChange={(e) => setNewChargeData(p => ({ ...p, label: e.target.value }))}
+                                        required
+                                        placeholder="Ex: Achat Caisses, Transport adherent..."
+                                        style={{
+                                            width: '100%',
+                                            height: '48px',
+                                            padding: '0 1rem',
+                                            border: '1px solid #d1d5db',
+                                            borderRadius: '0.375rem',
+                                            fontSize: '0.95rem',
+                                            color: '#111827',
+                                            boxSizing: 'border-box',
+                                            outline: 'none',
+                                            transition: 'border-color 0.15s, box-shadow 0.15s'
+                                        }}
+                                        onFocus={(e) => { e.target.style.borderColor = '#3b82f6'; e.target.style.boxShadow = '0 0 0 1px #3b82f6'; }}
+                                        onBlur={(e) => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
+                                    />
+                                </div>
+                                <div className="input-group" style={{ width: '100%' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Type de Charge <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <Select
+                                        options={[
+                                            { value: 'Avance', label: 'Avance' },
+                                            { value: 'Emballage', label: 'Emballage' },
+                                            { value: 'Transport', label: 'Transport' },
+                                            { value: 'Main d\'oeuvre', label: 'Main d\'oeuvre' },
+                                            { value: 'Carburant', label: 'Carburant' },
+                                            { value: 'Pesticides/Engrais', label: 'Pesticides/Engrais' },
+                                            { value: 'Entretien', label: 'Entretien' },
+                                            { value: 'Autre', label: 'Autre' }
+                                        ]}
+                                        value={newChargeData.typecharge ? { value: newChargeData.typecharge, label: newChargeData.typecharge } : null}
+                                        onChange={(val) => setNewChargeData(p => ({ ...p, typecharge: val ? val.value : '' }))}
+                                        placeholder="Sélectionner Type"
+                                        isClearable
+                                        styles={modalSelectStyles}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-actions" style={{
+                                display: 'flex',
+                                justifyContent: 'flex-end',
+                                gap: '14px',
+                                borderTop: '1px solid #f3f4f6',
+                                paddingTop: '1.5rem',
+                                marginTop: 'auto'
+                            }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowChargeModal(false)}
+                                    style={{
+                                        height: '48px',
+                                        padding: '0 2rem',
+                                        backgroundColor: 'white',
+                                        color: '#4b5563',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.375rem',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.borderColor = '#9ca3af'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    style={{
+                                        height: '48px',
+                                        padding: '0 2rem',
+                                        background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '0.375rem',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; }}
+                                >
+                                    Créer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

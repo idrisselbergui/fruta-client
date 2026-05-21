@@ -429,6 +429,49 @@ const GestionAvancePage = () => {
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentAvances = filteredAvances.slice(startIndex, startIndex + itemsPerPage);
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        const maxVisible = 5; // Max page buttons to display
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show page 1
+            pages.push(1);
+
+            // Calculate start and end for middle block centered on currentPage
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+
+            // Adjust if we are close to boundaries
+            if (currentPage <= 3) {
+                end = 4;
+            } else if (currentPage >= totalPages - 2) {
+                start = totalPages - 3;
+            }
+
+            // Add left ellipsis before middle block if needed
+            if (start > 2) {
+                pages.push('...');
+            }
+
+            // Add middle block page numbers
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            // Add right ellipsis after middle block if needed
+            if (end < totalPages - 1) {
+                pages.push('...');
+            }
+
+            // Always show last page
+            pages.push(totalPages);
+        }
+        return pages;
+    }, [currentPage, totalPages]);
 
 
     return (
@@ -759,14 +802,18 @@ const GestionAvancePage = () => {
                                     <span className="nav-arrow">«</span> Précédent
                                 </button>
                                 <div className="pagination-numbers">
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            className={`pagination-number ${currentPage === i + 1 ? 'active' : ''}`}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                        >
-                                            {i + 1}
-                                        </button>
+                                    {pageNumbers.map((p, i) => (
+                                        p === '...' ? (
+                                            <span key={`ellipsis-${i}`} className="pagination-ellipsis">...</span>
+                                        ) : (
+                                            <button
+                                                key={p}
+                                                className={`pagination-number ${currentPage === p ? 'active' : ''}`}
+                                                onClick={() => setCurrentPage(p)}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
                                     ))}
                                 </div>
                                 <button className="pagination-nav" onClick={() => setCurrentPage(c => Math.min(totalPages, c + 1))} disabled={currentPage === totalPages}>
