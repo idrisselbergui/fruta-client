@@ -1433,7 +1433,7 @@ const formatNumber = (num, decimals = 0) => {
     : 'N/A';
 };
 
-const generateSampleTestReportPDF = async (historyData, destinations, varieties, availableDefects) => {
+const generateSampleTestReportPDF = async (historyData, destinations, varieties, availableDefects, previewOnly = false) => {
   console.log('Starting Premium Sample Test Report generation for:', historyData);
 
   if (!historyData || !historyData.sample) {
@@ -1713,6 +1713,11 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
 
   // Save
   const fileName = `shelf-life-report-P${sample.numpal}-${new Date().toISOString().split('T')[0]}.pdf`;
+  if (previewOnly) {
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+    return { blobUrl, fileName };
+  }
   doc.save(fileName);
   return fileName;
 };

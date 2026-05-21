@@ -13,10 +13,8 @@ import TraitementPage from './pages/TraitementPage';
 import EcartDirectPage from './pages/EcartDirectPage';
 import QualiteDefautPage from './pages/QualiteDefautPage';
 import VenteEcartPage from './pages/VenteEcartPage';
-import DailyChecksPage from './pages/DailyChecksPage';
 import MarqueManagementPage from './pages/MarqueManagementPage';
-import SampleDashboardPage from './pages/SampleDashboardPage';
-import SampleTestManagementPage from './pages/SampleTestManagementPage';
+import ShelfLifeHubPage from './pages/ShelfLifeHubPage';
 import GestionAvancePage from './pages/GestionAvancePage';
 import SaisieChargesPage from './pages/SaisieChargesPage';
 import GestionAvanceYearlyPrint from './pages/GestionAvanceYearlyPrint';
@@ -143,19 +141,9 @@ function App() {
             <MarqueManagementPage />
           </PageProtectedRoute>
         } />
-        <Route path="/sample-dashboard" element={
+        <Route path="/shelf-life" element={
           <PageProtectedRoute user={user} pageName="sample-dashboard">
-            <SampleDashboardPage />
-          </PageProtectedRoute>
-        } />
-        <Route path="/sample-management" element={
-          <PageProtectedRoute user={user} pageName="sample-dashboard">
-            <SampleTestManagementPage />
-          </PageProtectedRoute>
-        } />
-        <Route path="/daily-checks" element={
-          <PageProtectedRoute user={user} pageName="sample-dashboard">
-            <DailyChecksPage />
+            <ShelfLifeHubPage />
           </PageProtectedRoute>
         } />
         <Route path="/gestion-avance" element={

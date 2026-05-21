@@ -21,9 +21,7 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
     if (label === 'Quality Defects' && !hasPagePermission(user, "qualite-defaut")) hasPermission = false;
     if (label === 'Vente Ecart' && !hasPagePermission(user, "vente-ecart")) hasPermission = false;
     if (label === 'Marque Management' && !hasPagePermission(user, "marque-management")) hasPermission = false;
-    if (label === 'Tableau de Bord Contrôle Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
-    if (label === 'Gestion Shelf Life' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
-    if (label === 'Contrôles Quotidiens Qualité' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
+    if (label === 'Suivi Shelf Life' && !hasPagePermission(user, "sample-dashboard")) hasPermission = false;
     if (label === 'Gestion Decompte' && !hasPagePermission(user, "gestion-avance")) hasPermission = false;
     if (label === 'Admin' && !hasPagePermission(user, "admin")) hasPermission = false;
 
@@ -155,30 +153,11 @@ const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu })
             </svg>
           )}
           {renderNavItem(
-            '/sample-dashboard',
-            'Tableau de Bord Contrôle Qualité',
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
-              <path d="M13 19v-6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
-              <path d="M17 19v-6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2z"></path>
-              <path d="M3 7h18"></path>
-            </svg>
-          )}
-          {renderNavItem(
-            '/sample-management',
-            'Gestion Shelf Life',
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14,2 14,8 20,8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-          )}
-          {renderNavItem(
-            '/daily-checks',
-            'Contrôles Quotidiens Qualité',
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2v20m8-8H4"></path>
+            '/shelf-life',
+            'Suivi Shelf Life',
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2c1.38 0 2.5 1.12 2.5 2.5S13.38 7 12 7 9.5 5.88 9.5 4.5 10.62 2 12 2z"></path>
+              <path d="M12 7c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24L12 22l4.24-4.76C17.33 16.16 18 14.66 18 13c0-3.31-2.69-6-6-6z"></path>
             </svg>
           )}
           {renderNavItem(
