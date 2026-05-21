@@ -9,6 +9,7 @@ import { apiGet } from '../apiService';
 import useDebounce from '../hooks/useDebounce';
 import { generateDetailedExportPDF, generateVarietesPDF, generateGroupVarietePDF, generateEcartDetailsPDF, generateEcartGroupDetailsPDF, generateEcartDirectGroupedPDF, generateEcartDirectDetailsPDF, generateGlobalVenteEcartPDF, generateVenteEcartDetailsPDF, calculateDateRangeFromTableRows } from '../utils/pdfGenerator';
 import { generateChartPDF } from '../utils/chartPdfGenerator';
+import { generateExcel } from '../utils/excelGenerator';
 import './DashboardPage.css';
 
 const formatDate = (date) => date ? new Date(date).toLocaleDateString('sv-SE') : '';
@@ -391,8 +392,17 @@ const DashboardPage = () => {
   const sortedTableRows = useMemo(() => {
     if (!dashboardData?.tableRows) return [];
     return [...dashboardData.tableRows].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle trailing carriage returns/newlines for string comparison
+      if (typeof aValue === 'string') aValue = aValue.trim().replace(/\r?\n|\r/g, ' ');
+      if (typeof bValue === 'string') bValue = bValue.trim().replace(/\r?\n|\r/g, ' ');
+      
+      // Handle null/undefined values so they sort predictably (null values to the bottom)
+      if (aValue === null || aValue === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
+      if (bValue === null || bValue === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
+
       if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
       return 0;
@@ -761,6 +771,20 @@ const DashboardPage = () => {
     } catch (error) {
       console.error('Error generating group variete PDF:', error);
       alert('Erreur lors de la génération du PDF des groupes de variétés: ' + error.message);
+    }
+  };
+
+  const handleExportExcel = () => {
+    console.log('Excel export button clicked');
+    if (!dashboardData?.tableRows?.length) {
+      alert('Aucune donnée disponible pour l\'export Excel.');
+      return;
+    }
+    try {
+      generateExcel(dashboardData.tableRows, filters);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      alert('Erreur lors de l\'export Excel: ' + error.message);
     }
   };
 
@@ -1428,6 +1452,23 @@ const DashboardPage = () => {
               >
                 📄 Détails Groupes Variétés
               </button>
+              <button
+                onClick={handleExportExcel}
+                className="btn btn-success"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#1f7246',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+                title="Exporter le tableau des variétés en format Excel/CSV"
+              >
+                📊 Exporter Excel
+              </button>
             </div>
             <div className="dashboard-table-container">
               <table className="details-table">
@@ -1435,6 +1476,8 @@ const DashboardPage = () => {
                   <tr>
                     <th className="sortable-header" onClick={() => handleSort('vergerName', false)}>Verger{sortConfig.key === 'vergerName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     <th className="sortable-header" onClick={() => handleSort('varieteName', false)}>Variété{sortConfig.key === 'varieteName' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('minReceptionDate', false)}>Min Réception{sortConfig.key === 'minReceptionDate' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
+                    <th className="sortable-header" onClick={() => handleSort('maxExportDate', false)}>Max Export{sortConfig.key === 'maxExportDate' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     <th className="sortable-header" onClick={() => handleSort('totalPdsfru', false)}>Réception{sortConfig.key === 'totalPdsfru' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     <th className="sortable-header" onClick={() => handleSort('totalPdscom', false)}>Export{sortConfig.key === 'totalPdscom' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
                     <th className="sortable-header" onClick={() => handleSort('totalEcart', false)}>Écart{sortConfig.key === 'totalEcart' && (<span className="sort-indicator">{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>)}</th>
@@ -1443,8 +1486,10 @@ const DashboardPage = () => {
                 <tbody>
                   {sortedTableRows.map((row, index) => (
                     <tr key={index}>
-                      <td>{row.vergerName}</td>
-                      <td>{row.varieteName}</td>
+                      <td>{(row.vergerName || '').trim().replace(/\r?\n|\r/g, ' ')}</td>
+                      <td>{(row.varieteName || '').trim().replace(/\r?\n|\r/g, ' ')}</td>
+                      <td>{row.minReceptionDate ? new Date(row.minReceptionDate).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                      <td>{row.maxExportDate ? new Date(row.maxExportDate).toLocaleDateString('fr-FR') : 'N/A'}</td>
                       <td>{formatNumberWithSpaces(row.totalPdsfru)}</td>
                       <td>{formatNumberWithSpaces(row.totalPdscom)}</td>
                       <td>{formatNumberWithSpaces(row.totalEcart)}</td>
