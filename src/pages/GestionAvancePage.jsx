@@ -6,6 +6,7 @@ import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './GestionAvancePage.css';
 import SaisieChargesPage from './SaisieChargesPage';
+import PrixEstimatifsModal from './PrixEstimatifsModal';
 
 const GestionAvancePage = () => {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ const GestionAvancePage = () => {
     // Form State
     const [showForm, setShowForm] = useState(false);
     const [showChargesModal, setShowChargesModal] = useState(false);
+    const [showPrixModal, setShowPrixModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingAvanceId, setEditingAvanceId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
@@ -470,6 +472,27 @@ const GestionAvancePage = () => {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() => setShowPrixModal(true)}
+                                    style={{
+                                        padding: '0.5rem 1.2rem',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        backgroundColor: '#d97706',
+                                        color: '#fff',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#b45309'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#d97706'}
+                                >
+                                    💰 Prix Estimatifs
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => navigate('/rapport-annuel')}
                                     style={{
                                         padding: '0.5rem 1.2rem',
@@ -819,6 +842,10 @@ const GestionAvancePage = () => {
                         }} />
                     </div>
                 </div>
+            )}
+
+            {showPrixModal && (
+                <PrixEstimatifsModal onClose={() => setShowPrixModal(false)} />
             )}
 
         </div>
