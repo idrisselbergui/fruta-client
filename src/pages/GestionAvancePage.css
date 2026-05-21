@@ -420,3 +420,11 @@ button {
   font-weight: 600;
   box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
 }
+
+/* Custom print button sizing override to prevent global button width stretching */
+.print-btn-custom {
+  width: auto !important;
+  max-width: fit-content !important;
+  flex: 0 0 auto !important;
+  min-width: auto !important;
+}

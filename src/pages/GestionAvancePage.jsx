@@ -5,6 +5,7 @@ import { apiGet, apiPost, apiPut, apiDelete, getChargeSum } from '../apiService'
 import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './GestionAvancePage.css';
+import SaisieChargesPage from './SaisieChargesPage';
 
 const GestionAvancePage = () => {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ const GestionAvancePage = () => {
 
     // Form State
     const [showForm, setShowForm] = useState(false);
+    const [showChargesModal, setShowChargesModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingAvanceId, setEditingAvanceId] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
@@ -92,21 +94,22 @@ const GestionAvancePage = () => {
 
     const adherentOptions = adherents.map(a => ({ value: a.refadh, label: a.nomadh }));
 
+    const fetchCharges = async () => {
+        if (!formData.adherent || !formData.annee || !formData.mois) {
+            setTotalCharges(0);
+            return;
+        }
+        try {
+            const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
+            setTotalCharges(sum || 0);
+        } catch (err) {
+            console.error("Failed to fetch charge sum", err);
+            setTotalCharges(0);
+        }
+    };
+
     // Effect to fetch total charges when adherent, annee, or mois changes
     useEffect(() => {
-        const fetchCharges = async () => {
-            if (!formData.adherent || !formData.annee || !formData.mois) {
-                setTotalCharges(0);
-                return;
-            }
-                try {
-                    const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
-                    setTotalCharges(sum || 0);
-                } catch (err) {
-                    console.error("Failed to fetch charge sum", err);
-                    setTotalCharges(0);
-                }
-        };
         fetchCharges();
     }, [formData.adherent, formData.annee, formData.mois]);
 
@@ -446,6 +449,27 @@ const GestionAvancePage = () => {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() => setShowChargesModal(true)}
+                                    style={{
+                                        padding: '0.5rem 1.2rem',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        backgroundColor: '#0284c7',
+                                        color: '#fff',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#0369a1'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#0284c7'}
+                                >
+                                    💼 Saisie des Charges
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => navigate('/rapport-annuel')}
                                     style={{
                                         padding: '0.5rem 1.2rem',
@@ -728,6 +752,72 @@ const GestionAvancePage = () => {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {showChargesModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '2rem',
+                    boxSizing: 'border-box'
+                }}>
+                    <div className="modal-content" style={{
+                        background: 'white',
+                        padding: '2rem',
+                        borderRadius: '16px',
+                        width: '90%',
+                        maxWidth: '1200px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        position: 'relative',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        border: '1px solid #e2e8f0',
+                        boxSizing: 'border-box'
+                    }}>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setShowChargesModal(false);
+                                fetchCharges();
+                            }} 
+                            style={{
+                                position: 'absolute',
+                                top: '1.5rem',
+                                right: '1.5rem',
+                                background: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                fontSize: '1.25rem',
+                                color: '#64748b',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                zIndex: 10
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                        >
+                            &times;
+                        </button>
+                        <SaisieChargesPage isModal={true} onClose={() => {
+                            setShowChargesModal(false);
+                            fetchCharges();
+                        }} />
+                    </div>
                 </div>
             )}
 

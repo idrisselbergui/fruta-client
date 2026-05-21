@@ -7,7 +7,75 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './GestionAvancePage.css'; // Reusing the matched styling
 
-const SaisieChargesPage = () => {
+const SaisieChargesPage = ({ isModal = false, onClose }) => {
+    // Premium React Select Custom Styles to override global 48px styles and vertically center text
+    const selectStyles = {
+        control: (base, state) => ({
+            ...base,
+            height: '40px !important',
+            minHeight: '40px !important',
+            borderRadius: '0.375rem',
+            borderColor: state.isFocused ? '#3b82f6 !important' : '#d1d5db !important',
+            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6 !important' : 'none !important',
+            '&:hover': { borderColor: state.isFocused ? '#3b82f6 !important' : '#9ca3af !important' },
+            backgroundColor: 'white',
+            display: 'flex !important',
+            alignItems: 'center !important',
+            flexWrap: 'nowrap !important'
+        }),
+        valueContainer: (base) => ({
+            ...base,
+            padding: '0 8px !important',
+            display: 'flex !important',
+            alignItems: 'center !important',
+            height: '38px !important',
+            overflow: 'hidden !important',
+            marginTop: '0 !important',
+            marginBottom: '0 !important',
+            paddingTop: '0 !important',
+            paddingBottom: '0 !important'
+        }),
+        singleValue: (base) => ({
+            ...base,
+            margin: '0 !important',
+            color: '#111827 !important',
+            fontSize: '0.875rem !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        placeholder: (base) => ({
+            ...base,
+            margin: '0 !important',
+            color: '#9ca3af !important',
+            fontSize: '0.875rem !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        indicatorsContainer: (base) => ({
+            ...base,
+            height: '38px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        dropdownIndicator: (base) => ({
+            ...base,
+            padding: '0 8px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        clearIndicator: (base) => ({
+            ...base,
+            padding: '0 8px !important',
+            display: 'flex !important',
+            alignItems: 'center !important'
+        }),
+        input: (base) => ({
+            ...base,
+            margin: '0 !important',
+            padding: '0 !important'
+        })
+    };
+
     // Lookups
     const [adherents, setAdherents] = useState([]);
     const [chargesOptions, setChargesOptions] = useState([]);
@@ -28,9 +96,8 @@ const SaisieChargesPage = () => {
         montantCharge: ''
     });
 
-    // New Charge Modal
-    const [showChargeModal, setShowChargeModal] = useState(false);
-    const [newChargeData, setNewChargeData] = useState({ label: '', typecharge: '' });
+    const [isMontantFocused, setIsMontantFocused] = useState(false);
+
 
     useEffect(() => {
         const fetchLookups = async () => {
@@ -102,35 +169,6 @@ const SaisieChargesPage = () => {
         try {
             await deleteAdherentCharge(id);
             setSavedCharges(prev => prev.filter(c => c.id !== id));
-        } catch (err) {
-            alert("Erreur: " + err.message);
-        }
-    };
-
-    const handleCreateNewChargeType = async (e) => {
-        e.preventDefault();
-
-        if (!newChargeData.typecharge || newChargeData.typecharge.trim() === '') {
-            alert("Veuillez sélectionner un Type de Charge.");
-            return;
-        }
-
-        try {
-            const response = await apiPost('/api/charges', newChargeData);
-            const updatedCharges = await apiGet('/api/charges');
-            setChargesOptions(updatedCharges.map(c => ({
-                value: c.idcharge,
-                label: c.typecharge ? `${c.label} - ${c.typecharge}` : c.label
-            })));
-            setNewDetail(prev => ({
-                ...prev,
-                charge: {
-                    value: response.idcharge,
-                    label: response.typecharge ? `${response.label} - ${response.typecharge}` : response.label
-                }
-            }));
-            setShowChargeModal(false);
-            setNewChargeData({ label: '', typecharge: '' });
         } catch (err) {
             alert("Erreur: " + err.message);
         }
@@ -245,39 +283,89 @@ const SaisieChargesPage = () => {
     };
 
     return (
-        <div className="vente-ecart-page">
-            <header className="page-header">
-                <div className="header-title">
-                    <h1>Saisie des Charges</h1>
-                    <span className="subtitle">Saisir les charges journalières par adhérent</span>
+        <div className="vente-ecart-page" style={isModal ? { padding: '0', minHeight: 'auto', background: 'transparent' } : {}}>
+            {!isModal ? (
+                <header className="page-header">
+                    <div className="header-title">
+                        <h1>Saisie des Charges</h1>
+                        <span className="subtitle">Saisir les charges journalières par adhérent</span>
+                    </div>
+                </header>
+            ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>💼</div>
+                    <div>
+                        <h2 style={{ margin: 0, color: '#111827', fontSize: '1.35rem', fontWeight: '700' }}>Saisie des Charges</h2>
+                        <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>Saisir les charges journalières par adhérent</span>
+                    </div>
                 </div>
-            </header>
+            )}
 
             {error && <div className="error-message" style={{ margin: '1rem', padding: '1rem', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '4px' }}>{error} <button onClick={() => setError(null)}>X</button></div>}
 
             <div className="form-container" style={{ paddingBottom: '2rem' }}>
-                <div className="form-section" style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: '#111827', fontSize: '1.125rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}><span role="img" aria-label="selection">📝</span> Sélection et Ajout de Charges</h3>
+                <div className="form-section" style={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderTop: '3px solid #10b981',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    borderRadius: '0.5rem',
+                    padding: '1.5rem',
+                    marginBottom: '1.5rem'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                        <h3 style={{ margin: 0, color: '#111827', fontSize: '1.125rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span role="img" aria-label="selection" style={{ marginRight: '4px' }}>📝📝</span> Sélection et Ajout de Charges
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={handlePrintAllCharges}
+                            disabled={!formData.adherent || isPrinting}
+                            className="print-btn-custom"
+                            style={{
+                                boxSizing: 'border-box',
+                                height: '40px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '0 1.5rem',
+                                background: (!formData.adherent || isPrinting) ? '#cbd5e1' : 'linear-gradient(180deg, #4b5563 0%, #374151 100%)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: '600',
+                                cursor: (!formData.adherent || isPrinting) ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s',
+                                fontSize: '0.875rem',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                flex: '0 0 auto',
+                                width: 'auto',
+                                minWidth: 'auto'
+                            }}
+                            onMouseEnter={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.filter = 'brightness(1.1)'; }}
+                            onMouseLeave={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.filter = 'none'; }}
+                            title="Imprimer toutes les charges de cet adhérent"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }} viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            {isPrinting ? 'Impression...' : 'Imprimer Tout'}
+                        </button>
+                    </div>
 
                     {/* Top Row: Selection */}
-                    <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
-                        <div className="input-group" style={{ flex: '1 1 300px' }}>
-                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Adhérent <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div className="form-row" style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
+                        <div className="input-group" style={{ flex: '1 1 50%', minWidth: '0' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Adhérent <span style={{ color: '#ef4444' }}>*</span></label>
                             <Select
                                 options={adherentOptions}
                                 value={formData.adherent}
                                 onChange={(val) => setFormData(p => ({ ...p, adherent: val }))}
                                 placeholder="Sélectionner Adhérent"
                                 isClearable
-                                styles={{
-                                    control: (base) => ({ ...base, minHeight: '40px', height: '40px', borderRadius: '0.375rem', borderColor: '#d1d5db', boxShadow: 'none', '&:hover': { borderColor: '#9ca3af' } }),
-                                    valueContainer: (base) => ({ ...base, height: '40px', padding: '0 8px' }),
-                                    indicatorsContainer: (base) => ({ ...base, height: '40px' })
-                                }}
+                                styles={selectStyles}
                             />
                         </div>
-                        <div className="input-group" style={{ flex: '1 1 200px' }}>
-                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Date <span style={{ color: '#ef4444' }}>*</span></label>
+                        <div className="input-group" style={{ flex: '1 1 50%', minWidth: '0' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date <span style={{ color: '#ef4444' }}>*</span></label>
                             <input
                                 type="date"
                                 required
@@ -288,104 +376,96 @@ const SaisieChargesPage = () => {
                                 onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
                             />
                         </div>
-                        <div className="input-group" style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}>
+                    </div>
+
+                    {/* Bottom Row: Ajouter */}
+                    <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div className="input-group" style={{ flex: '2 1 0%', minWidth: '0' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type de Charge</label>
+                            <Select
+                                options={chargesOptions}
+                                value={newDetail.charge}
+                                onChange={(val) => setNewDetail(p => ({ ...p, charge: val }))}
+                                placeholder="Choisir Charge"
+                                styles={selectStyles}
+                            />
+                        </div>
+                        <div className="input-group" style={{ flex: '1 1 0%', minWidth: '0' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Montant</label>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                height: '40px',
+                                border: isMontantFocused ? '1px solid #3b82f6' : '1px solid #d1d5db',
+                                boxShadow: isMontantFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                borderRadius: '0.375rem',
+                                backgroundColor: 'white',
+                                overflow: 'hidden',
+                                boxSizing: 'border-box',
+                                transition: 'border-color 0.15s, box-shadow 0.15s'
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '0 0.75rem',
+                                    height: '100%',
+                                    backgroundColor: '#f3f4f6',
+                                    borderRight: '1px solid #d1d5db',
+                                    color: '#6b7280',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '500',
+                                    userSelect: 'none'
+                                }}>
+                                    DH
+                                </div>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={newDetail.montantCharge}
+                                    onChange={(e) => setNewDetail(p => ({ ...p, montantCharge: e.target.value }))}
+                                    placeholder="0.00"
+                                    onFocus={() => setIsMontantFocused(true)}
+                                    onBlur={() => setIsMontantFocused(false)}
+                                    style={{
+                                        flex: 1,
+                                        height: '100%',
+                                        padding: '0 0.75rem',
+                                        border: 'none',
+                                        outline: 'none',
+                                        fontSize: '0.875rem',
+                                        color: '#111827',
+                                        textAlign: 'right',
+                                        fontVariantNumeric: 'tabular-nums',
+                                        backgroundColor: 'transparent'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        <div className="input-group" style={{ flex: '0 0 auto' }}>
                             <button
                                 type="button"
-                                onClick={handlePrintAllCharges}
-                                disabled={!formData.adherent || isPrinting}
+                                onClick={handleAddCharge}
                                 style={{
                                     boxSizing: 'border-box',
                                     height: '40px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    padding: '0 1rem',
-                                    backgroundColor: (!formData.adherent || isPrinting) ? '#9ca3af' : '#4f46e5',
+                                    padding: '0 1.5rem',
+                                    backgroundColor: '#0ea5e9',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '0.375rem',
-                                    fontWeight: '500',
-                                    cursor: (!formData.adherent || isPrinting) ? 'not-allowed' : 'pointer',
-                                    transition: 'background-color 0.2s'
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}
-                                onMouseEnter={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.backgroundColor = '#4338ca'; }}
-                                onMouseLeave={(e) => { if (formData.adherent && !isPrinting) e.currentTarget.style.backgroundColor = '#4f46e5'; }}
-                                title="Imprimer toutes les charges de cet adhérent"
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0284c7'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0ea5e9'; }}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                                {isPrinting ? 'Impression...' : 'Imprimer Tout'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Bottom Row: Ajouter */}
-                    <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                        <div className="input-group" style={{ flex: '1 1 400px', minWidth: '300px' }}>
-                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Type de Charge</label>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', height: '40px' }}>
-                                <div style={{ flex: 1, minHeight: '40px', height: '40px' }}>
-                                    <Select
-                                        options={chargesOptions}
-                                        value={newDetail.charge}
-                                        onChange={(val) => setNewDetail(p => ({ ...p, charge: val }))}
-                                        placeholder="Choisir Charge"
-                                        styles={{
-                                            control: (base) => ({ ...base, minHeight: '40px', height: '40px', borderRadius: '0.375rem', borderColor: '#d1d5db', boxShadow: 'none', '&:hover': { borderColor: '#9ca3af' } }),
-                                            valueContainer: (base) => ({ ...base, height: '40px', padding: '0 8px' }),
-                                            indicatorsContainer: (base) => ({ ...base, height: '40px' })
-                                        }}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowChargeModal(true)}
-                                    style={{
-                                        boxSizing: 'border-box',
-                                        width: '40px',
-                                        height: '40px',
-                                        padding: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        borderRadius: '0.375rem',
-                                        flexShrink: 0,
-                                        backgroundColor: '#f3f4f6',
-                                        border: '1px solid #d1d5db',
-                                        color: '#374151',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e5e7eb'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6'; }}
-                                    title="Nouveau Type de Charge"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div className="input-group" style={{ flex: '0 1 150px' }}>
-                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Montant</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={newDetail.montantCharge}
-                                onChange={(e) => setNewDetail(p => ({ ...p, montantCharge: e.target.value }))}
-                                placeholder="0.00"
-                                style={{ width: '100%', height: '40px', padding: '0 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem', color: '#111827', boxSizing: 'border-box', outline: 'none', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}
-                                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-                            />
-                        </div>
-                        <div className="input-group">
-                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563', marginBottom: '0.5rem' }}>&nbsp;</label>
-                            <button
-                                type="button"
-                                onClick={handleAddCharge}
-                                style={{ boxSizing: 'border-box', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 1.5rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.2s' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#059669'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#10b981'; }}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                                 Ajouter
                             </button>
                         </div>
@@ -398,9 +478,9 @@ const SaisieChargesPage = () => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}>
                                 <thead>
                                     <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Charge (Label)</th>
-                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Montant Charge</th>
-                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: '600', color: '#374151', width: '80px' }}>Action</th>
+                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Charge (Label)</th>
+                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Montant Charge</th>
+                                        <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -414,12 +494,29 @@ const SaisieChargesPage = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteCharge(item.id)}
-                                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', borderRadius: '4px' }}
-                                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
-                                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: '#6b7280',
+                                                            cursor: 'pointer',
+                                                            padding: '4px',
+                                                            borderRadius: '4px',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'all 0.2s',
+                                                            margin: '0 auto'
+                                                        }}
+                                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+                                                        onMouseLeave={(e) => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                                                         title="Supprimer"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                        </svg>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -441,73 +538,6 @@ const SaisieChargesPage = () => {
                 </div>
             </div>
 
-            {/* Modal for creating a new Charge type */}
-            {showChargeModal && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div className="modal-content" style={{ background: 'white', padding: '2.5rem 2rem', borderRadius: '8px', width: '400px', minHeight: '400px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #eee', paddingBottom: '0.75rem' }}>
-                            <h2 style={{ margin: 0, color: '#2c3e50', fontSize: '1.5rem' }}>Nouvelle Charge</h2>
-                            <button type="button" onClick={() => setShowChargeModal(false)} style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '4px', fontSize: '1.25rem', color: '#6c757d', cursor: 'pointer', padding: '0', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e9ecef'; e.currentTarget.style.color = '#dc3545'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f8f9fa'; e.currentTarget.style.color = '#6c757d'; }}>&times;</button>
-                        </div>
-                        <form onSubmit={handleCreateNewChargeType} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <div className="form-row" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div className="input-group" style={{ width: '100%' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#495057', fontWeight: 'bold', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                        Label Charge <span style={{ color: '#dc3545' }}>*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={newChargeData.label}
-                                        onChange={(e) => setNewChargeData(p => ({ ...p, label: e.target.value }))}
-                                        required
-                                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '1rem', color: '#495057', backgroundColor: '#f8f9fa', transition: 'border-color 0.15s ease-in-out', boxSizing: 'border-box' }}
-                                        onFocus={(e) => { e.target.style.borderColor = '#80bdff'; e.target.style.outline = '0'; e.target.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)'; }}
-                                        onBlur={(e) => { e.target.style.borderColor = '#ced4da'; e.target.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                                <div className="input-group" style={{ width: '100%' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#495057', fontWeight: 'bold', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                        Type de Charge <span style={{ color: '#dc3545' }}>*</span>
-                                    </label>
-                                    <Select
-                                        options={[
-                                            { value: 'Avance', label: 'Avance' },
-                                            { value: 'Emballage', label: 'Emballage' },
-                                            { value: 'Transport', label: 'Transport' },
-                                            { value: 'Main d\'oeuvre', label: 'Main d\'oeuvre' },
-                                            { value: 'Carburant', label: 'Carburant' },
-                                            { value: 'Pesticides/Engrais', label: 'Pesticides/Engrais' },
-                                            { value: 'Entretien', label: 'Entretien' },
-                                            { value: 'Autre', label: 'Autre' }
-                                        ]}
-                                        value={newChargeData.typecharge ? { value: newChargeData.typecharge, label: newChargeData.typecharge } : null}
-                                        onChange={(val) => setNewChargeData(p => ({ ...p, typecharge: val ? val.value : '' }))}
-                                        placeholder="Optionnel"
-                                        isClearable
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                minHeight: '42px',
-                                                borderRadius: '4px',
-                                                borderColor: state.isFocused ? '#80bdff' : '#ced4da',
-                                                boxShadow: state.isFocused ? '0 0 0 0.2rem rgba(0,123,255,.25)' : 'none',
-                                                '&:hover': { borderColor: state.isFocused ? '#80bdff' : '#adb5bd' },
-                                                backgroundColor: '#f8f9fa'
-                                            }),
-                                            valueContainer: (base) => ({ ...base, padding: '2px 12px' }),
-                                            placeholder: (base) => ({ ...base, color: '#6c757d' })
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-actions" style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '2rem', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-                                <button type="button" className="cancel-btn" onClick={() => setShowChargeModal(false)} style={{ backgroundColor: '#6c757d', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', flex: '1', transition: 'background-color 0.2s' }} onMouseEnter={(e) => { e.target.style.backgroundColor = '#5a6268'; }} onMouseLeave={(e) => { e.target.style.backgroundColor = '#6c757d'; }}>Annuler</button>
-                                <button type="submit" className="save-btn" style={{ backgroundColor: '#20c997', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', flex: '1', transition: 'background-color 0.2s' }} onMouseEnter={(e) => { e.target.style.backgroundColor = '#1ba87e'; }} onMouseLeave={(e) => { e.target.style.backgroundColor = '#20c997'; }}>Créer</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
