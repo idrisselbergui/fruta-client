@@ -334,12 +334,12 @@ const ShelfLifeHubPage = () => {
   const handleTimelineNodeClick = async (sample, dayNum) => {
     // Calculate the target check date string for "Day X"
     const start = new Date(sample.startDate);
-    const targetDate = new Date(start.getTime() + (dayNum - 1) * 24 * 60 * 60 * 1000);
+    const targetDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + (dayNum - 1));
 
     // Prevent future date check
     if (targetDate > new Date()) return;
 
-    const dateStr = targetDate.toISOString().split('T')[0];
+    const dateStr = formatDateForInput(targetDate);
 
     setActiveCheckSample(sample);
     setCheckDate(dateStr);
@@ -532,8 +532,8 @@ const ShelfLifeHubPage = () => {
       }
     });
 
-    // 2. If the sample is active and the next pending check is available to record today or in the past, show it
-    if (sample.status === 0 && nextPendingDay <= elapsed) {
+    // 2. If the sample is active, always show the next pending check as the upcoming control placeholder
+    if (sample.status === 0) {
       daysToRenderSet.add(nextPendingDay);
     }
 
@@ -563,8 +563,13 @@ const ShelfLifeHubPage = () => {
         }
       } else {
         // If not checked, it must be the pending day
-        nodeClass = 'pending';
-        symbol = '➕';
+        if (i > elapsed) {
+          nodeClass = 'future';
+          symbol = '➕';
+        } else {
+          nodeClass = 'pending';
+          symbol = '➕';
+        }
       }
 
       nodes.push(
@@ -574,12 +579,15 @@ const ShelfLifeHubPage = () => {
           onClick={() => {
             if (sample.status === 1 && !checkOnDay) return;
             if (sample.status === 0 && !checkOnDay && i !== nextPendingDay) return;
+            if (i > elapsed) return;
             handleTimelineNodeClick(sample, i);
           }}
           title={
             checkOnDay 
               ? `Défauts relevés : ${checkOnDay.defects ? checkOnDay.defects.length : 0}${sample.status === 1 ? ' (Lecture seule)' : ''}` 
-              : 'En attente - Cliquer pour enregistrer'
+              : i > elapsed 
+                ? 'Prochain contrôle prévu'
+                : 'En attente - Cliquer pour enregistrer'
           }
         >
           <span className="node-day">J{i}</span>
