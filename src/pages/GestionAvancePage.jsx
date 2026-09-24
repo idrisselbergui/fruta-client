@@ -27,6 +27,8 @@ const GestionAvancePage = () => {
     const [isViewing, setIsViewing] = useState(false);
     const [loadingEditId, setLoadingEditId] = useState(null);
     const [savedRealValues, setSavedRealValues] = useState(null);
+    // Adhérent/année/mois the edited décompte was loaded with — saved detail rows only apply to that key
+    const [loadedKey, setLoadedKey] = useState(null);
 
     // Wizard State
     const [currentStep, setCurrentStep] = useState(1);
@@ -156,24 +158,34 @@ const GestionAvancePage = () => {
             return;
         }
 
-        // --- In EDIT mode: if we already have saved detail rows, skip recalculation ---
-        // Just go to step 2, preserving DB values exactly as-is.
-        if (isEditing && editableRows.length > 0) {
+        const annee = parseInt(formData.annee);
+        const mois = parseInt(formData.mois);
+        if (!annee || !mois || mois < 1 || mois > 12) {
+            setError('Veuillez saisir une année valide et un mois entre 1 et 12.');
+            return;
+        }
+
+        // --- In EDIT mode: keep the saved detail rows only if adhérent/année/mois are unchanged ---
+        const keyUnchanged = loadedKey
+            && loadedKey.refadh === formData.adherent.value
+            && loadedKey.annee === annee
+            && loadedKey.mois === mois;
+        if (isEditing && keyUnchanged && editableRows.length > 0) {
+            setError(null);
             setCurrentStep(2);
             return;
         }
 
-        // --- Duplicate check: block if a décompte already exists for this adherent + month ---
-        if (!isEditing) {
-            const duplicate = avances.find(a =>
-                a.refadh === formData.adherent.value &&
-                a.annee === parseInt(formData.annee) &&
-                a.mois === parseInt(formData.mois)
-            );
-            if (duplicate) {
-                setError(`⚠️ Un décompte existe déjà pour cet adhérent pour ${formData.mois}/${formData.annee} (ID: #${duplicate.id}). Veuillez le modifier via le bouton ✏️ au lieu d'en créer un nouveau.`);
-                return;
-            }
+        // --- Duplicate check: block if another décompte already exists for this adherent + month ---
+        const duplicate = avances.find(a =>
+            a.id !== editingAvanceId &&
+            a.refadh === formData.adherent.value &&
+            a.annee === annee &&
+            a.mois === mois
+        );
+        if (duplicate) {
+            setError(`⚠️ Un décompte existe déjà pour cet adhérent pour ${mois}/${annee} (ID: #${duplicate.id}). Veuillez le modifier via le bouton ✏️ au lieu d'en créer un nouveau.`);
+            return;
         }
 
         setError(null);
@@ -355,6 +367,7 @@ const GestionAvancePage = () => {
                 setCurrentStep(1);
             }
 
+            setLoadedKey({ refadh: avance.refadh, annee: parseInt(avance.annee), mois: parseInt(avance.mois) });
             setIsEditing(true);
             setEditingAvanceId(id);
             setIsViewing(false);
@@ -404,6 +417,7 @@ const GestionAvancePage = () => {
         });
         setTotalCharges(0);
         setSavedRealValues(null);
+        setLoadedKey(null);
     };
 
     // Filter and Pagination
