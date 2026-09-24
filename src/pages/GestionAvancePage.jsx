@@ -53,8 +53,20 @@ const GestionAvancePage = () => {
         montantAvance: '', totalCharges: '', totalDecompte: ''
     });
 
-    // Total Charges Fetched from Server
-    const [totalCharges, setTotalCharges] = useState(0);
+    // Total Charges currently in the DB for the selected adhérent/période
+    const [liveCharges, setLiveCharges] = useState(0);
+    // Charges saved with the décompte being edited, and whether the user chose to replace them
+    const [savedCharges, setSavedCharges] = useState(null);
+    const [useLiveCharges, setUseLiveCharges] = useState(false);
+
+    const isSamePeriod = !!loadedKey && !!formData.adherent
+        && loadedKey.refadh === formData.adherent.value
+        && loadedKey.annee === parseInt(formData.annee)
+        && loadedKey.mois === parseInt(formData.mois);
+    // Editing without changing the période keeps the saved snapshot unless "Recalculer" was clicked
+    const keepSavedCharges = isEditing && isSamePeriod && savedCharges !== null && !useLiveCharges;
+    const totalCharges = keepSavedCharges ? savedCharges : liveCharges;
+    const chargesChanged = keepSavedCharges && Math.abs(liveCharges - savedCharges) > 0.005;
 
     // Editable rows — one per variety group, pre-filled from wizardDetails
     const [editableRows, setEditableRows] = useState([]);
@@ -100,15 +112,15 @@ const GestionAvancePage = () => {
 
     const fetchCharges = async () => {
         if (!formData.adherent || !formData.annee || !formData.mois) {
-            setTotalCharges(0);
+            setLiveCharges(0);
             return;
         }
         try {
             const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
-            setTotalCharges(sum || 0);
+            setLiveCharges(sum || 0);
         } catch (err) {
             console.error("Failed to fetch charge sum", err);
-            setTotalCharges(0);
+            setLiveCharges(0);
         }
     };
 
@@ -166,11 +178,7 @@ const GestionAvancePage = () => {
         }
 
         // --- In EDIT mode: keep the saved detail rows only if adhérent/année/mois are unchanged ---
-        const keyUnchanged = loadedKey
-            && loadedKey.refadh === formData.adherent.value
-            && loadedKey.annee === annee
-            && loadedKey.mois === mois;
-        if (isEditing && keyUnchanged && editableRows.length > 0) {
+        if (isEditing && isSamePeriod && editableRows.length > 0) {
             setError(null);
             setCurrentStep(2);
             return;
@@ -325,7 +333,8 @@ const GestionAvancePage = () => {
             });
 
             // Preserve the saved total charges snapshot
-            setTotalCharges(avance.ttcharges || 0);
+            setSavedCharges(avance.ttcharges || 0);
+            setUseLiveCharges(false);
 
             // If detail rows were saved, load them directly — no averaging needed
             if (avance.details && avance.details.length > 0) {
@@ -415,7 +424,9 @@ const GestionAvancePage = () => {
             s1: '', s2: '', s3: '', s4: '', s5: '',
             montantAvance: '', totalCharges: '', totalDecompte: ''
         });
-        setTotalCharges(0);
+        setLiveCharges(0);
+        setSavedCharges(null);
+        setUseLiveCharges(false);
         setSavedRealValues(null);
         setLoadedKey(null);
     };
@@ -732,6 +743,22 @@ const GestionAvancePage = () => {
                                                 <div style={{ textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>Total Charges (- Chg)</div>
                                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc3545' }}>{formatNumber(totalCharges)} DH</div>
+                                                    {chargesChanged && (
+                                                        <div style={{ fontSize: '0.8rem', color: '#856404', marginTop: '4px' }}>
+                                                            Charges actuelles : {formatNumber(liveCharges)} DH{' '}
+                                                            <button type="button" onClick={() => setUseLiveCharges(true)} style={{ padding: '2px 8px', background: '#ffc107', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                                                Recalculer
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {isEditing && isSamePeriod && useLiveCharges && savedCharges !== null && Math.abs(liveCharges - savedCharges) > 0.005 && (
+                                                        <div style={{ fontSize: '0.8rem', color: '#6c757d', marginTop: '4px' }}>
+                                                            Enregistré : {formatNumber(savedCharges)} DH{' '}
+                                                            <button type="button" onClick={() => setUseLiveCharges(false)} style={{ padding: '2px 8px', background: '#e9ecef', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                                                Annuler
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>Solde (Déc. - Chg)</div>
