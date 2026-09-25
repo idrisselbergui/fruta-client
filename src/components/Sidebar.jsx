@@ -3,12 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { hasPagePermission } from '../ProtectedRoute';
 import './Sidebar.css';
 
-const Sidebar = ({ user, onLogout, isCollapsed, isMobileOpen, closeMobileMenu }) => {
-
-  const handleLogout = () => {
-    onLogout();
-    closeMobileMenu();
-  };
+const Sidebar = ({ user, isCollapsed, isMobileOpen, closeMobileMenu }) => {
 
   const renderNavItem = (to, label, icon) => {
     // Permission check would be added here based on the specific page

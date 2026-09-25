@@ -203,24 +203,3 @@ const extractTableData = (tableElement) => {
   console.log('Final extracted data:', { headers, rows });
   return { headers, rows };
 };
-
-/**
- * Hook to generate PDF from chart and table elements
- * @param {string} chartId - ID of the chart element
- * @param {string} tableId - ID of the table element
- * @returns {Function} - Function to generate PDF
- */
-export const useChartPDFGenerator = (chartId, tableId) => {
-  const generatePDF = async (options = {}) => {
-    const chartElement = document.getElementById(chartId);
-    const tableElement = document.getElementById(tableId);
-
-    if (!chartElement) {
-      throw new Error('Element graphique introuvable');
-    }
-
-    return await generateChartPDF(chartElement, tableElement, options);
-  };
-
-  return generatePDF;
-};

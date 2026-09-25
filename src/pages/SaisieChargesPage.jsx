@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { apiGet, apiPost, deleteAdherentCharge, createAdherentCharge, getAdherentCharges } from '../apiService';
-import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
+import { formatDateForDisplay } from '../utils/dateUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './GestionAvancePage.css'; // Reusing the matched styling
 
-const SaisieChargesPage = ({ isModal = false, onClose }) => {
+const SaisieChargesPage = ({ isModal = false }) => {
     // Premium React Select Custom Styles to override global 48px styles and vertically center text
     const selectStyles = {
         control: (base, state) => ({

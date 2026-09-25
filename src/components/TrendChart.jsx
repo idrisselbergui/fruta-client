@@ -16,12 +16,10 @@ import { formatNumberWithSpaces } from '../utils/numberUtils';
 export const CombinedTrendChart = ({
   data,
   title,
-  timePeriod,
-  color = '#007bff',
-  dataKey = 'value'
+  timePeriod
 }) => {
   // Format data for display
-  const formattedData = data.map((item, index) => ({
+  const formattedData = data.map((item) => ({
     ...item,
     displayLabel: formatDateLabel(item.label, timePeriod),
     reception: parseFloat(item.reception || 0),
@@ -183,7 +181,7 @@ const TrendChart = ({
   dataKey = 'value'
 }) => {
   // Format data for display
-  const formattedData = data.map((item, index) => {
+  const formattedData = data.map((item) => {
     console.log('Raw item data:', item, 'TimePeriod:', timePeriod);
 
     return {

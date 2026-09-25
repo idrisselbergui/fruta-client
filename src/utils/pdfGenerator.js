@@ -859,11 +859,9 @@ const generateEcartDirectGroupedPDF = (ecartDirectData, vergers, varietes, typeE
   const sortedVergers = Object.keys(groupedData).sort();
 
   sortedVergers.forEach(vergerName => {
-    let vergerTotal = 0;
     const sortedVarietes = Object.keys(groupedData[vergerName]).sort();
 
     sortedVarietes.forEach(varieteName => {
-      let varieteTotal = 0;
       const sortedTypeEcarts = Object.keys(groupedData[vergerName][varieteName]).sort();
 
       sortedTypeEcarts.forEach(typeEcartName => {
@@ -874,8 +872,6 @@ const generateEcartDirectGroupedPDF = (ecartDirectData, vergers, varietes, typeE
           typeEcartName.toUpperCase(),
           formatNumberWithSpaces(weight, 2)
         ]);
-        varieteTotal += weight;
-        vergerTotal += weight;
         grandTotal += weight;
       });
     });
@@ -1485,7 +1481,6 @@ const generateSampleTestReportPDF = async (historyData, destinations, varieties,
   const clientName = destinations.find(d => d.value === sample.coddes || d.coddes === sample.coddes)?.vildes || sample.coddes || 'N/A';
   const varietyName = varieties.find(v => v.value === sample.codvar || v.codvar === sample.codvar)?.nomvar || sample.codvar || 'N/A';
   const lastCheck = dailyChecks && dailyChecks.length > 0 ? dailyChecks[dailyChecks.length - 1] : null;
-  const daysElapsed = sample.startDate ? Math.floor((new Date() - new Date(sample.startDate)) / (1000 * 60 * 60 * 24)) + 1 : 0;
 
   // Col 1
   doc.text(`Verger : ${sample.vergerName || 'N/A'}`, 20, yPosition + 20);
@@ -1858,112 +1853,6 @@ const generateVenteEcartPDF = (vente, details, vergers, grpvars, typeEcarts) => 
 
   // Save
   const fileName = `Bon_Vente_${vente.numbonvente || vente.id}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
-};
-
-const generateGlobalVenteEcartPDF = (ventes, typeEcarts, filters) => {
-  console.log('Starting Global Vente Ecart PDF generation', { ventes });
-
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
-  });
-
-  // Add Logo
-  try {
-    const logoPath = '/diaf.png';
-    const pageWidth = doc.internal.pageSize.getWidth();
-    doc.addImage(logoPath, 'PNG', pageWidth - 35, 10, 25, 25);
-  } catch (error) {
-    console.log('Logo not found');
-  }
-
-  // Header
-  doc.setFontSize(20);
-  doc.setTextColor(44, 62, 80);
-  doc.text('Rapport Global Ventes Écarts', 20, 20);
-
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
-
-  if (filters.startDate && filters.endDate) {
-    doc.text(`Période: ${formatDateForDisplay(filters.startDate)} au ${formatDateForDisplay(filters.endDate)}`, 20, 37);
-  }
-
-  // Prepare table data
-  let totalPoids = 0;
-  let totalMontant = 0;
-
-  // Sort by date descending
-  const sortedVentes = [...ventes].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const tableData = sortedVentes.map(vente => {
-    const typeLabel = typeEcarts.find(t => t.codtype === vente.codtype)?.destype || 'N/A';
-
-    totalPoids += parseFloat(vente.poidsTotal) || 0;
-    totalMontant += parseFloat(vente.montantTotal) || 0;
-
-    return [
-      new Date(vente.date).toLocaleDateString('fr-FR'),
-      vente.numbonvente || 'N/A',
-      typeLabel,
-      vente.numlot || '-',
-      formatNumberWithSpaces(parseFloat(vente.poidsTotal) || 0),
-      formatNumberWithSpaces(parseFloat(vente.montantTotal) || 0)
-    ];
-  });
-
-  // Add total row
-  tableData.push([
-    'TOTAL',
-    '',
-    '',
-    '',
-    formatNumberWithSpaces(totalPoids),
-    formatNumberWithSpaces(totalMontant)
-  ]);
-
-  const headerRow = ['Date', 'N° Bon', 'Type Écart', 'N° Lot', 'Poids (kg)', 'Montant (DH)'];
-
-  autoTable(doc, {
-    startY: 45,
-    head: [headerRow],
-    body: tableData,
-    theme: 'grid',
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-      lineColor: [220, 220, 220]
-    },
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: 255,
-      fontStyle: 'bold',
-      halign: 'center'
-    },
-    columnStyles: {
-      0: { cellWidth: 30, halign: 'center' },
-      1: { cellWidth: 25, halign: 'center' },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 25, halign: 'center' },
-      4: { cellWidth: 30, halign: 'right' },
-      5: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
-    },
-    didParseCell: (data) => {
-      // Style the total row
-      if (data.row.index === tableData.length - 1) {
-        data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fillColor = [240, 240, 240];
-      }
-    },
-    margin: { left: 15, right: 15 },
-    alternateRowStyles: { fillColor: [248, 250, 252] }
-  });
-
-  // Save
-  const fileName = `Rapport_Global_Ventes_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 };
 

@@ -25,7 +25,6 @@ const MarqueManagementPage = () => {
 
   // Form data
   const [assignmentForm, setAssignmentForm] = useState({ codmar: '', refver: '', codvar: '' });
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadInitialData();

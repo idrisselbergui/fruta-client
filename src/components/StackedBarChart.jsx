@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     return (
       <div className="custom-tooltip">
         <p className="tooltip-label">{label}</p>
-        {payload.map((entry, index) => (
+        {payload.map((entry) => (
           <p key={entry.dataKey} className="tooltip-entry">
             <span className="tooltip-color" style={{ backgroundColor: entry.fill }}></span>
             <span className="tooltip-key">{entry.dataKey}:</span>

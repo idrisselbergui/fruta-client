@@ -15,7 +15,6 @@ const GestionAvancePage = () => {
 
     // Main Data
     const [avances, setAvances] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // Form State
@@ -26,13 +25,10 @@ const GestionAvancePage = () => {
     const [editingAvanceId, setEditingAvanceId] = useState(null);
     // Adherent/annee/mois of the décompte being edited — saved rows are only valid for this key
     const [editingOriginalKey, setEditingOriginalKey] = useState(null);
-    const [isViewing, setIsViewing] = useState(false);
     const [loadingEditId, setLoadingEditId] = useState(null);
-    const [savedRealValues, setSavedRealValues] = useState(null);
 
     // Wizard State
     const [currentStep, setCurrentStep] = useState(1);
-    const [wizardDetails, setWizardDetails] = useState([]);
     const [isCalculating, setIsCalculating] = useState(false);
 
     // Pagination/Search
@@ -211,7 +207,6 @@ const GestionAvancePage = () => {
         try {
             const data = await apiGet(`/api/gestionavances/wizard-details?refadh=${formData.adherent.value}&annee=${formData.annee}&mois=${formData.mois}`);
 
-            setWizardDetails(data || []);
 
             // Pre-populate editable rows from wizardDetails — always use fresh export data
             // codGrv is now carried so we can save it in the details array
@@ -377,19 +372,12 @@ const GestionAvancePage = () => {
                 setCurrentStep(2);
             } else {
                 // Legacy records without details — fall back to wizard (Step 1)
-                setSavedRealValues({
-                    realTS1: avance.realTS1, realTS2: avance.realTS2,
-                    realTS3: avance.realTS3, realTS4: avance.realTS4, realTS5: avance.realTS5,
-                    realDecS1: avance.realDecS1, realDecS2: avance.realDecS2,
-                    realDecS3: avance.realDecS3, realDecS4: avance.realDecS4, realDecS5: avance.realDecS5,
-                });
                 setCurrentStep(1);
             }
 
             setIsEditing(true);
             setEditingAvanceId(id);
             setEditingOriginalKey({ refadh: avance.refadh, annee: avance.annee, mois: avance.mois, ttcharges: avance.ttcharges || 0 });
-            setIsViewing(false);
             setShowForm(true);
 
         } catch (err) {
@@ -420,9 +408,7 @@ const GestionAvancePage = () => {
         setIsEditing(false);
         setEditingAvanceId(null);
         setEditingOriginalKey(null);
-        setIsViewing(false);
         setCurrentStep(1);
-        setWizardDetails([]);
         setEditableRows([]);
         setFormData({
             adherent: null,
@@ -437,7 +423,6 @@ const GestionAvancePage = () => {
         });
         setTotalCharges(0);
         setChargesSource('live');
-        setSavedRealValues(null);
     };
 
     // Filter and Pagination

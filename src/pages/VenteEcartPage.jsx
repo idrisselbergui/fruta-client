@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { apiGet, apiPost, apiPut, apiDelete } from '../apiService';
 import { generateVenteEcartPDF } from '../utils/pdfGenerator';
 import { formatDateForDisplay, formatDateForInput } from '../utils/dateUtils';
-import LoadingSpinner from '../components/LoadingSpinner';
 import './VenteEcartPage.css';
 
 const VenteEcartPage = () => {
     const [typeEcarts, setTypeEcarts] = useState([]); // Add TypeEcarts state
     const [vergers, setVergers] = useState([]);
     const [grpvars, setGrpvars] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -40,8 +36,6 @@ const VenteEcartPage = () => {
     const itemsPerPage = 10;
     const [isEditing, setIsEditing] = useState(false);
     const [editingVenteId, setEditingVenteId] = useState(null);
-    const [isViewing, setIsViewing] = useState(false);
-    const [viewingVenteId, setViewingVenteId] = useState(null);
     const [searchVentes, setSearchVentes] = useState('');
     const [showForm, setShowForm] = useState(false);
 
@@ -188,12 +182,6 @@ const VenteEcartPage = () => {
     const vergerOptions = vergers.map(v => ({ value: v.refver, label: v.nomver }));
     const grpvarOptions = grpvars.map(v => ({ value: v.codgrv, label: v.nomgrv })); // Changed from varietes
 
-    const getDisplayName = (verRef, verList, grpCod, grpList) => {
-        const verger = verList.find(v => v.refver === verRef);
-        const grpvar = grpList.find(v => v.codgrv === grpCod);
-        return { verger: verger?.nomver || 'N/A', variete: grpvar?.nomgrv || 'N/A' }; // keeping 'variete' key for compatibility or rename it
-    };
-
     const handleDeleteVente = async (id) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
             try {
@@ -203,12 +191,10 @@ const VenteEcartPage = () => {
                 setVentes(refreshedVentes.sort((a, b) => b.id - a.id));
 
                 // If the deleted vente was being edited or viewed, reset form
-                if (editingVenteId === id || viewingVenteId === id) {
+                if (editingVenteId === id) {
                     setShowForm(false);
                     setIsEditing(false);
                     setEditingVenteId(null);
-                    setIsViewing(false);
-                    setViewingVenteId(null);
                     setFormData({
                         typeEcart: null,
                         numbonvente: '',
@@ -264,7 +250,6 @@ const VenteEcartPage = () => {
             });
             setIsEditing(true);
             setEditingVenteId(venteId);
-            setIsViewing(false);
             setShowForm(true);
 
             if (fetchedDetails && Array.isArray(fetchedDetails)) {
@@ -285,103 +270,6 @@ const VenteEcartPage = () => {
         }
     };
 
-    const generateBonDeLivraison = async (venteId) => {
-        if (!venteId) return;
-
-        try {
-            const data = await getVente(venteId);
-            const { vente, details } = data;
-
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            // Add logo
-            try {
-                const pageWidth = doc.internal.pageSize.getWidth();
-                doc.addImage('/diaf.png', 'PNG', pageWidth - 35, 10, 25, 25);
-            } catch (error) {
-                console.log('Logo not found, continuing without logo');
-            }
-
-            // Header
-            doc.setFontSize(20);
-            doc.text('BON DE VENTE', 105, 20, { align: 'center' });
-            doc.setFontSize(10);
-            doc.text(`${formatDateForDisplay(new Date().toISOString())}`, 170, 40);
-
-            // Vente details
-            doc.setFontSize(10);
-
-            let y = 60;
-            doc.text(`N° Bon: ${vente.numbonvente || 'N/A'}`, 20, y);
-            doc.text(`N° Lot: ${vente.numlot || 'N/A'}`, 75, y);
-            doc.text(`Date de Vente: ${formatDateForDisplay(vente.date)}`, 130, y);
-            y += 10;
-            doc.text(`Prix : ${parseFloat(vente.price).toLocaleString('fr-MA')} DH`, 20, y);
-            doc.text(`Poids Total: ${parseFloat(vente.poidsTotal).toFixed(2).toLocaleString('fr-MA')} kg`, 75, y);
-            doc.text(`Montant Total: ${parseFloat(vente.montantTotal).toFixed(2).toLocaleString('fr-MA')} DH`, 130, y);
-            y += 20;
-
-            // Ecarts table
-            const tableData = [];
-            const headerRow = ['Verger', 'Variété', 'Poids Vendu (kg)'];
-            tableData.push(headerRow);
-
-            const itemsToPrint = details || [];
-
-            if (itemsToPrint.length > 0) {
-                itemsToPrint.forEach(item => {
-                    const { verger, variete } = getDisplayName(item.refver, vergers, item.codgrv, grpvars); // Use codgrv/grpvars
-                    tableData.push([
-                        verger,
-                        variete,
-                        parseFloat(item.pds).toFixed(2)
-                    ]);
-                });
-            } else {
-                tableData.push(['Aucun détail', '', '']);
-            }
-
-            // Generate the table
-            autoTable(doc, {
-                startY: y,
-                head: [headerRow],
-                body: tableData.slice(1),
-                theme: 'grid',
-                styles: {
-                    fontSize: 9,
-                    cellPadding: 2
-                },
-                headStyles: {
-                    fillColor: [66, 139, 202],
-                    textColor: 255,
-                    fontStyle: 'bold'
-                },
-                columnStyles: {
-                    2: { halign: 'right' }
-                },
-                margin: { left: 20, right: 20 },
-                alternateRowStyles: { fillColor: [245, 245, 245] }
-            });
-
-            // Footer
-            const footerY = doc.internal.pageSize.height - 20;
-            doc.setFontSize(10);
-            doc.text('Signature du Vendeur:', 20, footerY);
-            doc.text('Signature de l\'Acheteur:', 100, footerY);
-
-            // Save the PDF
-            const fileName = `bon-livraison-vente-${vente.numbonvente || venteId}-${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-            alert('Bon de livraison généré avec succès!');
-        } catch (error) {
-            console.error('Erreur génération bon livraison:', error);
-            alert('Erreur lors de génération du bon de livraison.');
-        }
-    };
 
     // Pagination logic
     const totalItems = filteredVentes.length;
@@ -451,7 +339,6 @@ const VenteEcartPage = () => {
         return pages;
     }, [currentPage, totalPages]);
 
-    if (isLoading) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
@@ -575,139 +462,130 @@ const VenteEcartPage = () => {
                                     </div>
 
                                     {/* Merged Manual Detail Entry Section */}
-                                    {(!isViewing) && (
-                                        <div className="detail-entry" style={{ marginTop: '0.5rem', paddingTop: '1rem' }}>
-                                            <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                                                <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
-                                                    <label>Verger</label>
-                                                    <Select
-                                                        options={vergerOptions}
-                                                        value={newDetail.refver}
-                                                        onChange={(val) => setNewDetail(prev => ({ ...prev, refver: val }))}
-                                                        placeholder="Choisir Verger"
-                                                        styles={{
-                                                            control: (base) => ({
-                                                                ...base,
-                                                                minHeight: '48px',
-                                                                height: '48px',
-                                                                fontSize: '1rem',
-                                                                borderRadius: '8px',
-                                                                borderColor: '#e0e6ed',
-                                                                backgroundColor: 'white',
-                                                                boxShadow: 'none',
-                                                                '&:hover': { borderColor: '#adb5bd' }
-                                                            }),
-                                                            valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
-                                                            singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
-                                                            placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
-                                                            indicatorsContainer: (base) => ({ ...base, height: '48px' })
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
-                                                    <label>Variété (Groupe)</label>
-                                                    <Select
-                                                        options={grpvarOptions}
-                                                        value={newDetail.codgrv}
-                                                        onChange={(val) => setNewDetail(prev => ({ ...prev, codgrv: val }))}
-                                                        placeholder="Choisir Variété"
-                                                        styles={{
-                                                            control: (base) => ({
-                                                                ...base,
-                                                                minHeight: '48px',
-                                                                height: '48px',
-                                                                fontSize: '1rem',
-                                                                borderRadius: '8px',
-                                                                borderColor: '#e0e6ed',
-                                                                backgroundColor: 'white',
-                                                                boxShadow: 'none',
-                                                                '&:hover': { borderColor: '#adb5bd' }
-                                                            }),
-                                                            valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
-                                                            singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
-                                                            placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
-                                                            indicatorsContainer: (base) => ({ ...base, height: '48px' })
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="input-group" style={{ flex: '1', minWidth: '120px' }}>
-                                                    <label>Poids (kg)</label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={newDetail.pds}
-                                                        onChange={(e) => setNewDetail(prev => ({ ...prev, pds: e.target.value }))}
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                                <div className="input-group" style={{ flex: '0 0 auto', minWidth: '120px' }}>
-                                                    <label>&nbsp;</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleAddDetail}
-                                                        className="ve-add-btn"
-                                                    >
-                                                        + Ajouter
-                                                    </button>
-                                                </div>
+                                    <div className="detail-entry" style={{ marginTop: '0.5rem', paddingTop: '1rem' }}>
+                                        <div className="form-row" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                            <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
+                                                <label>Verger</label>
+                                                <Select
+                                                    options={vergerOptions}
+                                                    value={newDetail.refver}
+                                                    onChange={(val) => setNewDetail(prev => ({ ...prev, refver: val }))}
+                                                    placeholder="Choisir Verger"
+                                                    styles={{
+                                                        control: (base) => ({
+                                                            ...base,
+                                                            minHeight: '48px',
+                                                            height: '48px',
+                                                            fontSize: '1rem',
+                                                            borderRadius: '8px',
+                                                            borderColor: '#e0e6ed',
+                                                            backgroundColor: 'white',
+                                                            boxShadow: 'none',
+                                                            '&:hover': { borderColor: '#adb5bd' }
+                                                        }),
+                                                        valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
+                                                        singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                        placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                        indicatorsContainer: (base) => ({ ...base, height: '48px' })
+                                                    }}
+                                                />
                                             </div>
-
-                                            {/* Details Table - Moved inside detail-entry for better layout */}
-                                            <div className="table-container" style={{ maxHeight: '250px', overflowY: 'auto', marginTop: '1rem' }}>
-                                                <table className="data-table" style={{ fontSize: '0.85em' }}>
-                                                    <thead>
-                                                        <tr>
-                                                            <th style={{ padding: '3px 6px' }}>Verger</th>
-                                                            <th style={{ padding: '3px 6px' }}>Variété</th>
-                                                            <th style={{ textAlign: 'right', padding: '3px 6px' }}>Poids (kg)</th>
-                                                            {!isViewing && <th style={{ textAlign: 'center', padding: '3px 6px' }}>Action</th>}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {details.length > 0 ? (
-                                                            details.map((item, index) => (
-                                                                <tr key={item.uniqueId || index}>
-                                                                    <td style={{ padding: '2px 6px' }}>{item.refver?.label || 'N/A'}</td>
-                                                                    <td style={{ padding: '2px 6px' }}>{item.codgrv?.label || 'N/A'}</td>
-                                                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '2px 6px' }}>{parseFloat(item.pds).toFixed(2)}</td>
-                                                                    {!isViewing && (
-                                                                        <td style={{ textAlign: 'center', padding: '2px 6px' }}>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => handleRemoveDetail(item.uniqueId)}
-                                                                                style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', padding: '0', lineHeight: '1' }}
-                                                                            >
-                                                                                &times;
-                                                                            </button>
-                                                                        </td>
-                                                                    )}
-                                                                </tr>
-                                                            ))
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={isViewing ? 3 : 4} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', padding: '10px' }}>
-                                                                    Aucun détail ajouté.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                            <div className="input-group" style={{ flex: '2', minWidth: '200px' }}>
+                                                <label>Variété (Groupe)</label>
+                                                <Select
+                                                    options={grpvarOptions}
+                                                    value={newDetail.codgrv}
+                                                    onChange={(val) => setNewDetail(prev => ({ ...prev, codgrv: val }))}
+                                                    placeholder="Choisir Variété"
+                                                    styles={{
+                                                        control: (base) => ({
+                                                            ...base,
+                                                            minHeight: '48px',
+                                                            height: '48px',
+                                                            fontSize: '1rem',
+                                                            borderRadius: '8px',
+                                                            borderColor: '#e0e6ed',
+                                                            backgroundColor: 'white',
+                                                            boxShadow: 'none',
+                                                            '&:hover': { borderColor: '#adb5bd' }
+                                                        }),
+                                                        valueContainer: (base) => ({ ...base, height: '48px', padding: '0 8px' }),
+                                                        singleValue: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                        placeholder: (base) => ({ ...base, margin: 0, top: '50%', transform: 'translateY(-50%)' }),
+                                                        indicatorsContainer: (base) => ({ ...base, height: '48px' })
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="input-group" style={{ flex: '1', minWidth: '120px' }}>
+                                                <label>Poids (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={newDetail.pds}
+                                                    onChange={(e) => setNewDetail(prev => ({ ...prev, pds: e.target.value }))}
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                            <div className="input-group" style={{ flex: '0 0 auto', minWidth: '120px' }}>
+                                                <label>&nbsp;</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddDetail}
+                                                    className="ve-add-btn"
+                                                >
+                                                    + Ajouter
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
+
+                                        {/* Details Table - Moved inside detail-entry for better layout */}
+                                        <div className="table-container" style={{ maxHeight: '250px', overflowY: 'auto', marginTop: '1rem' }}>
+                                            <table className="data-table" style={{ fontSize: '0.85em' }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th style={{ padding: '3px 6px' }}>Verger</th>
+                                                        <th style={{ padding: '3px 6px' }}>Variété</th>
+                                                        <th style={{ textAlign: 'right', padding: '3px 6px' }}>Poids (kg)</th>
+                                                        <th style={{ textAlign: 'center', padding: '3px 6px' }}>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {details.length > 0 ? (
+                                                        details.map((item, index) => (
+                                                            <tr key={item.uniqueId || index}>
+                                                                <td style={{ padding: '2px 6px' }}>{item.refver?.label || 'N/A'}</td>
+                                                                <td style={{ padding: '2px 6px' }}>{item.codgrv?.label || 'N/A'}</td>
+                                                                <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '2px 6px' }}>{parseFloat(item.pds).toFixed(2)}</td>
+                                                                <td style={{ textAlign: 'center', padding: '2px 6px' }}>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveDetail(item.uniqueId)}
+                                                                        style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', padding: '0', lineHeight: '1' }}
+                                                                    >
+                                                                        &times;
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={4} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', padding: '10px' }}>
+                                                                Aucun détail ajouté.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
 
                                     <div className="form-actions">
-                                        {/* Show Save/Update button only when not viewing */}
-                                        {!isViewing && (
-                                            <button type="submit" style={{ backgroundColor: isEditing ? '#ffc107' : '#28a745', color: isEditing ? 'black' : 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{isEditing ? 'Modifier Vente' : 'Enregistrer Vente'}</button>
-                                        )}
+                                        <button type="submit" style={{ backgroundColor: isEditing ? '#ffc107' : '#28a745', color: isEditing ? 'black' : 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{isEditing ? 'Modifier Vente' : 'Enregistrer Vente'}</button>
                                         {/* Always show Cancel button */}
                                         <button type="button" className="cancel-btn" onClick={() => {
                                             setShowForm(false);
                                             setIsEditing(false);
                                             setEditingVenteId(null);
-                                            setIsViewing(false);
-                                            setViewingVenteId(null);
                                             setFormData({
                                                 typeEcart: null,
                                                 numbonvente: '',
@@ -720,85 +598,12 @@ const VenteEcartPage = () => {
                                             setDetails([]);
                                             setNewDetail({ refver: null, codgrv: null, pds: '' });
                                         }}>
-                                            {isViewing ? 'Fermer' : 'Annuler'}
+                                            Annuler
                                         </button>
                                     </div>
                                 </form>
                             </div>
 
-                            {/* Visualisation Vente */}
-                            {isViewing && (
-                                <div style={{ marginTop: '20px' }}>
-                                    <div className="table-section" style={{ padding: '0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
-
-
-
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: '400px' }}>
-                                            {/* Summary Section */}
-                                            <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '0', border: '1px solid #ddd' }}>
-                                                <button onClick={() => generateBonDeLivraison(viewingVenteId)} style={{ fontSize: '0.8em', backgroundColor: '#5cb85c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}>Générer Bon de Livraison</button>
-                                                <h3 style={{ color: '#007bff', marginTop: '0', marginBottom: '10px' }}>  Vente   #{viewingVenteId} <span style={{ fontSize: '0.9em', color: 'black', textAlign: 'center' }}>{selectedTypeEcart?.label || 'Inconnu'} </span></h3>
-
-                                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
-                                                    N° Bon: {formData.numbonvente}
-                                                </div>
-                                                <div style={{ fontSize: '1em', marginBottom: '10px', color: '#495057' }}>
-                                                    Numéro de Lot:{formData.numlot || 'N/A'}
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '15px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Poids Total</div>
-                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#007bff' }}>{formData.poidsTotal || '0'} kg</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Prix par kg</div>
-                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#ffc107' }}>MAD {formData.price || '0'}</div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '0.85em', color: '#6c757d', marginBottom: '5px' }}>Montant Total</div>
-                                                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#28a745' }}>MAD {formData.montantTotal || '0'}</div>
-                                                    </div>
-
-
-                                                </div>
-                                            </div>
-                                            {/* Details Section */}
-                                            <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '0 0 10px 10px' }}>
-                                                <h3 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>Détails des Écarts Vendus</h3>
-                                                {details.length > 0 ? (
-                                                    <div className="table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                                                        <table className="data-table" style={{ fontSize: '0.85em' }}>
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Verger</th>
-                                                                    <th>Variété</th>
-                                                                    <th style={{ textAlign: 'right' }}>Poids (kg)</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {details.map((item, index) => (
-                                                                    <tr key={item.uniqueId || index}>
-                                                                        <td>{item.refver?.label || 'N/A'}</td>
-                                                                        <td>{item.codgrv?.label || 'N/A'}</td>
-                                                                        <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{parseFloat(item.pds).toFixed(2)}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                ) : (
-                                                    <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '10px' }}>
-                                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📦</div>
-                                                        <p style={{ color: '#856404', margin: '0', fontSize: '0.9em' }}>
-                                                            <strong>Note :</strong> L'API ne fournit actuellement pas les détails individuels des écarts pour cette vente. Si le backend est mis à jour pour inclure les informations sur les écarts dans la réponse de getVente, la liste détaillée des palettes sera affichée ici automatiquement.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                         </div>
                     )}

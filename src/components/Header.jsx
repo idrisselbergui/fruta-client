@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-const Header = ({ user, onLogout, isCollapsed, onToggleSidebar, isMobileOpen, toggleMobileMenu, closeMobileMenu }) => {
+const Header = ({ user, onLogout, isCollapsed, onToggleSidebar, toggleMobileMenu }) => {
   return (
     <header className={`app-header ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="header-left">

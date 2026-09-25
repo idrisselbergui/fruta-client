@@ -142,10 +142,6 @@ export const getDefauts = (databaseName = null) => {
   return apiGet('/api/defaut', null, databaseName);
 };
 
-export const getDefaut = (coddef, databaseName = null) => {
-  return apiGet(`/api/defaut/${coddef}`, null, databaseName);
-};
-
 export const createDefaut = (defautData, databaseName = null) => {
   return apiPost('/api/defaut', defautData, databaseName);
 };
@@ -158,68 +154,14 @@ export const deleteDefaut = (coddef, databaseName = null) => {
   return apiDelete(`/api/defaut/${coddef}`, databaseName);
 };
 
-// Export API_BASE_URL for debugging
-// Vente Ecart functions
-export const getUnsoldEcartDirect = (codtype, startDate = null, endDate = null, editingVenteId = null, databaseName = null) => {
-  return apiGet('/api/vente-ecart/ecartdirect/unsold', { codtype, startDate, endDate, editingVenteId }, databaseName);
-};
-
-export const getUnsoldEcartE = (codtype, startDate = null, endDate = null, editingVenteId = null, databaseName = null) => {
-  return apiGet('/api/vente-ecart/ecart-e/unsold', { codtype, startDate, endDate, editingVenteId }, databaseName);
-};
-
-export const getVentes = (databaseName = null) => {
-  return apiGet('/api/vente-ecart', null, databaseName);
-};
-
-export const getVente = (id, databaseName = null) => {
-  return apiGet(`/api/vente-ecart/${id}`, null, databaseName);
-};
-
-export const updateVente = (id, venteData, databaseName = null) => {
-  return apiPut(`/api/vente-ecart/${id}`, venteData, databaseName);
-};
-
-export const deleteVente = (id, databaseName = null) => {
-  return apiDelete(`/api/vente-ecart/${id}`, databaseName);
-};
-
-export const createVenteEcart = (venteData, databaseName = null) => {
-  return apiPost('/api/vente-ecart', venteData, databaseName);
-};
-
-export { API_BASE_URL, getUserSession };
+export { getUserSession };
 
 // Marque management functions
 export const getMarques = (databaseName = null) => {
   return apiGet('/api/marque', null, databaseName);
 };
 
-export const getMarque = (codmar, databaseName = null) => {
-  return apiGet(`/api/marque/${codmar}`, null, databaseName);
-};
-
-export const createMarque = (marqueData, databaseName = null) => {
-  return apiPost('/api/marque', marqueData, databaseName);
-};
-
-export const updateMarque = (codmar, marqueData, databaseName = null) => {
-  return apiPut(`/api/marque/${codmar}`, marqueData, databaseName);
-};
-
-export const deleteMarque = (codmar, databaseName = null) => {
-  return apiDelete(`/api/marque/${codmar}`, databaseName);
-};
-
 // Marque Assignment management functions
-export const getMarqueAssignments = (databaseName = null) => {
-  return apiGet('/api/MarqueAssignment', null, databaseName);
-};
-
-export const getMarqueAssignment = (id, databaseName = null) => {
-  return apiGet(`/api/MarqueAssignment/${id}`, null, databaseName);
-};
-
 export const getAssignmentsByMarque = (codmar, databaseName = null) => {
   return apiGet(`/api/MarqueAssignment/marque/${codmar}`, null, databaseName);
 };
