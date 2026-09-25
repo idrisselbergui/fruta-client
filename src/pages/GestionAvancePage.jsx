@@ -24,6 +24,8 @@ const GestionAvancePage = () => {
     const [showPrixModal, setShowPrixModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingAvanceId, setEditingAvanceId] = useState(null);
+    // Adherent/annee/mois of the décompte being edited — saved rows are only valid for this key
+    const [editingOriginalKey, setEditingOriginalKey] = useState(null);
     const [isViewing, setIsViewing] = useState(false);
     const [loadingEditId, setLoadingEditId] = useState(null);
     const [savedRealValues, setSavedRealValues] = useState(null);
@@ -53,6 +55,9 @@ const GestionAvancePage = () => {
 
     // Total Charges Fetched from Server
     const [totalCharges, setTotalCharges] = useState(0);
+    // 'saved' = snapshot stored in the décompte being edited, 'live' = current sum of charges
+    const [chargesSource, setChargesSource] = useState('live');
+    const [isRecalculatingCharges, setIsRecalculatingCharges] = useState(false);
 
     // Editable rows — one per variety group, pre-filled from wizardDetails
     const [editableRows, setEditableRows] = useState([]);
@@ -96,17 +101,35 @@ const GestionAvancePage = () => {
 
     const adherentOptions = adherents.map(a => ({ value: a.refadh, label: a.nomadh }));
 
-    const fetchCharges = async () => {
+    // True when editing and adherent/annee/mois still match the décompte that was opened
+    const isOriginalKey = () =>
+        isEditing && editingOriginalKey && formData.adherent &&
+        editingOriginalKey.refadh === formData.adherent.value &&
+        editingOriginalKey.annee === parseInt(formData.annee) &&
+        editingOriginalKey.mois === parseInt(formData.mois);
+
+    // In edit mode the saved charges snapshot is kept unless `force` is set (Recalculer button)
+    const fetchCharges = async ({ force = false } = {}) => {
         if (!formData.adherent || !formData.annee || !formData.mois) {
             setTotalCharges(0);
             return;
         }
+        if (!force && isOriginalKey()) {
+            setTotalCharges(editingOriginalKey.ttcharges);
+            setChargesSource('saved');
+            return;
+        }
         try {
+            setIsRecalculatingCharges(true);
             const sum = await getChargeSum(formData.adherent.value, formData.annee, formData.mois);
             setTotalCharges(sum || 0);
+            setChargesSource('live');
         } catch (err) {
             console.error("Failed to fetch charge sum", err);
             setTotalCharges(0);
+            setChargesSource('live');
+        } finally {
+            setIsRecalculatingCharges(false);
         }
     };
 
@@ -156,24 +179,31 @@ const GestionAvancePage = () => {
             return;
         }
 
-        // --- In EDIT mode: if we already have saved detail rows, skip recalculation ---
-        // Just go to step 2, preserving DB values exactly as-is.
-        if (isEditing && editableRows.length > 0) {
+        const annee = parseInt(formData.annee);
+        const mois = parseInt(formData.mois);
+        if (!mois || mois < 1 || mois > 12) {
+            setError('Veuillez saisir un mois valide (1 à 12).');
+            return;
+        }
+
+        // --- In EDIT mode: keep the saved detail rows only if adherent/annee/mois are unchanged ---
+        // If the user changed any of them, the saved rows belong to another décompte: recalculate.
+        if (isOriginalKey() && editableRows.length > 0) {
+            setError(null);
             setCurrentStep(2);
             return;
         }
 
-        // --- Duplicate check: block if a décompte already exists for this adherent + month ---
-        if (!isEditing) {
-            const duplicate = avances.find(a =>
-                a.refadh === formData.adherent.value &&
-                a.annee === parseInt(formData.annee) &&
-                a.mois === parseInt(formData.mois)
-            );
-            if (duplicate) {
-                setError(`⚠️ Un décompte existe déjà pour cet adhérent pour ${formData.mois}/${formData.annee} (ID: #${duplicate.id}). Veuillez le modifier via le bouton ✏️ au lieu d'en créer un nouveau.`);
-                return;
-            }
+        // --- Duplicate check: block if another décompte already exists for this adherent + month ---
+        const duplicate = avances.find(a =>
+            a.id !== editingAvanceId &&
+            a.refadh === formData.adherent.value &&
+            a.annee === annee &&
+            a.mois === mois
+        );
+        if (duplicate) {
+            setError(`⚠️ Un décompte existe déjà pour cet adhérent pour ${mois}/${annee} (ID: #${duplicate.id}). Veuillez le modifier via le bouton ✏️ au lieu d'en créer un nouveau.`);
+            return;
         }
 
         setError(null);
@@ -312,8 +342,9 @@ const GestionAvancePage = () => {
                 totalDecompte: avance.ttdecompte || ''
             });
 
-            // Preserve the saved total charges snapshot
+            // Preserve the saved total charges snapshot (fetchCharges keeps it while the key is unchanged)
             setTotalCharges(avance.ttcharges || 0);
+            setChargesSource('saved');
 
             // If detail rows were saved, load them directly — no averaging needed
             if (avance.details && avance.details.length > 0) {
@@ -357,6 +388,7 @@ const GestionAvancePage = () => {
 
             setIsEditing(true);
             setEditingAvanceId(id);
+            setEditingOriginalKey({ refadh: avance.refadh, annee: avance.annee, mois: avance.mois, ttcharges: avance.ttcharges || 0 });
             setIsViewing(false);
             setShowForm(true);
 
@@ -387,6 +419,7 @@ const GestionAvancePage = () => {
         setShowForm(false);
         setIsEditing(false);
         setEditingAvanceId(null);
+        setEditingOriginalKey(null);
         setIsViewing(false);
         setCurrentStep(1);
         setWizardDetails([]);
@@ -403,6 +436,7 @@ const GestionAvancePage = () => {
             montantAvance: '', totalCharges: '', totalDecompte: ''
         });
         setTotalCharges(0);
+        setChargesSource('live');
         setSavedRealValues(null);
     };
 
@@ -607,7 +641,7 @@ const GestionAvancePage = () => {
                                         {isEditing && (
                                             <div style={{ padding: '15px', backgroundColor: '#fff3cd', borderRadius: '8px', marginBottom: '15px', border: '1px solid #ffeeba' }}>
                                                 <strong>Mode Édition :</strong> Vous modifiez le décompte existant (ID: {editingAvanceId}).
-                                                Les anciens totaux globaux enregistrés sont conservés. Pour recalculer selon le Tonnage réel actuel, cliquez sur Suivant.
+                                                Les lignes enregistrées sont conservées. Si vous changez l'adhérent, l'année ou le mois, les données seront recalculées à partir des exports.
                                             </div>
                                         )}
 
@@ -718,6 +752,22 @@ const GestionAvancePage = () => {
                                                 <div style={{ textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>Total Charges (- Chg)</div>
                                                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc3545' }}>{formatNumber(totalCharges)} DH</div>
+                                                    {isEditing && (
+                                                        <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                                            <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                                                                {chargesSource === 'saved' ? 'Montant enregistré' : 'Montant actuel'}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => fetchCharges({ force: true })}
+                                                                disabled={isRecalculatingCharges}
+                                                                title="Remplacer par le total actuel des charges de ce mois"
+                                                                style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#fff', border: '1px solid #ced4da', borderRadius: '4px', cursor: 'pointer' }}
+                                                            >
+                                                                {isRecalculatingCharges ? '⏳' : '🔄 Recalculer les charges'}
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>Solde (Déc. - Chg)</div>
