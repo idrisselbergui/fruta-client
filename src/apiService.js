@@ -85,7 +85,8 @@ const apiFetch = async (endpoint, options = {}, databaseName = null) => {
 
 // Export specific methods for different types of requests
 export const apiGet = (endpoint, params, databaseName = null) => {
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
+  // Base on the current origin so an empty API_BASE_URL (relative /api/... calls) is valid
+  const url = new URL(`${API_BASE_URL}${endpoint}`, window.location.origin);
   if (params) {
     Object.keys(params).forEach(key => {
       if (params[key] !== null && params[key] !== undefined) {
